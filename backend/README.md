@@ -34,6 +34,7 @@ just test          # run all tests
 just test-unit     # fast unit tests
 just test-cov      # tests with coverage
 just refresh-disposable-email-domains # update the committed disposable-email fallback list
+just bench         # run the CPU benchmarks once (CodSpeed measures them in CI)
 just perf-baseline # run the k6 baseline suite and export a JSON summary (output under reports/performance/ is gitignored)
 just migrate       # apply migrations
 just migrate-create "description"  # create a migration from the current model changes
