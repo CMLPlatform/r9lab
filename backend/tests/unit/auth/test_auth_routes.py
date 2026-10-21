@@ -22,11 +22,13 @@ from app.api.common.rate_limiting import rate_limit_bucket_key
 from tests.fixtures.auth import EMAIL_SPELLING_VARIANTS
 
 
-def _router_dependency_names(api_router: APIRouter) -> set[str]:
-    """Return dependency function names attached at the router level."""
+def _route_dependency_names(api_router: APIRouter, path: str) -> set[str]:
+    """Return dependency function names attached to the route at ``path``."""
     return {
         getattr(dependency.dependency, "__name__", "")
-        for dependency in api_router.dependencies
+        for route in api_router.routes
+        if isinstance(route, APIRoute) and route.path == path
+        for dependency in route.dependencies
         if dependency.dependency is not None
     }
 
@@ -44,13 +46,13 @@ def _request() -> Request:
 def test_forgot_password_route_is_rate_limited() -> None:
     """The password-reset e-mail request endpoint should use the limiter dependency."""
     assert _has_route(router, FORGOT_PASSWORD_PATH)
-    assert "rate_limit" in _router_dependency_names(router)
+    assert "rate_limit" in _route_dependency_names(router, FORGOT_PASSWORD_PATH)
 
 
 def test_reset_password_route_is_rate_limited() -> None:
     """The password-reset submission endpoint should use the limiter dependency."""
     assert _has_route(router, RESET_PASSWORD_PATH)
-    assert "rate_limit" in _router_dependency_names(router)
+    assert "rate_limit" in _route_dependency_names(router, RESET_PASSWORD_PATH)
 
 
 def test_forgot_password_account_rate_limit_key_uses_normalized_keyed_bucket() -> None:

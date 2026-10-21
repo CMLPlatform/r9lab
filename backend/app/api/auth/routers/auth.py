@@ -33,6 +33,6 @@ router.include_router(mfa.router)
 
 # Verification and password reset routes
 verify_router = fastapi_user_manager.get_verify_router(user_schema=UserRead)
-router.include_router(verify_router, dependencies=[limiter.dependency(VERIFY_RATE_LIMIT)])
+router.include_router(verify_router, dependencies=[limiter.dependency(VERIFY_RATE_LIMIT, scope="verify")])
 router.include_router(password_reset.router)
 router.include_router(email_validation.router)

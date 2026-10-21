@@ -45,9 +45,13 @@ def rate_limit_bucket_key(prefix: str, value: str) -> str:
     return f"{prefix}:{keyed_digest(prefix, value)}"
 
 
-def request_ip_rate_limit_key(request: Request) -> str:
-    """Return a privacy-preserving rate-limit key for the request client IP."""
-    return rate_limit_bucket_key("client:ip", get_client_ip(request))
+def request_ip_rate_limit_key(request: Request, scope: str | None = None) -> str:
+    """Return a privacy-preserving rate-limit key for the request client IP.
+
+    Without a scope, every route limited at the same rate shares one per-IP bucket (the
+    login and MFA routes rely on that). A scope gives a route a bucket of its own.
+    """
+    return rate_limit_bucket_key(f"client:ip:{scope}" if scope else "client:ip", get_client_ip(request))
 
 
 type RequestUserId = Callable[[Request], Awaitable[str | None]]
@@ -115,6 +119,7 @@ class Limiter:
         rate_string: str,
         *,
         name: str = "rate_limit",
+        scope: str | None = None,
         per_user: tuple[str, RequestUserId] | None = None,
         signed_in_ip_ceiling: str | None = None,
     ) -> DependsParam:
@@ -127,13 +132,15 @@ class Limiter:
 
         ``signed_in_ip_ceiling`` also charges signed-in requests to a per-IP bucket of their
         own, so a stack of throwaway accounts on one IP cannot multiply the per-user budget.
+
+        ``scope`` keeps the per-IP bucket apart from other routes at the same rate.
         """
 
         async def dependency(request: Request) -> None:
             if not self.enabled:
                 return
             if per_user is None:
-                await self.ahit_key(rate_string, request_ip_rate_limit_key(request))
+                await self.ahit_key(rate_string, request_ip_rate_limit_key(request, scope))
                 return
             user_rate_string, user_id_of = per_user
             # No user id, or a Redis error resolving one, keeps the IP bucket, so rotating junk
@@ -143,7 +150,7 @@ class Limiter:
             except RedisError, ConnectionError, TimeoutError, OSError:
                 user_id = None
             if user_id is None:
-                await self.ahit_key(rate_string, request_ip_rate_limit_key(request))
+                await self.ahit_key(rate_string, request_ip_rate_limit_key(request, scope))
             else:
                 await self.ahit_key(user_rate_string, rate_limit_bucket_key("client:user", user_id))
                 if signed_in_ip_ceiling is not None:
