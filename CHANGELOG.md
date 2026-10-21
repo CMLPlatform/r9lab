@@ -61,6 +61,25 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - `just stack <env> compose ...` keeps quoted arguments that contain spaces whole.
 - The rename guard also refuses while the old `relab_<env>` project still runs or its uploads
   volume has not been copied.
+- Signing in with Google no longer disconnects YouTube streaming.
+- Usernames sign in whatever their letter case.
+- A failed social-login link now shows its error in the app instead of failing silently.
+- Forgot password, reset password and email verification each have their own hourly limit, so
+  retrying a reset after a weak-password rejection no longer hits "too many requests".
+
+### Security
+
+- Turning off two-step verification now needs your password as well as a code. API clients
+  send it as `password` to `POST /v1/auth/mfa/totp/disable`.
+- Logging out with a stolen, already-rotated refresh token no longer hides the theft, and a
+  device holding a token revoked by "log out everywhere" no longer logs you out again.
+- Parallel password guesses from many addresses can no longer get past the per-account login
+  limit, and wrong passwords now also count towards a daily limit per account.
+- The common-password and disposable-email checks keep working when their Redis cache is
+  flushed or evicted.
+- `GET /v1/oauth/{provider}/token/authorize` refuses a `redirect_uri`: the bearer flow returns
+  its tokens in the response body, which a redirect would drop. Use the `session` transport to
+  redirect.
 
 ## [0.5.0] - 2026-10-13
 
