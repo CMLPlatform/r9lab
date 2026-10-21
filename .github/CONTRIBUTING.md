@@ -186,6 +186,15 @@ Docker smoke already proves the images build, and base-image advisories move fas
 rebuild. After a merge a finding is reported without failing the run; the weekly and manual runs
 fail on it. Run `just security` before marking a pull request ready to get that signal early.
 
+To reproduce a failed `Container Security` job, build the image with the repo root as context
+(for example `docker build -f app/Dockerfile .`) and scan it with the flags from
+`.github/workflows/container-images.yml`: `trivy image --ignore-unfixed --severity HIGH,CRITICAL
+--ignorefile .github/trivyignore.yaml <image>`. Rebuild with `--no-cache` first: a cached layer
+keeps an old package set and shows alpine findings that are already fixed. A finding in an OS
+package with a fix means the pinned base digest is stale, so bump it. A Go CVE in the `caddy`
+binary has no upstream rebuild: add it to `.github/trivyignore.yaml` with an expiry and a note on
+why it is not reachable.
+
 ## Backend Development
 
 [backend/README.md](../backend/README.md) has the backend quick start, the migration commands, and
@@ -224,6 +233,7 @@ copy.
 | `docs/src/components/datamodel/*.generated.mdx` | `just backend/datamodel` |
 | `backend/app/templates/emails/build/` (edit the MJML in `src/`) | `just backend/compile-email` |
 | brand outputs: `*.generated.*` under `app/src/theme/`, `www/src/styles/`, `docs/src/styles/`, and `www/src/copy/research.generated.ts` | `just assets-sync` |
+| `www/src/styles/brand.css`, `docs/src/styles/brand.css` (copies of `assets/brand.css`; a hand edit passes the subrepo checks but fails root `just check-root`) | `just assets-sync` |
 
 `app/src/components/base/ui/` is vendored react-native-reusables output: regenerate it with the RNR
 CLI, do not refactor it by hand.
@@ -289,7 +299,8 @@ If you are new to the repo, start with the architecture docs before making struc
 
 1. Push your branch.
 
-1. Open a pull request.
+1. Open a pull request. `main` takes changes only through pull requests. To catch up, merge
+   `origin/main` into your branch and push the branch.
 
 1. Address review feedback.
 
