@@ -180,19 +180,23 @@ class UserManager(UUIDIDMixin, BaseUserManager[User, UUID4]):
 
         An unverified account has not proven it owns its email, so the provider identity
         must not join it; the login is refused as an existing-user conflict instead.
-        A provider already linked to the account still logs in as before.
+        A provider already linked to the account still logs in as before, and its stored
+        tokens are left alone: sign-in only proves identity, while the stored Google tokens
+        may be the YouTube grant, which a sign-in token (base scopes, no refresh token) would
+        replace. Only the association flows write tokens.
         """
+        try:
+            return await self.get_by_oauth_account(oauth_name, account_id)
+        except exceptions.UserNotExists:
+            pass
         if associate_by_email:
             try:
-                await self.get_by_oauth_account(oauth_name, account_id)
+                existing_user = await self.get_by_email(account_email)
             except exceptions.UserNotExists:
-                try:
-                    existing_user = await self.get_by_email(account_email)
-                except exceptions.UserNotExists:
-                    pass
-                else:
-                    if not existing_user.is_verified:
-                        raise exceptions.UserAlreadyExists from None
+                pass
+            else:
+                if not existing_user.is_verified:
+                    raise exceptions.UserAlreadyExists from None
         return await super().oauth_callback(
             oauth_name,
             access_token,

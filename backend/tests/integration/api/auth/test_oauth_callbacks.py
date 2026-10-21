@@ -553,3 +553,20 @@ async def test_google_login_still_works_for_unverified_account_already_linked(db
     logged_in = await _google_login(db_session, TEST_EMAIL, account_id="google-account-id")
 
     assert logged_in.id == user.id
+
+
+async def test_google_login_keeps_the_stored_youtube_grant(db_session: AsyncSession) -> None:
+    """Signing in with Google must not replace the YouTube grant stored on the same link.
+
+    Regression: sign-in and the YouTube link share the "google" row, and every sign-in
+    overwrote its tokens with a base-scope token and no refresh token, so streaming broke
+    until the user linked YouTube again.
+    """
+    user = await create_password_user(db_session, email=TEST_EMAIL, username="streamer", is_verified=True)
+    account = await link_google(db_session, user, account_id="google-account-id", refresh_token="youtube-refresh")
+
+    await _google_login(db_session, TEST_EMAIL, account_id="google-account-id")
+
+    await db_session.refresh(account)
+    assert account.refresh_token == "youtube-refresh"  # noqa: S105 - test fixture value, not a credential
+    assert account.access_token == "access-token"  # noqa: S105 - test fixture value, not a credential
