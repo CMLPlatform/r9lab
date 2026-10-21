@@ -9,7 +9,7 @@ from redis.exceptions import RedisError
 from app.api.auth.services.blocklist_store import (
     load_blocklist_lines,
     load_blocklist_text,
-    redis_set_contains,
+    redis_set_contains_any,
     replace_redis_set,
 )
 from app.api.auth.services.email_identity import canonical_email_domain
@@ -82,7 +82,7 @@ class EmailChecker(PeriodicBackgroundTask):
             return False
 
         try:
-            return await redis_set_contains(self.redis_client, REDIS_DISPOSABLE_DOMAINS_KEY, domain)
+            return await redis_set_contains_any(self.redis_client, REDIS_DISPOSABLE_DOMAINS_KEY, (domain,))
         except _RECOVERABLE_ERRORS:
             logger.exception("Failed to check disposable-domain Redis cache; using local fallback")
             return domain in self._domains

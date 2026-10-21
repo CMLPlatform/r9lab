@@ -31,11 +31,22 @@ async def redis_set_contains(redis: Redis, key: str, member: str) -> bool:
     return bool(await cast("Awaitable[int]", redis.sismember(key, member)))
 
 
+class BlocklistUnavailableError(RuntimeError):
+    """The Redis set is missing (never seeded, evicted or flushed), so a miss proves nothing."""
+
+
 async def redis_set_contains_any(redis: Redis, key: str, members: Iterable[str]) -> bool:
-    """Return whether a Redis set contains any supplied member."""
+    """Return whether a Redis set contains any supplied member.
+
+    Raises:
+        BlocklistUnavailableError: on a miss when the set itself is missing, since a
+            missing set answers every lookup with "no". Callers fall back to their local list.
+    """
     for member in members:
         if await redis_set_contains(redis, key, member):
             return True
+    if not await cast("Awaitable[int]", redis.exists(key)):
+        raise BlocklistUnavailableError(key)
     return False
 
 

@@ -77,3 +77,12 @@ async def test_validate_password_uses_common_password_checker() -> None:
 
     assert "too common" in exc.value.reason
     checker.matches.assert_awaited_once_with("not-in-local-fixture-12345")
+
+
+async def test_common_password_checker_falls_back_to_memory_when_the_redis_set_is_gone(redis_client: Redis) -> None:
+    """An evicted or flushed set answers every lookup with "not common", so it must not be trusted."""
+    checker = CommonPasswordChecker(redis_client)
+    await checker.initialize()
+    await redis_client.delete(REDIS_COMMON_PASSWORDS_KEY)
+
+    assert await checker.matches("password12345")

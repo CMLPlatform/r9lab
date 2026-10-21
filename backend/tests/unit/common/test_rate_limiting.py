@@ -213,14 +213,15 @@ async def test_hit_key_fails_open_on_redis_error(limiter: Limiter, caplog: pytes
     assert "auth:login:account:one" not in caplog.text
 
 
-async def test_hit_key_without_consume_only_checks(limiter: Limiter) -> None:
-    """consume=False reports an exhausted bucket but never spends from it."""
+async def test_refund_key_gives_back_one_hit(limiter: Limiter) -> None:
+    """A refunded hit frees its slot; an unrefunded one still exhausts the bucket."""
     for _ in range(5):
-        await limiter.ahit_key("1/minute", "auth:login:account:one", consume=False)
+        await limiter.ahit_key("1/minute", "auth:login:account:one")
+        await limiter.arefund_key("1/minute", "auth:login:account:one")
     await limiter.ahit_key("1/minute", "auth:login:account:one")
 
     with pytest.raises(RateLimitExceededError):
-        await limiter.ahit_key("1/minute", "auth:login:account:one", consume=False)
+        await limiter.ahit_key("1/minute", "auth:login:account:one")
 
 
 # ---------------------------------------------------------------------------

@@ -61,11 +61,8 @@ class Limiter:
         self.enabled = enabled
         self._limiter = FixedWindowRateLimiter(storage_from_string(storage_uri)) if enabled else None
 
-    async def ahit_key(self, rate_string: str, key: str, *, consume: bool = True) -> None:
+    async def ahit_key(self, rate_string: str, key: str) -> None:
         """Enforce *rate_string* for an explicit bucket key.
-
-        ``consume=False`` only checks the bucket, for budgets that count some outcomes,
-        such as failed logins: check before the work, hit only when the outcome counts.
 
         The ``limits`` Redis backend is synchronous (its async backend would pull in a
         second Redis client, coredis), so its calls run in a worker thread: a direct call
@@ -82,7 +79,7 @@ class Limiter:
 
         parsed = parse(rate_string)
         try:
-            allowed = await anyio.to_thread.run_sync(self._limiter.hit if consume else self._limiter.test, parsed, key)
+            allowed = await anyio.to_thread.run_sync(self._limiter.hit, parsed, key)
         except RedisError, ConnectionError, TimeoutError, OSError:
             logger.warning("Rate limiter backend unavailable; failing open for limit %s", rate_string)
             return
@@ -95,6 +92,23 @@ class Limiter:
             except RedisError, ConnectionError, TimeoutError, OSError:
                 raise RateLimitExceededError from None
             raise RateLimitExceededError(retry_after=max(1, math.ceil(stats.reset_time - time.time())))
+
+    async def arefund_key(self, rate_string: str, key: str) -> None:
+        """Give back one hit that ``ahit_key`` charged, for budgets that keep only some outcomes.
+
+        Charging up front and refunding the outcomes that do not count keeps parallel
+        requests from all passing the check before any is charged. A refund that lands
+        after its window expired credits the next window with one extra attempt.
+        """
+        if not self.enabled or self._limiter is None:
+            return
+
+        parsed = parse(rate_string)
+        storage = self._limiter.storage
+        try:
+            await anyio.to_thread.run_sync(lambda: storage.incr(parsed.key_for(key), parsed.get_expiry(), amount=-1))
+        except RedisError, ConnectionError, TimeoutError, OSError:
+            logger.warning("Rate limiter backend unavailable; refund skipped for limit %s", rate_string)
 
     def dependency(
         self,

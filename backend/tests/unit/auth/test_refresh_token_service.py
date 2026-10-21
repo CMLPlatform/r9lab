@@ -412,3 +412,60 @@ async def test_revoke_all_user_tokens_catches_a_token_created_mid_revocation(red
     assert raced_token["value"], "the racing token was never created"
     with pytest.raises((RefreshTokenInvalidError, RefreshTokenRevokedError)):
         await verify_refresh_token(redis_client, raced_token["value"])
+
+
+@pytest.mark.parametrize("delay", [0, _REUSE_GRACE_SECONDS + 60], ids=["logout-in-grace", "logout-after-grace"])
+async def test_logout_with_a_rotated_token_keeps_reuse_detection(
+    redis_client: Redis, monkeypatch: pytest.MonkeyPatch, delay: int
+) -> None:
+    """A thief who rotates a stolen token and then logs out with it must not erase the evidence.
+
+    Regression: logout overwrote the rotation entry with a marker that names no user, so
+    the victim's later replay could no longer revoke the thief's rotated token.
+    """
+    now = 1_700_000_000
+    monkeypatch.setattr("app.api.auth.services.refresh_token_service.time.time", lambda: now)
+
+    user_id = uuid.uuid4()
+    stolen = await create_refresh_token(redis_client, user_id)
+    thief_token = await rotate_refresh_token(redis_client, stolen)
+    now += delay
+    await blacklist_token(redis_client, stolen)
+
+    now += _REUSE_GRACE_SECONDS + 60
+    with pytest.raises(RefreshTokenRevokedError):
+        await verify_refresh_token(redis_client, stolen)
+
+    with pytest.raises((RefreshTokenInvalidError, RefreshTokenRevokedError)):
+        await verify_refresh_token(redis_client, thief_token)
+
+
+@pytest.mark.parametrize("revoke", ["revoke_all", "logout"])
+async def test_a_stale_revoked_token_does_not_revoke_newer_sessions(
+    redis_client: Redis, monkeypatch: pytest.MonkeyPatch, revoke: str
+) -> None:
+    """A device still holding a token revoked by revoke-all or logout is rejected, nothing more.
+
+    Regression: revocation wrote the same entry as rotation, so the stale device's next
+    refresh looked like stolen-token reuse and logged the user out everywhere again.
+    """
+    now = 1_700_000_000
+    monkeypatch.setattr("app.api.auth.services.refresh_token_service.time.time", lambda: now)
+
+    user_id = uuid.uuid4()
+    stale = await create_refresh_token(redis_client, user_id)
+    if revoke == "revoke_all":
+        await revoke_all_user_tokens(redis_client, user_id)
+    else:
+        await blacklist_token(redis_client, stale)
+    fresh = await create_refresh_token(redis_client, user_id)
+
+    now += _REUSE_GRACE_SECONDS + 60
+    with (
+        patch("app.api.auth.services.refresh_token_service.audit_event") as audit,
+        pytest.raises(RefreshTokenRevokedError),
+    ):
+        await verify_refresh_token(redis_client, stale)
+
+    audit.assert_not_called()
+    assert await verify_refresh_token(redis_client, fresh) == user_id

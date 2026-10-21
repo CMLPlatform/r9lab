@@ -17,7 +17,7 @@ from app.api.auth.config import settings as auth_settings
 from app.api.auth.crud import update_user_override
 from app.api.auth.models import OAuthAccount, User
 from app.api.auth.runtime_dependencies import get_common_password_checker
-from app.api.auth.schemas import UserCreateBase, UserUpdate
+from app.api.auth.schemas import UserCreateBase, UserUpdate, normalize_username
 from app.api.auth.services.account_security import revoke_user_refresh_tokens, sensitive_update_fields
 from app.api.auth.services.auth_backends import build_authentication_backends
 from app.api.auth.services.email.service import (
@@ -33,7 +33,7 @@ from app.api.auth.services.email.service import (
 from app.api.auth.services.email_identity import account_rate_limit_identity
 from app.api.auth.services.password_hashing import build_password_helper
 from app.api.auth.services.password_validator import validate_password as _validate_password
-from app.api.auth.services.rate_limiter import LOGIN_RATE_LIMIT
+from app.api.auth.services.rate_limiter import ACCOUNT_GUESS_DAILY_RATE_LIMIT, LOGIN_RATE_LIMIT
 from app.api.auth.services.user_database import UserDatabaseAsync
 from app.api.auth.terms import CURRENT_TERMS_VERSION
 from app.api.common.audit import AuditAction, audit_event
@@ -62,9 +62,13 @@ RESET_PASSWORD_TOKEN_AUDIENCE = "fastapi-users:reset"  # noqa: S105 # This value
 VERIFICATION_TOKEN_AUDIENCE = "fastapi-users:verify"  # noqa: S105 # This value is not a secret.
 
 
-def _login_identifier_rate_limit_key(identifier: str) -> str:
-    """Return a privacy-preserving login rate-limit key for a submitted identifier."""
-    return rate_limit_bucket_key("auth:login:account", account_rate_limit_identity(identifier))
+def _login_identifier_rate_limit_keys(identifier: str) -> tuple[str, str]:
+    """Return the privacy-preserving per-minute and per-day login rate-limit keys for an identifier."""
+    identity = account_rate_limit_identity(identifier)
+    return (
+        rate_limit_bucket_key("auth:login:account", identity),
+        rate_limit_bucket_key("auth:login:account:day", identity),
+    )
 
 
 class UserManager(UUIDIDMixin, BaseUserManager[User, UUID4]):
@@ -103,22 +107,27 @@ class UserManager(UUIDIDMixin, BaseUserManager[User, UUID4]):
             pass
 
         if not is_email:
-            statement = select(User).where(User.username == credentials.username)
+            # Stored usernames are normalized the same way (UsernameValue).
+            statement = select(User).where(User.username == normalize_username(credentials.username))
             result = await self.user_db.session.execute(statement)
             db_user = result.scalars().unique().one_or_none()
             if db_user:
                 credentials.username = db_user.email
 
         # Bucket on the resolved email so a username and its email share one budget. Only
-        # failures count: a room signing in to one shared account must not lock it, while a
-        # password guesser still gets LOGIN_RATE_LIMIT tries per account however many IPs
-        # it uses. NOTE: check-then-hit is not atomic, so a burst of concurrent guesses can
-        # overshoot by the number in flight; the per-IP login limit bounds that per source.
-        account_key = _login_identifier_rate_limit_key(credentials.username)
-        await limiter.ahit_key(LOGIN_RATE_LIMIT, account_key, consume=False)
+        # failures stay charged: a room signing in to one shared account must not lock it,
+        # while a password guesser gets LOGIN_RATE_LIMIT tries a minute and
+        # ACCOUNT_GUESS_DAILY_RATE_LIMIT a day per account, however many IPs it uses. Every
+        # attempt is charged before the hash and refunded on success, so parallel guesses
+        # cannot all pass the check before any is charged.
+        minute_key, day_key = _login_identifier_rate_limit_keys(credentials.username)
+        # Minute first: a guess the minute limit refuses does not spend the daily ceiling.
+        await limiter.ahit_key(LOGIN_RATE_LIMIT, minute_key)
+        await limiter.ahit_key(ACCOUNT_GUESS_DAILY_RATE_LIMIT, day_key)
         user = await self._authenticate_offloading_hashes(credentials)
-        if user is None:
-            await limiter.ahit_key(LOGIN_RATE_LIMIT, account_key)
+        if user is not None:
+            await limiter.arefund_key(LOGIN_RATE_LIMIT, minute_key)
+            await limiter.arefund_key(ACCOUNT_GUESS_DAILY_RATE_LIMIT, day_key)
         return user
 
     async def _authenticate_offloading_hashes(self, credentials: OAuth2PasswordRequestForm) -> User | None:
