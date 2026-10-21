@@ -74,6 +74,12 @@ def build_oauth_login_router(
         "/authorize",
         name=f"oauth:{oauth_client.name}.{backend.name}.authorize",
         response_model=OAuth2AuthorizeResponse,
+        responses={
+            400: {
+                "description": "redirect_uri is not allowed, or was sent to the bearer (token) route, "
+                "which returns its tokens in the callback body."
+            }
+        },
     )
     async def authorize(
         request: Request,

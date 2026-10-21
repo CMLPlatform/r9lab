@@ -1685,7 +1685,9 @@ export interface paths {
     put?: never;
     /**
      * Disable Totp
-     * @description Turn off TOTP MFA after confirming a current code.
+     * @description Turn off TOTP MFA after confirming the password and a current or recovery code.
+     *
+     *     Accounts without a usable password (signed up with Google or GitHub) send only the code.
      */
     post: operations['disable_totp_v1_auth_mfa_totp_disable_post'];
     delete?: never;
@@ -10331,6 +10333,27 @@ export interface operations {
         };
         content?: never;
       };
+      /** @description The password or the code is missing. */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description MFA is not on for this account. */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description The password or the code is wrong. */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
       /** @description Validation Error */
       422: {
         headers: {
@@ -10339,6 +10362,13 @@ export interface operations {
         content: {
           'application/json': components['schemas']['HTTPValidationError'];
         };
+      };
+      /** @description Too many guesses for this account. See the Retry-After header. */
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
       };
     };
   };
@@ -10644,6 +10674,13 @@ export interface operations {
           'application/json': components['schemas']['OAuth2AuthorizeResponse'];
         };
       };
+      /** @description redirect_uri is not allowed, or was sent to the bearer (token) route, which returns its tokens in the callback body. */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
     };
   };
   oauth_github_bearer_callback_v1_oauth_github_token_callback_get: {
@@ -10697,6 +10734,13 @@ export interface operations {
         content: {
           'application/json': components['schemas']['OAuth2AuthorizeResponse'];
         };
+      };
+      /** @description redirect_uri is not allowed, or was sent to the bearer (token) route, which returns its tokens in the callback body. */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
       };
     };
   };
@@ -10819,6 +10863,13 @@ export interface operations {
           'application/json': components['schemas']['OAuth2AuthorizeResponse'];
         };
       };
+      /** @description redirect_uri is not allowed, or was sent to the bearer (token) route, which returns its tokens in the callback body. */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
     };
   };
   oauth_google_bearer_callback_v1_oauth_google_token_callback_get: {
@@ -10872,6 +10923,13 @@ export interface operations {
         content: {
           'application/json': components['schemas']['OAuth2AuthorizeResponse'];
         };
+      };
+      /** @description redirect_uri is not allowed, or was sent to the bearer (token) route, which returns its tokens in the callback body. */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
       };
     };
   };
