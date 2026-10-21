@@ -12,6 +12,7 @@ from fastapi import Response
 from fastapi_users.jwt import decode_jwt, generate_jwt
 
 from app.api.auth.config import settings as auth_settings
+from app.api.auth.services.auth_backends import set_browser_auth_cookie
 from app.api.auth.services.email_identity import account_rate_limit_identity
 from app.core.http_headers import DEVICE_COOKIE_NAME
 from app.core.pseudonyms import keyed_digest
@@ -58,12 +59,6 @@ def set_device_cookie(response: Response, identifier: str) -> None:
 
     It outlives logout on purpose: the point is that this client stays known.
     """
-    response.set_cookie(
-        key=DEVICE_COOKIE_NAME,
-        value=issue_device_token(identifier),
-        max_age=DEVICE_COOKIE_TTL_SECONDS,
-        path="/",
-        httponly=True,
-        secure=True,
-        samesite="lax",
+    set_browser_auth_cookie(
+        response, key=DEVICE_COOKIE_NAME, value=issue_device_token(identifier), max_age=DEVICE_COOKIE_TTL_SECONDS
     )

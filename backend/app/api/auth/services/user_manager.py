@@ -69,16 +69,10 @@ def _login_identifier_rate_limit_keys(identifier: str, device_token: str | None 
     A client with a valid device cookie for this account gets buckets of its own, so
     guesses from unknown clients cannot lock the owner out of their devices.
     """
-    if device_id := device_id_for(device_token, identifier):
-        return (
-            rate_limit_bucket_key("auth:login:device", device_id),
-            rate_limit_bucket_key("auth:login:device:day", device_id),
-        )
-    identity = account_rate_limit_identity(identifier)
-    return (
-        rate_limit_bucket_key("auth:login:account", identity),
-        rate_limit_bucket_key("auth:login:account:day", identity),
-    )
+    device_id = device_id_for(device_token, identifier)
+    prefix = "auth:login:device" if device_id else "auth:login:account"
+    value = device_id or account_rate_limit_identity(identifier)
+    return rate_limit_bucket_key(prefix, value), rate_limit_bucket_key(f"{prefix}:day", value)
 
 
 class UserManager(UUIDIDMixin, BaseUserManager[User, UUID4]):

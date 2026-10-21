@@ -29,6 +29,7 @@ from ._oauth_support import (
     make_auth_flow,
     make_oauth_state,
     make_request_with_valid_state,
+    session_returning,
 )
 from .shared import USER1_EMAIL, USER2_EMAIL, create_password_user, link_google
 
@@ -416,12 +417,7 @@ async def test_associate_callback_links_provider_for_current_user() -> None:
     current_user.email = TEST_EMAIL
 
     request, access_token_state = make_associate_request_with_valid_state(str(current_user.id))
-    mock_session = MagicMock()
-    mock_scalars_result = MagicMock()
-    mock_scalars_result.first.return_value = None
-    mock_exec_result = MagicMock()
-    mock_exec_result.scalars.return_value = mock_scalars_result
-    mock_session.execute = AsyncMock(return_value=mock_exec_result)
+    mock_session = session_returning(None)
 
     user_manager = MagicMock()
     user_manager.user_db.session = mock_session
@@ -454,12 +450,7 @@ async def test_associate_callback_rejects_provider_linked_to_other_user() -> Non
     existing_account = MagicMock()
     existing_account.user_id = USER2_EMAIL
 
-    mock_session = MagicMock()
-    mock_scalars_result = MagicMock()
-    mock_scalars_result.first.return_value = existing_account
-    mock_exec_result = MagicMock()
-    mock_exec_result.scalars.return_value = mock_scalars_result
-    mock_session.execute = AsyncMock(return_value=mock_exec_result)
+    mock_session = session_returning(existing_account)
 
     user_manager = MagicMock()
     user_manager.user_db.session = mock_session
@@ -601,12 +592,7 @@ async def test_associate_callback_redirects_errors_to_the_frontend(failure: str,
 
     existing_account = MagicMock()
     existing_account.user_id = USER2_EMAIL
-    mock_session = MagicMock()
-    mock_session.execute = AsyncMock(
-        return_value=MagicMock(
-            scalars=MagicMock(return_value=MagicMock(first=MagicMock(return_value=existing_account)))
-        )
-    )
+    mock_session = session_returning(existing_account)
     user_manager = MagicMock()
     user_manager.user_db.session = mock_session
     if failure == "no-email":
@@ -655,12 +641,7 @@ async def test_associate_callback_keeps_a_stored_grant_the_new_one_cannot_replac
     existing_account = MagicMock()
     existing_account.user_id = USER1_EMAIL
     existing_account.refresh_token = stored_refresh_token
-    mock_session = MagicMock()
-    mock_session.execute = AsyncMock(
-        return_value=MagicMock(
-            scalars=MagicMock(return_value=MagicMock(first=MagicMock(return_value=existing_account)))
-        )
-    )
+    mock_session = session_returning(existing_account)
     user_manager = MagicMock()
     user_manager.user_db.session = mock_session
     user_manager.user_db.update_oauth_account = AsyncMock(return_value=current_user)

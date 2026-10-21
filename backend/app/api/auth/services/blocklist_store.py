@@ -24,13 +24,6 @@ def load_blocklist_text(raw_text: str, normalize: Callable[[str], str]) -> set[s
     }
 
 
-async def redis_set_contains(redis: Redis, key: str, member: str) -> bool:
-    """Return whether a Redis set contains a member."""
-    # Not app.core.redis.redis_bool: core.redis -> core.runtime -> auth services -> here
-    # would be an import cycle.
-    return bool(await cast("Awaitable[int]", redis.sismember(key, member)))
-
-
 class BlocklistUnavailableError(RuntimeError):
     """The Redis set is missing (never seeded, evicted or flushed), so a miss proves nothing."""
 
@@ -43,7 +36,9 @@ async def redis_set_contains_any(redis: Redis, key: str, members: Iterable[str])
             missing set answers every lookup with "no". Callers fall back to their local list.
     """
     for member in members:
-        if await redis_set_contains(redis, key, member):
+        # Not app.core.redis.redis_bool: core.redis -> core.runtime -> auth services -> here
+        # would be an import cycle.
+        if await cast("Awaitable[int]", redis.sismember(key, member)):
             return True
     if not await cast("Awaitable[int]", redis.exists(key)):
         raise BlocklistUnavailableError(key)

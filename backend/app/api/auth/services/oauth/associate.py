@@ -1,6 +1,5 @@
 """OAuth account-association router factory."""
 
-from enum import Enum
 from typing import TYPE_CHECKING, Annotated, Any, Protocol, cast
 
 from fastapi import APIRouter, BackgroundTasks, Body, Depends, Request, Response
@@ -199,7 +198,7 @@ async def handle_oauth_associate_callback(
     except (OAuthEmailUnavailableError, OAuthAccountAlreadyLinkedError) as err:
         if not frontend_redirect:
             raise
-        error = err.detail.value if isinstance(err.detail, Enum) else str(err.detail)
+        error = str(getattr(err.detail, "value", err.detail))
         return create_oauth_result_redirect(frontend_redirect, status="error", error=error)
 
     if frontend_redirect:
