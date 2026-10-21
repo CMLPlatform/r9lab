@@ -24,6 +24,9 @@
  * assets/DESIGN.md reserves for text, never a fill or an interaction state.
  * The palette now emits a neutral `--state` pair for that role; map the class
  * names the primitives use onto it. Values come from the generator only. */
+/* Keep `@theme inline` so scoped themes work. Opacity classes such as `bg-primary/12` also emit a
+ * `color-mix(in srgb, unset 12%, transparent)` rule in the bundle. That is harmless: a second rule
+ * with the real `var(--primary)` wins. If an opacity colour looks missing, check the class first. */
 @theme inline {
   --color-accent: var(--state);
   --color-accent-foreground: var(--state-foreground);

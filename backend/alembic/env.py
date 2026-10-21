@@ -12,6 +12,8 @@ from app.core.model_registry import load_models
 config = context.config
 
 # Tests and scripted callers can inject a database URL; CLI migrations fall back to app settings.
+# `alembic -x sqlalchemy.url=...` does not count: it is not read here, so the CLI migrates the
+# database from settings. To target another database, set the `DATABASE_*` and `POSTGRES_*` env vars.
 database_url = config.get_alembic_option("sqlalchemy.url")
 if not database_url:
     from app.core.config.core import settings

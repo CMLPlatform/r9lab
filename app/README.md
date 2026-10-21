@@ -177,6 +177,11 @@ pnpm run profile:compiler:web  # local web profiling with production/staging com
 
 `just test` runs both Jest lanes. E2E requires `just build-web` and the `compose.e2e.yaml` stack.
 
+A fresh checkout or worktree needs `pnpm install --frozen-lockfile` in `app/` before Jest or `just check`.
+To run the full-stack E2E by hand: `just _e2e-backend-up` from the root, `just build-web` in `app/`,
+`pnpm exec playwright test --project=chromium` in `app/`, then `just _e2e-backend-down`. The stack
+uses its own compose project, so it does not clash with a running dev stack.
+
 Jest integration tests run in-memory with `jest-expo` and React Native Testing Library. They do
 not replace device-native end-to-end coverage.
 
