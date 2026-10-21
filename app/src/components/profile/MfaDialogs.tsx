@@ -201,24 +201,28 @@ function DisableMfaDialog({
         Enter a current code
       </AppText>
       <AppText className="opacity-75 mb-4">
-        {mfa.useRecoveryCode
-          ? 'Enter your password and one of your saved recovery codes to confirm it’s you.'
-          : 'Enter your password and a code from your authenticator app to confirm it’s you.'}
+        {`Enter ${mfa.disableNeedsPassword ? 'your password and ' : ''}${
+          mfa.useRecoveryCode
+            ? 'one of your saved recovery codes'
+            : 'a code from your authenticator app'
+        } to confirm it’s you.`}
       </AppText>
 
-      <TextInput
-        value={mfa.password}
-        onChangeText={mfa.setPassword}
-        placeholder="Current password"
-        accessibilityLabel="Current password"
-        secureTextEntry
-        autoCapitalize="none"
-        autoComplete="current-password"
-        textContentType="password"
-        autoFocus
-        editable={!mfa.busy}
-        style={[local.field, { borderColor: theme.colors.outline }]}
-      />
+      {mfa.disableNeedsPassword ? (
+        <TextInput
+          value={mfa.password}
+          onChangeText={mfa.setPassword}
+          placeholder="Current password"
+          accessibilityLabel="Current password"
+          secureTextEntry
+          autoCapitalize="none"
+          autoComplete="current-password"
+          textContentType="password"
+          autoFocus
+          editable={!mfa.busy}
+          style={[local.field, { borderColor: theme.colors.outline }]}
+        />
+      ) : null}
 
       {mfa.useRecoveryCode ? (
         // Labelled like the OtpInput it swaps with, so toggling recovery mode
@@ -245,6 +249,7 @@ function DisableMfaDialog({
             onComplete={disable}
             disabled={mfa.busy}
             hasError={Boolean(mfa.error)}
+            autoFocus={!mfa.disableNeedsPassword}
             label="Authentication code"
           />
         </View>

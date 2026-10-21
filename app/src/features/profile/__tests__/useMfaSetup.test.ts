@@ -134,6 +134,23 @@ describe('useMfaSetup disable', () => {
     expect(result.current.mode).toBe('disable');
   });
 
+  it('turns MFA off with only a code for an account without a password', async () => {
+    mockDisable.mockResolvedValue(undefined);
+    const { result } = await renderHook(() =>
+      useMfaSetup(jest.fn(), { disableNeedsPassword: false }),
+    );
+
+    await act(() => result.current.beginDisable(false));
+    await act(() => result.current.setCode('123456'));
+    expect(result.current.canSubmit).toBe(true);
+
+    await act(async () => {
+      await result.current.disable();
+    });
+
+    expect(mockDisable).toHaveBeenCalledWith('123456', undefined);
+  });
+
   it('reset chains disable into a fresh enrollment', async () => {
     mockDisable.mockResolvedValue(undefined);
     mockStart.mockResolvedValue(SETUP);
