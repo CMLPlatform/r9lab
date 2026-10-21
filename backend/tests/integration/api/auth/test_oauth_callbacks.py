@@ -570,3 +570,51 @@ async def test_google_login_keeps_the_stored_youtube_grant(db_session: AsyncSess
     await db_session.refresh(account)
     assert account.refresh_token == "youtube-refresh"
     assert account.access_token == "access-token"
+
+
+@pytest.mark.parametrize("failure", ["linked-elsewhere", "no-email"])
+async def test_associate_callback_redirects_errors_to_the_frontend(failure: str) -> None:
+    """Once the state names a trusted frontend, a failed link comes back there as status=error.
+
+    Regression: the errors were raised as raw JSON, which the app's browser session never
+    shows, so the user saw nothing.
+    """
+    config, user_schema = make_associate_flow()
+    current_user = MagicMock()
+    current_user.id = USER1_EMAIL
+    frontend_redirect = "relab-app://account"
+    csrf_token = generate_csrf_token()
+    state = make_oauth_state(
+        csrf_token,
+        provider_name="github",
+        oauth_flow="github:associate",
+        extra_state={"sub": str(current_user.id), "frontend_redirect_uri": frontend_redirect},
+    )
+    request = MagicMock()
+    request.cookies = {OAuthCookieSettings.name: csrf_token}
+
+    existing_account = MagicMock()
+    existing_account.user_id = USER2_EMAIL
+    mock_session = MagicMock()
+    mock_session.execute = AsyncMock(
+        return_value=MagicMock(
+            scalars=MagicMock(return_value=MagicMock(first=MagicMock(return_value=existing_account)))
+        )
+    )
+    user_manager = MagicMock()
+    user_manager.user_db.session = mock_session
+    if failure == "no-email":
+        cast("MagicMock", config.oauth_client).get_id_email = AsyncMock(return_value=("provider-account-id", None))
+
+    response = await handle_oauth_associate_callback(
+        config,
+        request,
+        current_user,
+        (cast("Any", {"access_token": "provider-access-token"}), state),
+        user_manager,
+        user_schema=user_schema,
+    )
+
+    fragment = parse_qs(urlparse(response.headers["location"]).fragment)
+    assert fragment["status"] == ["error"]
+    assert fragment["error"]

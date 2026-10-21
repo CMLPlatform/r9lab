@@ -1,5 +1,6 @@
 """OAuth account-association router factory."""
 
+from enum import Enum
 from typing import TYPE_CHECKING, Annotated, Any, Protocol, cast
 
 from fastapi import APIRouter, BackgroundTasks, Body, Depends, Request, Response
@@ -183,11 +184,39 @@ async def handle_oauth_associate_callback(
     user_schema: type[schemas.U],
     background_tasks: BackgroundTasks | None = None,
 ) -> Response | schemas.U:
-    """Handle one OAuth account-association callback after provider token exchange."""
+    """Handle one OAuth account-association callback after provider token exchange.
+
+    Once the state is verified it names a trusted frontend, so a failed link goes back
+    there as ``status=error``; before that, errors stay JSON.
+    """
     token, state = access_token_state
     state_data = verify_oauth_state(config, request, state)
     _require_state_belongs_to_user(state_data, user.id)
+    frontend_redirect = state_data.get(FRONTEND_REDIRECT_URI_KEY)
 
+    try:
+        user = await _link_oauth_account(config, request, user, token, user_manager, background_tasks)
+    except (OAuthEmailUnavailableError, OAuthAccountAlreadyLinkedError) as err:
+        if not frontend_redirect:
+            raise
+        error = err.detail.value if isinstance(err.detail, Enum) else str(err.detail)
+        return create_oauth_result_redirect(frontend_redirect, status="error", error=error)
+
+    if frontend_redirect:
+        return create_oauth_result_redirect(frontend_redirect, status="success", response=FastAPIResponse())
+
+    return cast("schemas.U", user_schema.model_validate(user))
+
+
+async def _link_oauth_account(
+    config: OAuthFlowConfig,
+    request: Request,
+    user: User,
+    token: OAuth2Token,
+    user_manager: UserManager,
+    background_tasks: BackgroundTasks | None,
+) -> User:
+    """Link the provider account to ``user``, or refresh the tokens of an existing link."""
     account_id, account_email = await config.oauth_client.get_id_email(token["access_token"])
     _require_account_email(account_email)
 
@@ -228,9 +257,4 @@ async def handle_oauth_associate_callback(
             linked=True,
             background_tasks=background_tasks,
         )
-
-    frontend_redirect = state_data.get(FRONTEND_REDIRECT_URI_KEY)
-    if frontend_redirect:
-        return create_oauth_result_redirect(frontend_redirect, status="success", response=FastAPIResponse())
-
-    return cast("schemas.U", user_schema.model_validate(user))
+    return user
