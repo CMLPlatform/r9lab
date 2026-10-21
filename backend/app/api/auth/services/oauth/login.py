@@ -13,6 +13,7 @@ from pydantic import UUID4
 from app.api.auth.exceptions import (
     OAuthEmailUnavailableError,
     OAuthInactiveUserHTTPError,
+    OAuthInvalidRedirectURIError,
     OAuthUserAlreadyExistsHTTPError,
 )
 from app.api.auth.models import User
@@ -78,6 +79,10 @@ def build_oauth_login_router(
         request: Request,
         response: Response,
     ) -> OAuth2AuthorizeResponse:
+        # Bearer tokens travel in the callback's body, which a frontend redirect would drop.
+        # A client that needs a redirect uses the session transport.
+        if backend.name != COOKIE_BACKEND_NAME and request.query_params.get("redirect_uri"):
+            raise OAuthInvalidRedirectURIError
         return await build_authorize_response(
             config,
             request,

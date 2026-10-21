@@ -1,5 +1,6 @@
 """OAuth redirect validation tests."""
 
+from typing import TYPE_CHECKING
 from unittest.mock import MagicMock
 from urllib.parse import parse_qs, urlparse
 
@@ -9,6 +10,9 @@ from fastapi import HTTPException, Response, status
 from app.api.auth.services.oauth.base import build_authorize_response, create_oauth_result_redirect
 
 from ._oauth_support import make_auth_flow
+
+if TYPE_CHECKING:
+    from httpx import AsyncClient
 
 pytestmark = pytest.mark.api
 
@@ -123,3 +127,25 @@ def test_result_redirect_carries_only_the_session_cookies() -> None:
     assert len(cookies) == 1
     assert cookies[0].startswith("auth=session-value")
     assert "x-internal" not in redirect.headers
+
+
+async def test_bearer_authorize_refuses_a_frontend_redirect(
+    api_client: AsyncClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Bearer tokens travel in the callback's body, which a redirect drops.
+
+    Regression: the bearer callback redirected with only cookies, so the client got
+    status=success and no tokens, and an unused refresh token stayed in Redis.
+    """
+    monkeypatch.setattr(
+        "app.api.auth.services.oauth.base.settings.oauth_allowed_redirect_uris",
+        [ALLOWED_WEB_REDIRECT_URI],
+    )
+
+    bearer = await api_client.get("/v1/oauth/google/token/authorize", params={"redirect_uri": ALLOWED_WEB_REDIRECT_URI})
+    session = await api_client.get(
+        "/v1/oauth/google/session/authorize", params={"redirect_uri": ALLOWED_WEB_REDIRECT_URI}
+    )
+
+    assert bearer.status_code == status.HTTP_400_BAD_REQUEST
+    assert session.status_code == status.HTTP_200_OK
