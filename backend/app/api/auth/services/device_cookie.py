@@ -14,7 +14,7 @@ from fastapi_users.jwt import decode_jwt, generate_jwt
 from app.api.auth.config import settings as auth_settings
 from app.api.auth.services.auth_backends import set_browser_auth_cookie
 from app.api.auth.services.email_identity import account_rate_limit_identity
-from app.core.http_headers import DEVICE_COOKIE_NAME
+from app.core.http_headers import DEVICE_COOKIE_NAME, DEVICE_TOKEN_HEADER
 from app.core.pseudonyms import keyed_digest
 
 DEVICE_TOKEN_AUDIENCE = "r9lab:login-device"  # noqa: S105 - JWT audience, not a secret.
@@ -54,11 +54,14 @@ def device_id_for(token: str | None, identifier: str) -> str | None:
     return nonce if isinstance(nonce, str) and nonce else None
 
 
-def set_device_cookie(response: Response, identifier: str) -> None:
+def set_device_cookie(response: Response, identifier: str, *, in_header: bool = False) -> None:
     """Remember this client for the account it just proved the password of.
 
     It outlives logout on purpose: the point is that this client stays known.
+    ``in_header`` also returns the token in DEVICE_TOKEN_HEADER, for native apps that may
+    not keep cookies and send it back in that header instead.
     """
-    set_browser_auth_cookie(
-        response, key=DEVICE_COOKIE_NAME, value=issue_device_token(identifier), max_age=DEVICE_COOKIE_TTL_SECONDS
-    )
+    token = issue_device_token(identifier)
+    set_browser_auth_cookie(response, key=DEVICE_COOKIE_NAME, value=token, max_age=DEVICE_COOKIE_TTL_SECONDS)
+    if in_header:
+        response.headers[DEVICE_TOKEN_HEADER] = token

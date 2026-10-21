@@ -79,8 +79,9 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Parallel password guesses from many addresses can no longer get past the per-account login
   limit, and password login for an account stops after 100 wrong passwords in a row, as NIST
   SP 800-63B asks; a correct password starts the count again. A browser or app that has signed
-  in to the account before keeps its own count in a device cookie, so someone guessing at your
-  address cannot lock you out of your own devices. Login answers 429 with `Retry-After` when a
+  in to the account before keeps its own count in a device cookie (for bearer clients also in
+  an `X-Device-Token` header), so someone guessing at your address cannot lock you out of your
+  own devices. Login answers 429 with `Retry-After` when a
   limit is reached.
 - The common-password and disposable-email checks keep working when their Redis cache is
   flushed or evicted, and the common-password list refills its cache on the next check.

@@ -9,7 +9,7 @@ from app.api.auth.models import User
 from app.api.auth.schemas import MfaPendingResponse, RefreshTokenResponse
 from app.api.auth.services import login_completion
 from app.api.auth.services.device_cookie import set_device_cookie
-from app.api.auth.services.mfa_service import MfaTransport
+from app.api.auth.services.mfa_service import SESSION_TRANSPORT, MfaTransport
 from app.api.auth.services.user_manager import UserManager
 from app.api.common.audit import AuditAction, AuditContext, audit_event
 from app.core.redis import Redis
@@ -38,7 +38,7 @@ async def authenticate_first_factor(
             context=AuditContext(outcome="denied", transport=transport, reason="bad_credentials"),
         )
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=ErrorCode.LOGIN_BAD_CREDENTIALS)
-    set_device_cookie(response, user.email)
+    set_device_cookie(response, user.email, in_header=transport != SESSION_TRANSPORT)
     return user
 
 

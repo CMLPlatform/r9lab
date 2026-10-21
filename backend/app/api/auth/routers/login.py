@@ -2,7 +2,7 @@
 
 from typing import Annotated
 
-from fastapi import APIRouter, Cookie, Depends, Response
+from fastapi import APIRouter, Cookie, Depends, Header, Response
 from fastapi.security import OAuth2PasswordRequestForm
 from fastapi_users.authentication import Strategy
 from fastapi_users.router.common import ErrorModel
@@ -17,7 +17,7 @@ from app.api.auth.services.user_manager import (
     fastapi_user_manager,
 )
 from app.api.common.rate_limiting import limiter
-from app.core.http_headers import DEVICE_COOKIE_NAME
+from app.core.http_headers import DEVICE_COOKIE_NAME, DEVICE_TOKEN_HEADER
 from app.core.redis import RedisDep
 
 AUTH_ERROR_RESPONSES: dict[int | str, dict[str, object]] = {
@@ -26,6 +26,7 @@ AUTH_ERROR_RESPONSES: dict[int | str, dict[str, object]] = {
 }
 # The device cookie picks the login rate-limit bucket (services/device_cookie.py).
 DeviceCookie = Annotated[str | None, Cookie(alias=DEVICE_COOKIE_NAME, include_in_schema=False)]
+DeviceHeader = Annotated[str | None, Header(alias=DEVICE_TOKEN_HEADER, include_in_schema=False)]
 
 router = APIRouter()
 
@@ -45,10 +46,11 @@ async def bearer_login(
     redis: RedisDep,
     bearer_strategy: Annotated[Strategy, Depends(bearer_auth_backend.get_strategy)],
     device_token: DeviceCookie = None,
+    device_header: DeviceHeader = None,
 ) -> RefreshTokenResponse | MfaPendingResponse:
     """Authenticate a bearer client and return access and refresh tokens in JSON."""
     user = await login_flow.authenticate_first_factor(
-        credentials, user_manager, "bearer", response=response, device_token=device_token
+        credentials, user_manager, "bearer", response=response, device_token=device_header or device_token
     )
     return await login_flow.complete_bearer_login(
         response=response,

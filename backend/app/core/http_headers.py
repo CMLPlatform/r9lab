@@ -29,6 +29,9 @@ AUTH_COOKIE_NAMES = frozenset({AUTH_COOKIE_NAME, REFRESH_COOKIE_NAME})
 # Not a credential, so not in AUTH_COOKIE_NAMES: it only picks a login rate-limit bucket
 # (api/auth/services/device_cookie.py).
 DEVICE_COOKIE_NAME = "__Host-r9lab-device"
+# The same token for native apps, which may not keep cookies: bearer login returns it and
+# reads it back in this header.
+DEVICE_TOKEN_HEADER = "X-Device-Token"  # noqa: S105 - header name, not a secret.
 
 
 def request_has_auth_material(request: Request | None) -> bool:
