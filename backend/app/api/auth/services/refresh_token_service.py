@@ -143,8 +143,12 @@ async def _load_active_token_metadata(redis: Redis, token: str) -> RefreshTokenM
 
 
 async def _blacklist_fingerprint(redis: Redis, fingerprint: str, ttl_seconds: int, *, value: str) -> None:
-    # NX: an existing rotation entry is reuse evidence and must never be overwritten.
-    await redis.set(_blacklist_key_from_fingerprint(fingerprint), value, ex=ttl_seconds, nx=True)
+    """Write a blacklist entry.
+
+    A rotation entry is reuse evidence: it overwrites a plain revoked marker (a logout
+    racing the rotation), while revocations write NX so they never overwrite a rotation entry.
+    """
+    await redis.set(_blacklist_key_from_fingerprint(fingerprint), value, ex=ttl_seconds, nx=value == _REVOKED_MARKER)
 
 
 def _encode_blacklist_value(user_id: UUID) -> str:

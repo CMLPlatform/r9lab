@@ -469,3 +469,32 @@ async def test_a_stale_revoked_token_does_not_revoke_newer_sessions(
 
     audit.assert_not_called()
     assert await verify_refresh_token(redis_client, fresh) == user_id
+
+
+async def test_rotation_evidence_survives_a_racing_logout(redis_client: Redis, monkeypatch: pytest.MonkeyPatch) -> None:
+    """A logout that lands between a rotation's take and its blacklist write must not hide the rotation.
+
+    Regression: both writes used NX, so the logout's "revoked" marker won and a later replay
+    of the stolen token no longer revoked the token the rotation had minted.
+    """
+    now = 1_700_000_000
+    monkeypatch.setattr("app.api.auth.services.refresh_token_service.time.time", lambda: now)
+
+    user_id = uuid.uuid4()
+    stolen = await create_refresh_token(redis_client, user_id)
+    real_set = redis_client.set
+
+    async def set_after_a_racing_logout(key: str, value: str, **kwargs: object) -> object:
+        if key == _blacklist_key(stolen) and value != "revoked":
+            # The logout ran after the rotation took the metadata: no entry yet, no metadata left.
+            await real_set(key, "revoked", ex=3600, nx=True)  # ty: ignore[invalid-await]
+        return await real_set(key, value, **kwargs)  # ty: ignore[invalid-await]
+
+    with patch.object(redis_client, "set", set_after_a_racing_logout):
+        thief_token = await rotate_refresh_token(redis_client, stolen)
+
+    now += _REUSE_GRACE_SECONDS + 60
+    with pytest.raises(RefreshTokenRevokedError):
+        await verify_refresh_token(redis_client, stolen)
+    with pytest.raises((RefreshTokenInvalidError, RefreshTokenRevokedError)):
+        await verify_refresh_token(redis_client, thief_token)
