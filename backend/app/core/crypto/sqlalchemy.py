@@ -17,6 +17,7 @@ class EncryptedString(TypeDecorator[str]):
     impl = String
     cache_ok = True
 
+    # Keep the noqa: renaming `dialect` to `_dialect` passes ruff but fails ty, as the name must match the base class.
     def process_bind_param(self, value: str | None, dialect: Dialect) -> str | None:  # noqa: ARG002
         """Encrypt values before they are bound to SQL statements."""
         if value is None:

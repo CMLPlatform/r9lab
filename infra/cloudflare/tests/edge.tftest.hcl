@@ -3,6 +3,10 @@
 # make no API calls: run them with `tofu test` (wired into `just cloudflare-check`).
 #
 # Zone-global resources are tested in ../cloudflare-zone/tests/zone.tftest.hcl.
+#
+# Keep the literal asserts on the prod release policy (deploy branch and tag patterns, the
+# release-tag ruleset, reviewers). Widening `main` to `*` or adding a bypass actor must fail
+# here, which an existence-only check would not catch.
 
 mock_provider "cloudflare" {
   override_data {

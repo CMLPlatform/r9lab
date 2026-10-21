@@ -64,7 +64,12 @@ def override_authenticated_user(
     optional: bool = True,
     superuser: bool = False,
 ) -> Iterator[None]:
-    """Temporarily bind auth dependencies to a specific test user."""
+    """Temporarily bind auth dependencies to a specific test user.
+
+    The fastapi-users routers (`/users/me` and friends) build their own `current_user`
+    dependency, so this does not reach them and those tests get a 401. Log in with
+    `login_bearer` from `tests/integration/api/auth/shared.py` instead.
+    """
     test_app.dependency_overrides[current_active_user] = lambda: user
     if verified:
         test_app.dependency_overrides[current_active_verified_user] = lambda: user
