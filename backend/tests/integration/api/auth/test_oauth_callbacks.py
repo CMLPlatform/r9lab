@@ -572,8 +572,14 @@ async def test_google_login_keeps_the_stored_youtube_grant(db_session: AsyncSess
     assert account.access_token == "access-token"
 
 
-@pytest.mark.parametrize("failure", ["linked-elsewhere", "no-email"])
-async def test_associate_callback_redirects_errors_to_the_frontend(failure: str) -> None:
+@pytest.mark.parametrize(
+    ("failure", "expected_error"),
+    [
+        ("linked-elsewhere", "This account is already linked to another user."),
+        ("no-email", ErrorCode.OAUTH_NOT_AVAILABLE_EMAIL.value),
+    ],
+)
+async def test_associate_callback_redirects_errors_to_the_frontend(failure: str, expected_error: str) -> None:
     """Once the state names a trusted frontend, a failed link comes back there as status=error.
 
     Regression: the errors were raised as raw JSON, which the app's browser session never
@@ -617,16 +623,20 @@ async def test_associate_callback_redirects_errors_to_the_frontend(failure: str)
 
     fragment = parse_qs(urlparse(response.headers["location"]).fragment)
     assert fragment["status"] == ["error"]
-    assert fragment["error"]
+    assert fragment["error"] == [expected_error]
 
 
 @pytest.mark.parametrize(
-    ("new_refresh_token", "updates"),
-    [(None, False), ("new-youtube-refresh", True)],
-    ids=["plain-google-relink", "youtube-relink"],
+    ("stored_refresh_token", "new_refresh_token", "updates"),
+    [
+        ("youtube-refresh", None, False),
+        ("youtube-refresh", "new-youtube-refresh", True),
+        (None, None, True),
+    ],
+    ids=["plain-google-relink", "youtube-relink", "plain-google-relink-without-grant"],
 )
 async def test_associate_callback_keeps_a_stored_grant_the_new_one_cannot_replace(
-    new_refresh_token: str | None, *, updates: bool
+    stored_refresh_token: str | None, new_refresh_token: str | None, *, updates: bool
 ) -> None:
     """Relinking plain Google must not replace the YouTube grant stored on the same row.
 
@@ -644,7 +654,7 @@ async def test_associate_callback_keeps_a_stored_grant_the_new_one_cannot_replac
 
     existing_account = MagicMock()
     existing_account.user_id = USER1_EMAIL
-    existing_account.refresh_token = "youtube-refresh"
+    existing_account.refresh_token = stored_refresh_token
     mock_session = MagicMock()
     mock_session.execute = AsyncMock(
         return_value=MagicMock(

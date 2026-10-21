@@ -363,6 +363,28 @@ async def test_disable_totp_needs_the_password_as_well_as_a_code(
     clear.assert_not_awaited()
 
 
+async def test_disable_totp_without_a_password_on_an_account_that_has_none() -> None:
+    """An account created with Google or GitHub has no password to re-enter, so the code is enough."""
+    user, user_manager = build_mfa_user(mfa_enabled=True, mfa_totp_secret="totp-secret", has_usable_password=False)
+    user_manager.password_helper.verify_and_update = MagicMock()
+
+    with (
+        patch("app.api.auth.services.mfa_flow.mfa_service.verify_totp_code_once", new=AsyncMock(return_value=True)),
+        patch("app.api.auth.services.mfa_flow.mfa_service.clear_totp", new=AsyncMock()) as clear,
+        patch("app.api.auth.services.mfa_flow.send_mfa_changed_notification", new=AsyncMock()),
+    ):
+        await mfa_flow.disable_totp(
+            MfaTotpDisableRequest(code="123456"),
+            current_user=user,
+            user_manager=user_manager,
+            redis=MagicMock(),
+            background_tasks=MagicMock(),
+        )
+
+    clear.assert_awaited_once_with(user_manager, user)
+    user_manager.password_helper.verify_and_update.assert_not_called()
+
+
 async def test_complete_mfa_challenge_accepts_recovery_code() -> None:
     """A valid recovery code should complete login and be consumed (removed)."""
     challenge = MagicMock()

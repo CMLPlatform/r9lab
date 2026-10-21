@@ -129,8 +129,9 @@ def test_result_redirect_carries_only_the_session_cookies() -> None:
     assert "x-internal" not in redirect.headers
 
 
+@pytest.mark.parametrize("provider", ["google", "github"])
 async def test_bearer_authorize_refuses_a_frontend_redirect(
-    api_client: AsyncClient, monkeypatch: pytest.MonkeyPatch
+    api_client: AsyncClient, monkeypatch: pytest.MonkeyPatch, provider: str
 ) -> None:
     """Bearer tokens travel in the callback's body, which a redirect drops.
 
@@ -142,9 +143,11 @@ async def test_bearer_authorize_refuses_a_frontend_redirect(
         [ALLOWED_WEB_REDIRECT_URI],
     )
 
-    bearer = await api_client.get("/v1/oauth/google/token/authorize", params={"redirect_uri": ALLOWED_WEB_REDIRECT_URI})
+    bearer = await api_client.get(
+        f"/v1/oauth/{provider}/token/authorize", params={"redirect_uri": ALLOWED_WEB_REDIRECT_URI}
+    )
     session = await api_client.get(
-        "/v1/oauth/google/session/authorize", params={"redirect_uri": ALLOWED_WEB_REDIRECT_URI}
+        f"/v1/oauth/{provider}/session/authorize", params={"redirect_uri": ALLOWED_WEB_REDIRECT_URI}
     )
 
     assert bearer.status_code == status.HTTP_400_BAD_REQUEST
