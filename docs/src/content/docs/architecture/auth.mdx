@@ -30,6 +30,8 @@ TOTP MFA is optional account hardening for contributors and required for adminis
 - Accounts with TOTP receive a short-lived challenge token and must submit a current one-time code before the API issues credentials.
 - Turning TOTP on requires the current password. An account without a password (Google or GitHub
   sign-in only) must have signed in within the last 10 minutes instead.
+- Turning TOTP off requires the current password and a current authenticator code or a recovery
+  code. An account without a password needs only the code.
 - Turning TOTP on revokes every existing session and refresh token for the account, so a session
   from before enrolment never gains what enrolment unlocks. The device that enrolled gets a new
   session in the same response: new cookies for a browser, or new tokens in `tokens` for a bearer
@@ -48,9 +50,10 @@ Forgot-password returns the same accepted response for known, unknown, and inact
 
 Rate limits use the Redis-backed `limits` integration:
 
-- login by transient client-IP bucket (60 a minute, so a workshop room behind one IP can sign in) and by failed attempts against a keyed digest of the account's canonical email address (3 a minute), so every spelling of one address shares one bucket; successful logins do not count against the account, so a shared demo account is not locked by use
+- login by transient client-IP bucket (60 a minute, so a workshop room behind one IP can sign in) and per account, keyed on a digest of the canonical email address so every spelling of one address shares one bucket: 3 attempts a minute, and at most 100 wrong passwords in a row ([NIST SP 800-63B](https://pages.nist.gov/800-63-4/sp800-63b.html)). Every attempt is charged before the password is checked, so parallel guesses cannot slip past; a correct password gives its minute slot back and clears the run of failures, so a shared demo account used one sign-in after another is not locked.
+- a correct password also sets a device cookie (`__Host-r9lab-device`, signed, bound to that account, kept after logout). A request that carries one is charged to that device's own buckets instead of the account's, following OWASP's [device cookie](https://owasp.org/www-community/Slow_Down_Online_Guessing_Attacks_with_Device_Cookies) advice: someone guessing at an address can lock out only clients that never signed in to it, not the owner's own browser or phone.
 - forgot-password requests by transient client-IP bucket and by a keyed digest of the canonical email address
-- reset-password submissions, registration, and email verification requests by transient client-IP bucket
+- reset-password submissions, registration, and email verification requests by transient client-IP bucket. Forgot-password, reset-password and verification each have their own IP bucket, so spending one does not block the others.
 
 Password reset uses email links. Reset tokens are valid for one hour and include a fingerprint of the previous password hash, so a successful change invalidates them. A successful reset revokes existing refresh tokens and sends a confirmation email without credentials, tokens, or links. The web app is served with `Referrer-Policy: no-referrer` and removes the token from browser history after loading the reset page.
 
