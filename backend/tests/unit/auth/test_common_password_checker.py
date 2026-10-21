@@ -86,3 +86,15 @@ async def test_common_password_checker_falls_back_to_memory_when_the_redis_set_i
     await redis_client.delete(REDIS_COMMON_PASSWORDS_KEY)
 
     assert await checker.matches("password12345")
+
+
+async def test_common_password_checker_reseeds_the_redis_set_when_it_is_gone(redis_client: Redis) -> None:
+    """A lookup that finds the set missing refills it, so Redis is back in use without a restart."""
+    checker = CommonPasswordChecker(redis_client)
+    await checker.initialize()
+    await redis_client.delete(REDIS_COMMON_PASSWORDS_KEY)
+
+    assert not await checker.matches("a-long-unusual-passphrase-42")
+
+    # redis-py's command stubs return `Awaitable[int] | int` regardless of client mode.
+    assert await redis_client.scard(REDIS_COMMON_PASSWORDS_KEY) >= COMMON_PASSWORDS_TARGET_COUNT  # ty: ignore[invalid-await]

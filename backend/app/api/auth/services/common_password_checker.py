@@ -8,7 +8,12 @@ from typing import TYPE_CHECKING
 
 from redis.exceptions import RedisError
 
-from app.api.auth.services.blocklist_store import load_blocklist_lines, redis_set_contains_any, replace_redis_set
+from app.api.auth.services.blocklist_store import (
+    BlocklistUnavailableError,
+    load_blocklist_lines,
+    redis_set_contains_any,
+    replace_redis_set,
+)
 from app.core.env import BACKEND_DIR
 
 if TYPE_CHECKING:
@@ -113,6 +118,12 @@ class CommonPasswordChecker:
         if self.redis_client is not None and self._initialized:
             try:
                 return await redis_set_contains_any(self.redis_client, REDIS_COMMON_PASSWORDS_KEY, members)
+            except BlocklistUnavailableError:
+                logger.warning("Common-password Redis set is missing; reseeding it from the local fallback")
+                try:
+                    await self._store_passwords(passwords)
+                except _RECOVERABLE_ERRORS:
+                    logger.exception("Failed to reseed common-password Redis cache; using local fallback")
             except _RECOVERABLE_ERRORS:
                 logger.exception("Failed to check common password in Redis; using local fallback")
         return passwords.matches(password)
