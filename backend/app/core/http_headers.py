@@ -26,6 +26,9 @@ UPLOADS_PATH_PREFIX = "/uploads"
 AUTH_COOKIE_NAME = "__Host-r9lab-auth"
 REFRESH_COOKIE_NAME = "__Host-r9lab-refresh"
 AUTH_COOKIE_NAMES = frozenset({AUTH_COOKIE_NAME, REFRESH_COOKIE_NAME})
+# Not a credential, so not in AUTH_COOKIE_NAMES: it only picks a login rate-limit bucket
+# (api/auth/services/device_cookie.py).
+DEVICE_COOKIE_NAME = "__Host-r9lab-device"
 
 
 def request_has_auth_material(request: Request | None) -> bool:

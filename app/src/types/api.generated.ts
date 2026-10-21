@@ -10026,6 +10026,13 @@ export interface operations {
           'application/json': components['schemas']['HTTPValidationError'];
         };
       };
+      /** @description Too many attempts for this address or account. See the Retry-After header. */
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
     };
   };
   auth_session_login_v1_auth_session_login_post: {
@@ -10067,6 +10074,13 @@ export interface operations {
         content: {
           'application/json': components['schemas']['HTTPValidationError'];
         };
+      };
+      /** @description Too many attempts for this address or account. See the Retry-After header. */
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
       };
     };
   };

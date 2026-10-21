@@ -6921,6 +6921,9 @@
               }
             },
             "description": "Validation Error"
+          },
+          "429": {
+            "description": "Too many attempts for this address or account. See the Retry-After header."
           }
         },
         "summary": "Login with email and password for bearer-token clients",
@@ -7585,6 +7588,9 @@
               }
             },
             "description": "Validation Error"
+          },
+          "429": {
+            "description": "Too many attempts for this address or account. See the Retry-After header."
           }
         },
         "summary": "Login with email and password for browser sessions",

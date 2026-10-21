@@ -8,6 +8,7 @@ from fastapi_users.router.common import ErrorCode
 from app.api.auth.models import User
 from app.api.auth.schemas import MfaPendingResponse, RefreshTokenResponse
 from app.api.auth.services import login_completion
+from app.api.auth.services.device_cookie import set_device_cookie
 from app.api.auth.services.mfa_service import MfaTransport
 from app.api.auth.services.user_manager import UserManager
 from app.api.common.audit import AuditAction, AuditContext, audit_event
@@ -18,9 +19,16 @@ async def authenticate_first_factor(
     credentials: OAuth2PasswordRequestForm,
     user_manager: UserManager,
     transport: MfaTransport,
+    *,
+    response: Response,
+    device_token: str | None = None,
 ) -> User:
-    """Authenticate password credentials and return the active user."""
-    user = await user_manager.authenticate(credentials)
+    """Authenticate password credentials and return the active user.
+
+    A correct password also (re)issues the device cookie, so this client keeps its own
+    login budget for the account from now on.
+    """
+    user = await user_manager.authenticate(credentials, device_token=device_token)
     if user is None or not user.is_active:
         audit_event(
             None,
@@ -30,6 +38,7 @@ async def authenticate_first_factor(
             context=AuditContext(outcome="denied", transport=transport, reason="bad_credentials"),
         )
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=ErrorCode.LOGIN_BAD_CREDENTIALS)
+    set_device_cookie(response, user.email)
     return user
 
 

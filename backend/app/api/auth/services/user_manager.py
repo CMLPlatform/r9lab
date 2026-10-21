@@ -20,6 +20,7 @@ from app.api.auth.runtime_dependencies import get_common_password_checker
 from app.api.auth.schemas import UserCreateBase, UserUpdate, normalize_username
 from app.api.auth.services.account_security import revoke_user_refresh_tokens, sensitive_update_fields
 from app.api.auth.services.auth_backends import build_authentication_backends
+from app.api.auth.services.device_cookie import device_id_for
 from app.api.auth.services.email.service import (
     email_log_token,
     send_email_changed_notification,
@@ -62,8 +63,17 @@ RESET_PASSWORD_TOKEN_AUDIENCE = "fastapi-users:reset"  # noqa: S105 # This value
 VERIFICATION_TOKEN_AUDIENCE = "fastapi-users:verify"  # noqa: S105 # This value is not a secret.
 
 
-def _login_identifier_rate_limit_keys(identifier: str) -> tuple[str, str]:
-    """Return the privacy-preserving per-minute and per-day login rate-limit keys for an identifier."""
+def _login_identifier_rate_limit_keys(identifier: str, device_token: str | None = None) -> tuple[str, str]:
+    """Return the privacy-preserving per-minute and per-day login rate-limit keys.
+
+    A client with a valid device cookie for this account gets buckets of its own, so
+    guesses from unknown clients cannot lock the owner out of their devices.
+    """
+    if device_id := device_id_for(device_token, identifier):
+        return (
+            rate_limit_bucket_key("auth:login:device", device_id),
+            rate_limit_bucket_key("auth:login:device:day", device_id),
+        )
     identity = account_rate_limit_identity(identifier)
     return (
         rate_limit_bucket_key("auth:login:account", identity),
@@ -96,8 +106,13 @@ class UserManager(UUIDIDMixin, BaseUserManager[User, UUID4]):
     verification_token_lifetime_seconds = VERIFICATION_TOKEN_TTL
     verification_token_audience = VERIFICATION_TOKEN_AUDIENCE
 
-    async def authenticate(self, credentials: OAuth2PasswordRequestForm) -> User | None:
-        """Support login with either email or username."""
+    async def authenticate(
+        self, credentials: OAuth2PasswordRequestForm, *, device_token: str | None = None
+    ) -> User | None:
+        """Support login with either email or username.
+
+        ``device_token`` is the request's device cookie, if any (``device_cookie``).
+        """
         is_email = False
         try:
             TypeAdapter(EmailStr).validate_python(credentials.username)
@@ -122,7 +137,7 @@ class UserManager(UUIDIDMixin, BaseUserManager[User, UUID4]):
         # guesses cannot all pass the check before any is charged; a success refunds its
         # minute slot and clears the failure streak. Logins that overlap a hash in flight
         # still share the minute budget.
-        minute_key, day_key = _login_identifier_rate_limit_keys(credentials.username)
+        minute_key, day_key = _login_identifier_rate_limit_keys(credentials.username, device_token)
         # Minute first: a guess the minute limit refuses does not spend the daily ceiling.
         await limiter.ahit_key(LOGIN_RATE_LIMIT, minute_key)
         await limiter.ahit_key(ACCOUNT_GUESS_DAILY_RATE_LIMIT, day_key)

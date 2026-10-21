@@ -647,7 +647,9 @@ async def test_associate_callback_keeps_a_stored_grant_the_new_one_cannot_replac
     existing_account.refresh_token = "youtube-refresh"
     mock_session = MagicMock()
     mock_session.execute = AsyncMock(
-        return_value=MagicMock(scalars=MagicMock(return_value=MagicMock(first=MagicMock(return_value=existing_account))))
+        return_value=MagicMock(
+            scalars=MagicMock(return_value=MagicMock(first=MagicMock(return_value=existing_account)))
+        )
     )
     user_manager = MagicMock()
     user_manager.user_db.session = mock_session
