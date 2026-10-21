@@ -568,5 +568,5 @@ async def test_google_login_keeps_the_stored_youtube_grant(db_session: AsyncSess
     await _google_login(db_session, TEST_EMAIL, account_id="google-account-id")
 
     await db_session.refresh(account)
-    assert account.refresh_token == "youtube-refresh"  # noqa: S105 - test fixture value, not a credential
-    assert account.access_token == "access-token"  # noqa: S105 - test fixture value, not a credential
+    assert account.refresh_token == "youtube-refresh"
+    assert account.access_token == "access-token"

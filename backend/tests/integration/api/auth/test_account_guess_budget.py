@@ -59,7 +59,7 @@ ROUTES = {
     "social link": ("POST", "/v1/oauth/google/associate/authorize", {"current_password": WRONG_PASSWORD}),
     "social unlink": ("DELETE", "/v1/oauth/google/associate", {"current_password": WRONG_PASSWORD}),
     "mfa confirm": ("POST", "/v1/auth/mfa/totp/confirm", None),
-    "mfa disable": ("POST", "/v1/auth/mfa/totp/disable", {"code": WRONG_CODE}),
+    "mfa disable": ("POST", "/v1/auth/mfa/totp/disable", {"code": WRONG_CODE, "password": WRONG_PASSWORD}),
     "recovery codes": ("POST", "/v1/auth/mfa/recovery-codes/regenerate", {"code": WRONG_CODE}),
     "account deletion": ("DELETE", "/v1/users/me", {"current_password": WRONG_PASSWORD}),
 }
