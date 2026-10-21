@@ -228,16 +228,19 @@ async def _link_oauth_account(
     _require_account_not_linked_elsewhere(existing_account, user.id)
 
     if existing_account:
-        updated_user = await user_manager.user_db.update_oauth_account(
-            cast("UserOAuthProtocol[UUID4, OAuthAccount]", user),
-            existing_account,
-            {
-                "access_token": token["access_token"],
-                "expires_at": token.get("expires_at"),
-                "refresh_token": token.get("refresh_token"),
-            },
-        )
-        user = cast("User", updated_user)
+        # A grant without a refresh token (a plain Google link) must not replace one that
+        # has it (the YouTube link, which always asks for offline access).
+        if token.get("refresh_token") or not existing_account.refresh_token:
+            updated_user = await user_manager.user_db.update_oauth_account(
+                cast("UserOAuthProtocol[UUID4, OAuthAccount]", user),
+                existing_account,
+                {
+                    "access_token": token["access_token"],
+                    "expires_at": token.get("expires_at"),
+                    "refresh_token": token.get("refresh_token"),
+                },
+            )
+            user = cast("User", updated_user)
     else:
         oauth_associate_callback = cast("Any", user_manager.oauth_associate_callback)
         user = await oauth_associate_callback(

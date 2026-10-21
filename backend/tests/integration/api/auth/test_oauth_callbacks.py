@@ -618,3 +618,43 @@ async def test_associate_callback_redirects_errors_to_the_frontend(failure: str)
     fragment = parse_qs(urlparse(response.headers["location"]).fragment)
     assert fragment["status"] == ["error"]
     assert fragment["error"]
+
+
+@pytest.mark.parametrize(
+    ("new_refresh_token", "updates"),
+    [(None, False), ("new-youtube-refresh", True)],
+    ids=["plain-google-relink", "youtube-relink"],
+)
+async def test_associate_callback_keeps_a_stored_grant_the_new_one_cannot_replace(
+    new_refresh_token: str | None, *, updates: bool
+) -> None:
+    """Relinking plain Google must not replace the YouTube grant stored on the same row.
+
+    A plain Google link returns no refresh token, while the YouTube link always does
+    (offline access with consent), so only a grant with a refresh token replaces one.
+    """
+    config, user_schema = make_associate_flow(provider_name="google", oauth_flow="google:associate")
+    current_user = MagicMock()
+    current_user.id = USER1_EMAIL
+    request, (token, state) = make_associate_request_with_valid_state(
+        str(current_user.id), provider_name="google", oauth_flow="google:associate"
+    )
+    if new_refresh_token:
+        token = cast("Any", {**token, "refresh_token": new_refresh_token})
+
+    existing_account = MagicMock()
+    existing_account.user_id = USER1_EMAIL
+    existing_account.refresh_token = "youtube-refresh"
+    mock_session = MagicMock()
+    mock_session.execute = AsyncMock(
+        return_value=MagicMock(scalars=MagicMock(return_value=MagicMock(first=MagicMock(return_value=existing_account))))
+    )
+    user_manager = MagicMock()
+    user_manager.user_db.session = mock_session
+    user_manager.user_db.update_oauth_account = AsyncMock(return_value=current_user)
+
+    await handle_oauth_associate_callback(
+        config, request, current_user, (token, state), user_manager, user_schema=user_schema
+    )
+
+    assert user_manager.user_db.update_oauth_account.await_count == int(updates)
