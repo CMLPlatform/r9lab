@@ -114,6 +114,17 @@ class Limiter:
         except RedisError, ConnectionError, TimeoutError, OSError:
             logger.warning("Rate limiter backend unavailable; refund skipped for limit %s", rate_string)
 
+    async def areset_key(self, rate_string: str, key: str) -> None:
+        """Empty one bucket, for budgets that count failures in a row and restart on a success."""
+        if not self.enabled or self._limiter is None:
+            return
+
+        parsed = parse(rate_string)
+        try:
+            await anyio.to_thread.run_sync(self._limiter.clear, parsed, key)
+        except RedisError, ConnectionError, TimeoutError, OSError:
+            logger.warning("Rate limiter backend unavailable; reset skipped for limit %s", rate_string)
+
     def dependency(
         self,
         rate_string: str,

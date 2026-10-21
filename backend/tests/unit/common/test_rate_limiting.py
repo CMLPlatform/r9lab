@@ -224,6 +224,42 @@ async def test_refund_key_gives_back_one_hit(limiter: Limiter) -> None:
         await limiter.ahit_key("1/minute", "auth:login:account:one")
 
 
+async def test_reset_key_empties_the_bucket(limiter: Limiter) -> None:
+    """A reset clears every hit, so a success can restart a failure streak."""
+    await limiter.ahit_key("1/minute", "auth:login:account:one")
+    await limiter.areset_key("1/minute", "auth:login:account:one")
+    await limiter.ahit_key("1/minute", "auth:login:account:one")
+
+    with pytest.raises(RateLimitExceededError):
+        await limiter.ahit_key("1/minute", "auth:login:account:one")
+
+
+@pytest.mark.parametrize("method", ["arefund_key", "areset_key"])
+async def test_refund_and_reset_do_nothing_when_disabled(method: str) -> None:
+    """A disabled limiter has no store, so giving back or clearing a hit must be a no-op."""
+    disabled = Limiter(storage_uri="memory://", enabled=False)
+
+    await getattr(disabled, method)("1/minute", "auth:login:account:one")  # must not raise
+
+
+@pytest.mark.parametrize("method", ["arefund_key", "areset_key"])
+async def test_refund_and_reset_survive_a_redis_error(
+    limiter: Limiter, caplog: pytest.LogCaptureFixture, method: str
+) -> None:
+    """A Redis outage after a successful login must not turn it into a 500."""
+    storage = MagicMock()
+    storage.incr.side_effect = RedisConnectionError("redis unreachable")
+    strategy = MagicMock(storage=storage)
+    strategy.clear.side_effect = RedisConnectionError("redis unreachable")
+    limiter._limiter = strategy
+
+    caplog.set_level(logging.WARNING, logger="app.api.common.rate_limiting")
+    await getattr(limiter, method)("1/minute", "auth:login:account:one")  # must not raise
+
+    assert "skipped" in caplog.text
+    assert "auth:login:account:one" not in caplog.text
+
+
 # ---------------------------------------------------------------------------
 # Per-user keying for signed-in requests
 # ---------------------------------------------------------------------------

@@ -115,11 +115,13 @@ class UserManager(UUIDIDMixin, BaseUserManager[User, UUID4]):
                 credentials.username = db_user.email
 
         # Bucket on the resolved email so a username and its email share one budget. Only
-        # failures stay charged: a room signing in to one shared account must not lock it,
-        # while a password guesser gets LOGIN_RATE_LIMIT tries a minute and
-        # ACCOUNT_GUESS_DAILY_RATE_LIMIT a day per account, however many IPs it uses. Every
-        # attempt is charged before the hash and refunded on success, so parallel guesses
-        # cannot all pass the check before any is charged.
+        # failures stay charged: a room signing in one after another to a shared account must
+        # not lock it, while a password guesser gets LOGIN_RATE_LIMIT tries a minute and
+        # ACCOUNT_GUESS_DAILY_RATE_LIMIT failures in a row per account (NIST SP 800-63B),
+        # however many IPs it uses. Every attempt is charged before the hash, so parallel
+        # guesses cannot all pass the check before any is charged; a success refunds its
+        # minute slot and clears the failure streak. Logins that overlap a hash in flight
+        # still share the minute budget.
         minute_key, day_key = _login_identifier_rate_limit_keys(credentials.username)
         # Minute first: a guess the minute limit refuses does not spend the daily ceiling.
         await limiter.ahit_key(LOGIN_RATE_LIMIT, minute_key)
@@ -127,7 +129,7 @@ class UserManager(UUIDIDMixin, BaseUserManager[User, UUID4]):
         user = await self._authenticate_offloading_hashes(credentials)
         if user is not None:
             await limiter.arefund_key(LOGIN_RATE_LIMIT, minute_key)
-            await limiter.arefund_key(ACCOUNT_GUESS_DAILY_RATE_LIMIT, day_key)
+            await limiter.areset_key(ACCOUNT_GUESS_DAILY_RATE_LIMIT, day_key)
         return user
 
     async def _authenticate_offloading_hashes(self, credentials: OAuth2PasswordRequestForm) -> User | None:

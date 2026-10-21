@@ -69,6 +69,7 @@ async def test_applies_account_aware_rate_limit_before_lookup() -> None:
     ):
         mock_limiter.ahit_key = AsyncMock()
         mock_limiter.arefund_key = AsyncMock()
+        mock_limiter.areset_key = AsyncMock()
         mock_super.return_value = None
         await manager.authenticate(credentials)
 
@@ -186,6 +187,44 @@ async def test_paced_wrong_passwords_stop_at_the_daily_ceiling() -> None:
             await manager.authenticate(_make_credentials("victim@example.com", "wrong"))
 
 
+async def test_a_good_login_clears_the_failure_streak() -> None:
+    """The daily ceiling counts consecutive failures (NIST SP 800-63B): a success starts it again.
+
+    Regression: a success refunded only its own attempt, so 99 old failures still counted
+    and the owner's next typo could lock the account for the rest of the day.
+    """
+    limiter = Limiter(storage_uri="memory://")
+    clock = [1_000_000.0]
+    per_minute = int(LOGIN_RATE_LIMIT.split("/", 1)[0])
+    per_day = int(ACCOUNT_GUESS_DAILY_RATE_LIMIT.split("/", 1)[0])
+    owner = MagicMock()
+
+    async def check(credentials: OAuth2PasswordRequestForm) -> MagicMock | None:
+        return owner if credentials.password == "right" else None
+
+    manager, _ = _make_manager()
+    attempts = 0
+
+    async def login(password: str) -> object:
+        nonlocal attempts
+        if attempts % per_minute == 0:
+            clock[0] += 61  # A fresh minute window; the daily window keeps counting.
+        attempts += 1
+        return await manager.authenticate(_make_credentials("owner@example.com", password))
+
+    with (
+        patch("limits.storage.memory.time.time", side_effect=lambda: clock[0]),
+        patch("app.api.auth.services.user_manager.limiter", new=limiter),
+        patch.object(UserManager, "_authenticate_offloading_hashes", side_effect=check),
+    ):
+        for _ in range(per_day - 1):
+            assert await login("wrong") is None
+        assert await login("right") is owner
+        for _ in range(per_day - 1):
+            assert await login("wrong") is None
+        assert await login("right") is owner
+
+
 async def test_username_login_ignores_letter_case_and_spaces() -> None:
     """Usernames are stored lowercase, so the login lookup must normalize the input the same way."""
     mock_user = MagicMock()
@@ -256,6 +295,7 @@ async def test_username_and_email_login_share_rate_limit_bucket() -> None:
     ):
         username_limiter.ahit_key = AsyncMock()
         username_limiter.arefund_key = AsyncMock()
+        username_limiter.areset_key = AsyncMock()
         await username_manager.authenticate(_make_credentials("myusername"))
     username_key = username_limiter.ahit_key.call_args.args[1]
 
@@ -266,6 +306,7 @@ async def test_username_and_email_login_share_rate_limit_bucket() -> None:
     ):
         email_limiter.ahit_key = AsyncMock()
         email_limiter.arefund_key = AsyncMock()
+        email_limiter.areset_key = AsyncMock()
         await email_manager.authenticate(_make_credentials("shared@example.com"))
     email_key = email_limiter.ahit_key.call_args.args[1]
 

@@ -484,11 +484,11 @@ async def test_rotation_evidence_survives_a_racing_logout(redis_client: Redis, m
     stolen = await create_refresh_token(redis_client, user_id)
     real_set = redis_client.set
 
-    async def set_after_a_racing_logout(key: str, value: str, **kwargs: object) -> object:
+    async def set_after_a_racing_logout(key: str, value: str, *, ex: int, nx: bool) -> object:
         if key == _blacklist_key(stolen) and value != "revoked":
             # The logout ran after the rotation took the metadata: no entry yet, no metadata left.
-            await real_set(key, "revoked", ex=3600, nx=True)  # ty: ignore[invalid-await]
-        return await real_set(key, value, **kwargs)  # ty: ignore[invalid-await]
+            await real_set(key, "revoked", ex=3600, nx=True)
+        return await real_set(key, value, ex=ex, nx=nx)
 
     with patch.object(redis_client, "set", set_after_a_racing_logout):
         thief_token = await rotate_refresh_token(redis_client, stolen)
