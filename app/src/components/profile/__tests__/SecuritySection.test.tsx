@@ -32,9 +32,13 @@ const mockSetStringAsync = setStringAsync as jest.MockedFunction<typeof setStrin
 const RECOVERY_CODES = ['aaaa-1111', 'bbbb-2222'];
 const onEnrolled = jest.fn();
 
-function renderSection(mfaEnabled: boolean) {
+function renderSection(mfaEnabled: boolean, hasUsablePassword = true) {
   return renderWithProviders(
-    <ProfileSecuritySection mfaEnabled={mfaEnabled} onEnrolled={onEnrolled} />,
+    <ProfileSecuritySection
+      mfaEnabled={mfaEnabled}
+      hasUsablePassword={hasUsablePassword}
+      onEnrolled={onEnrolled}
+    />,
     { withDialog: true },
   );
 }
@@ -126,10 +130,24 @@ describe('ProfileSecuritySection management', () => {
     );
 
     expect(await screen.findByText('Enter a current code')).toBeOnTheScreen();
+    await fireEvent.changeText(screen.getByLabelText('Current password'), 'pw');
     await fireEvent.changeText(screen.getByLabelText('Authentication code'), '654321');
 
-    await waitFor(() => expect(mockDisableTotp).toHaveBeenCalledWith('654321'));
+    await waitFor(() => expect(mockDisableTotp).toHaveBeenCalledWith('654321', 'pw'));
     expect(onEnrolled).toHaveBeenCalled();
+  });
+
+  it('asks an account without a password for the code alone', async () => {
+    await renderSection(true, false);
+
+    await fireEvent.press(
+      screen.getByLabelText('Turn off two-step verification, Sign in with just your password'),
+    );
+    expect(await screen.findByText('Enter a current code')).toBeOnTheScreen();
+    expect(screen.queryByLabelText('Current password')).toBeNull();
+    await fireEvent.changeText(screen.getByLabelText('Authentication code'), '654321');
+
+    await waitFor(() => expect(mockDisableTotp).toHaveBeenCalledWith('654321', undefined));
   });
 
   it('accepts a recovery code instead when the authenticator is lost', async () => {
@@ -141,10 +159,11 @@ describe('ProfileSecuritySection management', () => {
     await screen.findByText('Enter a current code');
 
     await fireEvent.press(screen.getByText('Lost your authenticator? Use a recovery code'));
+    await fireEvent.changeText(screen.getByLabelText('Current password'), 'pw');
     await fireEvent.changeText(screen.getByLabelText('Recovery code'), 'aaaa-1111');
     await fireEvent.press(screen.getByText('Confirm'));
 
-    await waitFor(() => expect(mockDisableTotp).toHaveBeenCalledWith('aaaa-1111'));
+    await waitFor(() => expect(mockDisableTotp).toHaveBeenCalledWith('aaaa-1111', 'pw'));
   });
 
   // Both branches of the toggle carry a visible label, so it can't appear and

@@ -19,7 +19,7 @@ FORGOT_PASSWORD_PATH = "/forgot-password"  # noqa: S105 # This value is not a se
 RESET_PASSWORD_PATH = "/reset-password"  # noqa: S105 # This value is not a secret
 FORGOT_PASSWORD_MINIMUM_RESPONSE_SECONDS = 0.25
 
-router = APIRouter(dependencies=[limiter.dependency(PASSWORD_RESET_RATE_LIMIT)])
+router = APIRouter()
 
 
 def _password_reset_identifier_rate_limit_key(identifier: str) -> str:
@@ -38,6 +38,7 @@ async def _sleep_until_minimum_elapsed(started_at: float) -> None:
     FORGOT_PASSWORD_PATH,
     status_code=status.HTTP_202_ACCEPTED,
     name="reset:forgot_password",
+    dependencies=[limiter.dependency(PASSWORD_RESET_RATE_LIMIT, scope="forgot-password")],
 )
 async def forgot_password(
     request: Request,
@@ -65,6 +66,7 @@ async def forgot_password(
     RESET_PASSWORD_PATH,
     name="reset:reset_password",
     responses=RESET_PASSWORD_RESPONSES,
+    dependencies=[limiter.dependency(PASSWORD_RESET_RATE_LIMIT, scope="reset-password")],
 )
 async def reset_password(
     request: Request,

@@ -47,6 +47,11 @@ _REUSE_GRACE_SECONDS = 30
 # Bounds the revocation sweep so a client rotating in a tight loop cannot keep it spinning.
 _REVOKE_SWEEP_LIMIT = 3
 
+# Blacklist value for a token revoked by logout, expiry or revoke-all. Only rotation entries
+# (user_id:timestamp) count as reuse evidence: a stale device replaying a revoked token is
+# rejected without revoking the sessions created since.
+_REVOKED_MARKER = "revoked"
+
 
 def _refresh_token_key_from_fingerprint(fingerprint: str) -> str:
     return f"{_REFRESH_TOKEN_KEY_PREFIX}:{fingerprint}"
@@ -137,9 +142,13 @@ async def _load_active_token_metadata(redis: Redis, token: str) -> RefreshTokenM
     return metadata
 
 
-async def _blacklist_fingerprint(redis: Redis, fingerprint: str, ttl_seconds: int, *, value: str = "1") -> None:
-    # value carries the owning user_id when known, so a replay can be traced to its session family.
-    await redis.setex(_blacklist_key_from_fingerprint(fingerprint), ttl_seconds, value)
+async def _blacklist_fingerprint(redis: Redis, fingerprint: str, ttl_seconds: int, *, value: str) -> None:
+    """Write a blacklist entry.
+
+    A rotation entry is reuse evidence: it overwrites a plain revoked marker (a logout
+    racing the rotation), while revocations write NX so they never overwrite a rotation entry.
+    """
+    await redis.set(_blacklist_key_from_fingerprint(fingerprint), value, ex=ttl_seconds, nx=value == _REVOKED_MARKER)
 
 
 def _encode_blacklist_value(user_id: UUID) -> str:
@@ -262,11 +271,21 @@ async def blacklist_token(
 ) -> None:
     """Blacklist a refresh token and delete it.
 
+    A token that is already blacklisted goes through reuse detection instead, so logging
+    out with a rotated token cannot hide its replay. Logout itself still succeeds.
+
     Args:
         redis: Redis client
         token: Refresh token to blacklist
         ttl_seconds: TTL for blacklist entry (if None, uses remaining token TTL)
     """
+    blacklisted = await redis.get(_blacklist_key(token))
+    if blacklisted is not None:
+        try:
+            await _reject_replayed_token(redis, blacklisted)
+        except RefreshTokenRevokedError:
+            return
+
     metadata_key = _refresh_token_key(token)
     if ttl_seconds is None:
         ttl_seconds = int(await redis.ttl(metadata_key))
@@ -291,7 +310,7 @@ async def blacklist_token(
         redis,
         fingerprint,
         ttl_seconds,
-        value=_encode_blacklist_value(metadata.user_id) if metadata else "1",
+        value=_REVOKED_MARKER,
     )
 
     if metadata:
@@ -317,13 +336,13 @@ async def revoke_all_user_tokens(
     # Read-then-delete is not atomic: a rotation landing in between adds a fingerprint
     # this pass never saw. Re-sweep until a pass finds nothing.
     for _ in range(_REVOKE_SWEEP_LIMIT):
-        if not await _revoke_refresh_token_sweep(redis, user_id, user_tokens_key):
+        if not await _revoke_refresh_token_sweep(redis, user_tokens_key):
             break
 
     await revoke_user_access_tokens(redis, user_id)
 
 
-async def _revoke_refresh_token_sweep(redis: Redis, user_id: UUID4, user_tokens_key: str) -> bool:
+async def _revoke_refresh_token_sweep(redis: Redis, user_tokens_key: str) -> bool:
     """Blacklist and delete every refresh token currently in the user's set.
 
     Returns whether any token was found, so the caller can sweep again for tokens added
@@ -340,10 +359,14 @@ async def _revoke_refresh_token_sweep(redis: Redis, user_id: UUID4, user_tokens_
         ttl_pipe.ttl(_refresh_token_key_from_fingerprint(fingerprint))
     ttls = await ttl_pipe.execute()
 
-    value = _encode_blacklist_value(user_id)
     write_pipe = redis.pipeline()
     for fingerprint, ttl_seconds in zip(fingerprints, ttls, strict=True):
-        write_pipe.setex(_blacklist_key_from_fingerprint(fingerprint), ttl_seconds if ttl_seconds > 0 else HOUR, value)
+        write_pipe.set(
+            _blacklist_key_from_fingerprint(fingerprint),
+            _REVOKED_MARKER,
+            ex=ttl_seconds if ttl_seconds > 0 else HOUR,
+            nx=True,
+        )
         write_pipe.delete(_refresh_token_key_from_fingerprint(fingerprint))
     # SREM only what this pass handled; a fingerprint added by a concurrent rotation
     # must survive for the next sweep.

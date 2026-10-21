@@ -10,13 +10,18 @@ import { createProfileSectionStyles } from './styles';
 
 type ProfileSecuritySectionProps = {
   mfaEnabled: boolean;
+  hasUsablePassword?: boolean;
   onEnrolled: () => unknown;
 };
 
-export function ProfileSecuritySection({ mfaEnabled, onEnrolled }: ProfileSecuritySectionProps) {
+export function ProfileSecuritySection({
+  mfaEnabled,
+  hasUsablePassword = true,
+  onEnrolled,
+}: ProfileSecuritySectionProps) {
   const theme = useAppTheme();
   const styles = createProfileSectionStyles(theme);
-  const mfa = useMfaSetup(onEnrolled);
+  const mfa = useMfaSetup(onEnrolled, { disableNeedsPassword: hasUsablePassword });
 
   const { start, beginDisable, beginRegenerate } = mfa;
   const enrollTriggerRef = useRef<View>(null);

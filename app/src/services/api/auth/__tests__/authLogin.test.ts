@@ -6,6 +6,8 @@ import { TimeoutError } from '@/services/api/request';
 jest.mock('@/services/api/auth/authSession', () => ({
   loadStoredAccessToken: jest.fn(),
   loadStoredRefreshToken: jest.fn(),
+  loadStoredDeviceToken: jest.fn(),
+  persistStoredDeviceToken: jest.fn(),
   markWebSessionActive: jest.fn(),
 }));
 
@@ -42,11 +44,17 @@ const { getUser } = jest.requireMock('@/services/api/auth/authUser') as {
 const { fetchWithTimeout } = jest.requireMock('@/services/api/request') as {
   fetchWithTimeout: jest.Mock;
 };
-const { loadStoredAccessToken, loadStoredRefreshToken, markWebSessionActive } = jest.requireMock(
-  '@/services/api/auth/authSession',
-) as {
+const {
+  loadStoredAccessToken,
+  loadStoredRefreshToken,
+  loadStoredDeviceToken,
+  persistStoredDeviceToken,
+  markWebSessionActive,
+} = jest.requireMock('@/services/api/auth/authSession') as {
   loadStoredAccessToken: jest.MockedFunction<() => Promise<string | undefined>>;
   loadStoredRefreshToken: jest.MockedFunction<() => Promise<string | undefined>>;
+  loadStoredDeviceToken: jest.MockedFunction<() => Promise<string | null | undefined>>;
+  persistStoredDeviceToken: jest.MockedFunction<(token: string) => Promise<void>>;
   markWebSessionActive: jest.Mock;
 };
 
@@ -66,6 +74,30 @@ describe('authLogin', () => {
     getUser.mockResolvedValue(undefined);
     loadStoredAccessToken.mockResolvedValue(undefined);
     loadStoredRefreshToken.mockResolvedValue(undefined);
+    loadStoredDeviceToken.mockResolvedValue(undefined);
+    persistStoredDeviceToken.mockResolvedValue(undefined);
+  });
+
+  // The device token keeps this phone's login budget apart from strangers guessing at the
+  // account, and native fetch may not keep the cookie, so the app carries it itself.
+  it('sends the stored device token and keeps the one the server issues', async () => {
+    loadStoredDeviceToken.mockResolvedValueOnce('stored-device-token');
+    fetchWithTimeout.mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      headers: new Headers({ 'X-Device-Token': 'issued-device-token' }),
+      json: async () => ({ access_token: 'native-token', refresh_token: 'native-refresh-token' }),
+    } as never);
+
+    await login('user', 'pass');
+
+    expect(fetchWithTimeout).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        headers: expect.objectContaining({ 'X-Device-Token': 'stored-device-token' }),
+      }),
+    );
+    expect(persistStoredDeviceToken).toHaveBeenCalledWith('issued-device-token');
   });
 
   it('returns and persists native bearer token on success', async () => {

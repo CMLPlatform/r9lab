@@ -29,6 +29,7 @@ from ._oauth_support import (
     make_auth_flow,
     make_oauth_state,
     make_request_with_valid_state,
+    session_returning,
 )
 from .shared import USER1_EMAIL, USER2_EMAIL, create_password_user, link_google
 
@@ -416,12 +417,7 @@ async def test_associate_callback_links_provider_for_current_user() -> None:
     current_user.email = TEST_EMAIL
 
     request, access_token_state = make_associate_request_with_valid_state(str(current_user.id))
-    mock_session = MagicMock()
-    mock_scalars_result = MagicMock()
-    mock_scalars_result.first.return_value = None
-    mock_exec_result = MagicMock()
-    mock_exec_result.scalars.return_value = mock_scalars_result
-    mock_session.execute = AsyncMock(return_value=mock_exec_result)
+    mock_session = session_returning(None)
 
     user_manager = MagicMock()
     user_manager.user_db.session = mock_session
@@ -454,12 +450,7 @@ async def test_associate_callback_rejects_provider_linked_to_other_user() -> Non
     existing_account = MagicMock()
     existing_account.user_id = USER2_EMAIL
 
-    mock_session = MagicMock()
-    mock_scalars_result = MagicMock()
-    mock_scalars_result.first.return_value = existing_account
-    mock_exec_result = MagicMock()
-    mock_exec_result.scalars.return_value = mock_scalars_result
-    mock_session.execute = AsyncMock(return_value=mock_exec_result)
+    mock_session = session_returning(existing_account)
 
     user_manager = MagicMock()
     user_manager.user_db.session = mock_session
@@ -553,3 +544,110 @@ async def test_google_login_still_works_for_unverified_account_already_linked(db
     logged_in = await _google_login(db_session, TEST_EMAIL, account_id="google-account-id")
 
     assert logged_in.id == user.id
+
+
+async def test_google_login_keeps_the_stored_youtube_grant(db_session: AsyncSession) -> None:
+    """Signing in with Google must not replace the YouTube grant stored on the same link.
+
+    Regression: sign-in and the YouTube link share the "google" row, and every sign-in
+    overwrote its tokens with a base-scope token and no refresh token, so streaming broke
+    until the user linked YouTube again.
+    """
+    user = await create_password_user(db_session, email=TEST_EMAIL, username="streamer", is_verified=True)
+    account = await link_google(db_session, user, account_id="google-account-id", refresh_token="youtube-refresh")
+
+    await _google_login(db_session, TEST_EMAIL, account_id="google-account-id")
+
+    await db_session.refresh(account)
+    assert account.refresh_token == "youtube-refresh"
+    assert account.access_token == "access-token"
+
+
+@pytest.mark.parametrize(
+    ("failure", "expected_error"),
+    [
+        ("linked-elsewhere", "This account is already linked to another user."),
+        ("no-email", ErrorCode.OAUTH_NOT_AVAILABLE_EMAIL.value),
+    ],
+)
+async def test_associate_callback_redirects_errors_to_the_frontend(failure: str, expected_error: str) -> None:
+    """Once the state names a trusted frontend, a failed link comes back there as status=error.
+
+    Regression: the errors were raised as raw JSON, which the app's browser session never
+    shows, so the user saw nothing.
+    """
+    config, user_schema = make_associate_flow()
+    current_user = MagicMock()
+    current_user.id = USER1_EMAIL
+    frontend_redirect = "relab-app://account"
+    csrf_token = generate_csrf_token()
+    state = make_oauth_state(
+        csrf_token,
+        provider_name="github",
+        oauth_flow="github:associate",
+        extra_state={"sub": str(current_user.id), "frontend_redirect_uri": frontend_redirect},
+    )
+    request = MagicMock()
+    request.cookies = {OAuthCookieSettings.name: csrf_token}
+
+    existing_account = MagicMock()
+    existing_account.user_id = USER2_EMAIL
+    mock_session = session_returning(existing_account)
+    user_manager = MagicMock()
+    user_manager.user_db.session = mock_session
+    if failure == "no-email":
+        cast("MagicMock", config.oauth_client).get_id_email = AsyncMock(return_value=("provider-account-id", None))
+
+    response = await handle_oauth_associate_callback(
+        config,
+        request,
+        current_user,
+        (cast("Any", {"access_token": "provider-access-token"}), state),
+        user_manager,
+        user_schema=user_schema,
+    )
+
+    fragment = parse_qs(urlparse(response.headers["location"]).fragment)
+    assert fragment["status"] == ["error"]
+    assert fragment["error"] == [expected_error]
+
+
+@pytest.mark.parametrize(
+    ("stored_refresh_token", "new_refresh_token", "updates"),
+    [
+        ("youtube-refresh", None, False),
+        ("youtube-refresh", "new-youtube-refresh", True),
+        (None, None, True),
+    ],
+    ids=["plain-google-relink", "youtube-relink", "plain-google-relink-without-grant"],
+)
+async def test_associate_callback_keeps_a_stored_grant_the_new_one_cannot_replace(
+    stored_refresh_token: str | None, new_refresh_token: str | None, *, updates: bool
+) -> None:
+    """Relinking plain Google must not replace the YouTube grant stored on the same row.
+
+    A plain Google link returns no refresh token, while the YouTube link always does
+    (offline access with consent), so only a grant with a refresh token replaces one.
+    """
+    config, user_schema = make_associate_flow(provider_name="google", oauth_flow="google:associate")
+    current_user = MagicMock()
+    current_user.id = USER1_EMAIL
+    request, (token, state) = make_associate_request_with_valid_state(
+        str(current_user.id), provider_name="google", oauth_flow="google:associate"
+    )
+    if new_refresh_token:
+        token = cast("Any", {**token, "refresh_token": new_refresh_token})
+
+    existing_account = MagicMock()
+    existing_account.user_id = USER1_EMAIL
+    existing_account.refresh_token = stored_refresh_token
+    mock_session = session_returning(existing_account)
+    user_manager = MagicMock()
+    user_manager.user_db.session = mock_session
+    user_manager.user_db.update_oauth_account = AsyncMock(return_value=current_user)
+
+    await handle_oauth_associate_callback(
+        config, request, current_user, (token, state), user_manager, user_schema=user_schema
+    )
+
+    assert user_manager.user_db.update_oauth_account.await_count == int(updates)
