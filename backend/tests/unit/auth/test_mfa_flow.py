@@ -287,6 +287,7 @@ async def test_confirm_totp_setup_requires_password_when_account_has_one() -> No
 async def test_disable_totp_clears_enrollment_after_valid_code() -> None:
     """Disabling TOTP with a current code should clear the enrollment."""
     user, user_manager = build_mfa_user(mfa_enabled=True, mfa_totp_secret="totp-secret")
+    user_manager.password_helper.verify_and_update = MagicMock(return_value=(True, None))
     redis = MagicMock()
 
     with (
@@ -297,7 +298,7 @@ async def test_disable_totp_clears_enrollment_after_valid_code() -> None:
         patch("app.api.auth.services.mfa_flow.send_mfa_changed_notification", new=AsyncMock()) as notify,
     ):
         await mfa_flow.disable_totp(
-            MfaTotpDisableRequest(code="123456"),
+            MfaTotpDisableRequest(code="123456", password=SecretStr("current-password")),
             current_user=user,
             user_manager=user_manager,
             redis=redis,
@@ -313,6 +314,7 @@ async def test_disable_totp_clears_enrollment_after_valid_code() -> None:
 async def test_disable_totp_invalid_code_keeps_enrollment() -> None:
     """An invalid code must not clear the TOTP enrollment."""
     user, user_manager = build_mfa_user(mfa_enabled=True, mfa_totp_secret="totp-secret")
+    user_manager.password_helper.verify_and_update = MagicMock(return_value=(True, None))
 
     with (
         patch("app.api.auth.services.mfa_flow.mfa_service.verify_totp_code_once", new=AsyncMock(return_value=False)),
@@ -321,7 +323,7 @@ async def test_disable_totp_invalid_code_keeps_enrollment() -> None:
         pytest.raises(MfaStepUpCodeInvalidError),
     ):
         await mfa_flow.disable_totp(
-            MfaTotpDisableRequest(code="000000"),
+            MfaTotpDisableRequest(code="000000", password=SecretStr("current-password")),
             current_user=user,
             user_manager=user_manager,
             redis=MagicMock(),
@@ -330,6 +332,35 @@ async def test_disable_totp_invalid_code_keeps_enrollment() -> None:
 
     clear.assert_not_awaited()
     assert any(call.args[1] == AuditAction.MFA_FAILURE for call in audit_event.call_args_list)
+
+
+@pytest.mark.parametrize(
+    ("password", "verified", "expected_status"),
+    [(None, True, status.HTTP_400_BAD_REQUEST), ("wrong-password", False, status.HTTP_403_FORBIDDEN)],
+    ids=["no-password", "wrong-password"],
+)
+async def test_disable_totp_needs_the_password_as_well_as_a_code(
+    password: str | None, *, verified: bool, expected_status: int
+) -> None:
+    """A stolen session plus a code must not turn MFA off: the password step-up applies, as for linking a login."""
+    user, user_manager = build_mfa_user(mfa_enabled=True, mfa_totp_secret="totp-secret", has_usable_password=True)
+    user_manager.password_helper.verify_and_update = MagicMock(return_value=(verified, None))
+
+    with (
+        patch("app.api.auth.services.mfa_flow.mfa_service.verify_totp_code_once", new=AsyncMock(return_value=True)),
+        patch("app.api.auth.services.mfa_flow.mfa_service.clear_totp", new=AsyncMock()) as clear,
+        pytest.raises(HTTPException) as exc,
+    ):
+        await mfa_flow.disable_totp(
+            MfaTotpDisableRequest(code="123456", password=SecretStr(password) if password else None),
+            current_user=user,
+            user_manager=user_manager,
+            redis=MagicMock(),
+            background_tasks=MagicMock(),
+        )
+
+    assert exc.value.status_code == expected_status
+    clear.assert_not_awaited()
 
 
 async def test_complete_mfa_challenge_accepts_recovery_code() -> None:
@@ -500,6 +531,7 @@ async def test_disable_totp_accepts_recovery_code() -> None:
     user, user_manager = build_mfa_user(
         mfa_enabled=True, mfa_totp_secret="totp-secret", mfa_recovery_codes=["hash-a", "hash-b"]
     )
+    user_manager.password_helper.verify_and_update = MagicMock(return_value=(True, None))
 
     with (
         patch("app.api.auth.services.mfa_flow.mfa_service.verify_totp_code_once", new=AsyncMock()) as verify_totp,
@@ -508,7 +540,7 @@ async def test_disable_totp_accepts_recovery_code() -> None:
         patch("app.api.auth.services.mfa_flow.send_mfa_changed_notification", new=AsyncMock()),
     ):
         await mfa_flow.disable_totp(
-            MfaTotpDisableRequest(code="ABCDE-FGHIJ"),
+            MfaTotpDisableRequest(code="ABCDE-FGHIJ", password=SecretStr("current-password")),
             current_user=user,
             user_manager=user_manager,
             redis=MagicMock(),

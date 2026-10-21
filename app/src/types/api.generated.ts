@@ -4510,11 +4510,16 @@ export interface components {
     };
     /**
      * MfaTotpDisableRequest
-     * @description Request to turn off TOTP MFA, confirmed with a current code or a recovery code.
+     * @description Request to turn off TOTP MFA, confirmed with the password and a current or recovery code.
      */
     MfaTotpDisableRequest: {
       /** Code */
       code: string;
+      /**
+       * Password
+       * @description Current account password, to reauthenticate the change. Required unless the account has no usable password (OAuth-only).
+       */
+      password?: string | null;
     };
     /**
      * MfaTotpSetupResponse

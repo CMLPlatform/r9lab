@@ -107,15 +107,31 @@ describe('useMfaSetup disable', () => {
     const { result } = await renderHook(() => useMfaSetup(onChange));
 
     await act(() => result.current.beginDisable(false));
+    await act(() => result.current.setPassword('pw'));
     expect(result.current.mode).toBe('disable');
 
     await act(async () => {
       await result.current.disable('123456');
     });
 
-    expect(mockDisable).toHaveBeenCalledWith('123456');
+    expect(mockDisable).toHaveBeenCalledWith('123456', 'pw');
     expect(onChange).toHaveBeenCalledTimes(1);
     expect(result.current.mode).toBe('idle');
+  });
+
+  it('waits for the password before turning MFA off', async () => {
+    const { result } = await renderHook(() => useMfaSetup(jest.fn()));
+
+    await act(() => result.current.beginDisable(false));
+    await act(() => result.current.setCode('123456'));
+    expect(result.current.canSubmit).toBe(false);
+
+    await act(async () => {
+      await result.current.disable();
+    });
+
+    expect(mockDisable).not.toHaveBeenCalled();
+    expect(result.current.mode).toBe('disable');
   });
 
   it('reset chains disable into a fresh enrollment', async () => {
@@ -124,11 +140,12 @@ describe('useMfaSetup disable', () => {
     const { result } = await renderHook(() => useMfaSetup(jest.fn()));
 
     await act(() => result.current.beginDisable(true));
+    await act(() => result.current.setPassword('pw'));
     await act(async () => {
       await result.current.disable('123456');
     });
 
-    expect(mockDisable).toHaveBeenCalledWith('123456');
+    expect(mockDisable).toHaveBeenCalledWith('123456', 'pw');
     expect(mockStart).toHaveBeenCalledTimes(1);
     expect(result.current.mode).toBe('enroll');
     expect(result.current.setup).toEqual(SETUP);
@@ -196,6 +213,7 @@ describe('useMfaSetup guards', () => {
 
     const { result } = await renderHook(() => useMfaSetup(jest.fn()));
     await act(() => result.current.beginDisable(false));
+    await act(() => result.current.setPassword('pw'));
     await act(() => result.current.setCode('123456'));
 
     await act(async () => {
@@ -258,10 +276,11 @@ describe('useMfaSetup guards', () => {
 
     const { result } = await renderHook(() => useMfaSetup(onChange));
     await act(() => result.current.beginDisable(false));
+    await act(() => result.current.setPassword('pw'));
 
     await act(async () => await result.current.disable('123456'));
 
-    expect(mockDisable).toHaveBeenCalledWith('123456');
+    expect(mockDisable).toHaveBeenCalledWith('123456', 'pw');
     expect(result.current.error).toBeNull();
     expect(result.current.mode).toBe('idle');
   });

@@ -126,9 +126,10 @@ describe('ProfileSecuritySection management', () => {
     );
 
     expect(await screen.findByText('Enter a current code')).toBeOnTheScreen();
+    await fireEvent.changeText(screen.getByLabelText('Current password'), 'pw');
     await fireEvent.changeText(screen.getByLabelText('Authentication code'), '654321');
 
-    await waitFor(() => expect(mockDisableTotp).toHaveBeenCalledWith('654321'));
+    await waitFor(() => expect(mockDisableTotp).toHaveBeenCalledWith('654321', 'pw'));
     expect(onEnrolled).toHaveBeenCalled();
   });
 
@@ -141,10 +142,11 @@ describe('ProfileSecuritySection management', () => {
     await screen.findByText('Enter a current code');
 
     await fireEvent.press(screen.getByText('Lost your authenticator? Use a recovery code'));
+    await fireEvent.changeText(screen.getByLabelText('Current password'), 'pw');
     await fireEvent.changeText(screen.getByLabelText('Recovery code'), 'aaaa-1111');
     await fireEvent.press(screen.getByText('Confirm'));
 
-    await waitFor(() => expect(mockDisableTotp).toHaveBeenCalledWith('aaaa-1111'));
+    await waitFor(() => expect(mockDisableTotp).toHaveBeenCalledWith('aaaa-1111', 'pw'));
   });
 
   // Both branches of the toggle carry a visible label, so it can't appear and

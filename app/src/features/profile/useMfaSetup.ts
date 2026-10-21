@@ -151,6 +151,7 @@ export function useMfaSetup(onChange: () => unknown): MfaSetupController {
   const beginDisable = useCallback((reenroll: boolean) => {
     reenrollAfter.current = reenroll;
     setCode('');
+    setPassword('');
     setRecoveryInput('');
     setUseRecoveryCode(false);
     setError(null);
@@ -163,11 +164,13 @@ export function useMfaSetup(onChange: () => unknown): MfaSetupController {
   }, []);
 
   const disable = useCallback(
-    (submitCode: string = useRecoveryCode ? recoveryInput.trim() : code) =>
-      withCurrentCode(submitCode, async (currentCode) => {
+    async (submitCode: string = useRecoveryCode ? recoveryInput.trim() : code) => {
+      // The code field auto-submits; without the password it would only spend a guess.
+      if (!password) return;
+      await withCurrentCode(submitCode, async (currentCode) => {
         // Once disableTotp succeeds MFA is off server-side; a later failure
         // must not be reported as "wrong code".
-        await disableTotp(currentCode);
+        await disableTotp(currentCode, password);
         try {
           await onChange();
           if (reenrollAfter.current) {
@@ -179,12 +182,14 @@ export function useMfaSetup(onChange: () => unknown): MfaSetupController {
           // A failed re-enroll drops back to idle; the account screen refetches later.
         }
         reset();
-      }),
+      });
+    },
     [
       beginEnroll,
       code,
       endRequest,
       onChange,
+      password,
       recoveryInput,
       reset,
       useRecoveryCode,
@@ -210,11 +215,12 @@ export function useMfaSetup(onChange: () => unknown): MfaSetupController {
     [code, endRequest, withCurrentCode],
   );
 
-  // Enroll needs a password (reauth); disable may use a recovery code instead of the
-  // 6-digit code; the other code flows need only the 6-digit code.
+  // Enroll and disable need a password (reauth); disable may use a recovery code instead
+  // of the 6-digit code; regenerate needs only the 6-digit code.
   const submitReady =
     mode === 'disable' && useRecoveryCode ? recoveryInput.trim().length >= 6 : code.length === 6;
-  const canSubmit = submitReady && !busy && (mode === 'enroll' ? password.length > 0 : true);
+  const canSubmit =
+    submitReady && !busy && (mode === 'enroll' || mode === 'disable' ? password.length > 0 : true);
 
   return {
     mode,
