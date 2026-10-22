@@ -11,6 +11,7 @@
 [![DOI](https://img.shields.io/badge/DOI-10.5281%2Fzenodo.16637742-blue.svg)](https://doi.org/10.5281/zenodo.16637742)
 [![Coverage](https://img.shields.io/codecov/c/github/CMLPlatform/r9lab)](https://codecov.io/gh/CMLPlatform/r9lab)
 [![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/CMLPlatform/r9lab/badge)](https://scorecard.dev/viewer/?uri=github.com/CMLPlatform/r9lab)
+[![OpenSSF Best Practices](https://www.bestpractices.dev/projects/14492/badge)](https://www.bestpractices.dev/projects/14492)
 [![FAIR checklist badge](https://fairsoftwarechecklist.net/badge.svg)](https://fairsoftwarechecklist.net/v0.2?f=31&a=32113&i=22322&r=123)
 [![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-2.1-4baaaa.svg)](.github/CODE_OF_CONDUCT.md)
 [![Deployed](https://img.shields.io/website?url=https%3A%2F%2Fr9lab.io&label=website)](https://r9lab.io)
