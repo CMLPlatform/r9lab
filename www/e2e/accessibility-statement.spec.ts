@@ -27,11 +27,14 @@ test('accessibility statement renders', async ({ page }) => {
   const body = page.locator('.content-page');
   await expect(body.getByText(STATUS_TERMS).first()).toBeVisible();
   await expect(body.getByText(FULLY_CONFORMANT)).toHaveCount(0);
-  // The feedback address comes from site config, so it must actually resolve.
-  await expect(page.getByRole('link', { name: /@/ }).first()).toHaveAttribute(
-    'href',
-    /^mailto:.+@.+/,
-  );
+  // The statement's address is written in the Markdown; the footer's comes from site
+  // config. They must match, or the statement points readers to a stale inbox.
+  const footerMailto = await page
+    .locator('footer')
+    .getByRole('link', { name: /@/ })
+    .getAttribute('href');
+  expect(footerMailto).toMatch(/^mailto:.+@.+/);
+  await expect(body.getByRole('link', { name: /@/ })).toHaveAttribute('href', footerMailto ?? '');
   await expectCanonicalUrl(page, '/accessibility/');
 });
 

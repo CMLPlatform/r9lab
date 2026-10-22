@@ -1,5 +1,4 @@
 ---
-import { getPublicSiteConfig } from '@/config/public.ts';
 // Shared chrome for the site's prose pages (terms, privacy, accessibility): a
 // title/meta/intro header above the page's own Markdown body. Astro passes a
 // Markdown page's frontmatter here as a single `frontmatter` prop.
@@ -17,10 +16,6 @@ interface Props {
 }
 
 const { title, description, meta, intro } = Astro.props.frontmatter;
-const { contactEmail } = getPublicSiteConfig();
-// The accessibility statement writes CONTACT_EMAIL where the address goes, so the
-// address comes from deployment config, not from page copy.
-const body = (await Astro.slots.render('default')).replaceAll('CONTACT_EMAIL', contactEmail);
 ---
 
 <Layout title={title} description={description}>
@@ -30,6 +25,6 @@ const body = (await Astro.slots.render('default')).replaceAll('CONTACT_EMAIL', c
       {meta && <p class="page-meta">{meta}</p>}
       {intro && <p>{intro}</p>}
     </section>
-    <Fragment set:html={body} />
+    <slot />
   </div>
 </Layout>

@@ -9,7 +9,7 @@ intro: This statement covers the R9lab website (r9lab.io), the documentation sit
 runs, the EU Web Accessibility Directive (EN 301 549) applies. Every fact must stay checkable in
 the repository (axe tags in e2e/helpers.ts, the contrast unit tests, the target-size rules).
 When a gap closes, move its bullet from "Known problems" to "How we check" in the same pull
-request. CONTACT_EMAIL is filled in from the site config by ContentLayout.astro. -->
+request. The address mirrors the PUBLIC_CONTACT_EMAIL default in src/config/public.ts (Markdown cannot read config, and set:html is banned); accessibility-statement.spec.ts fails if they differ. -->
 
 ## Using R9lab
 
@@ -39,7 +39,7 @@ We know of no problems in the parts we build ourselves. The ones below are in co
 
 ## Tell us about a problem
 
-Email [CONTACT_EMAIL](mailto:CONTACT_EMAIL), or open an issue on [GitHub](https://github.com/CMLPlatform/r9lab/issues). Please give the page you were on, what went wrong, and the browser and assistive technology you used. We reply within 10 working days. If you need any content in another format, ask and we will provide it.
+Email [info@r9lab.io](mailto:info@r9lab.io), or open an issue on [GitHub](https://github.com/CMLPlatform/r9lab/issues). Please give the page you were on, what went wrong, and the browser and assistive technology you used. We reply within 10 working days. If you need any content in another format, ask and we will provide it.
 
 ## How we check
 
