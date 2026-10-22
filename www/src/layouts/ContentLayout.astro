@@ -5,28 +5,22 @@ import { getPublicSiteConfig } from '@/config/public.ts';
 // Markdown page's frontmatter here as a single `frontmatter` prop.
 import Layout from '@/layouts/Layout.astro';
 
-interface Feedback {
-  title: string;
-  lead: string;
-  trail: string;
-}
-
 interface Frontmatter {
   title: string;
   description: string;
   meta?: string;
   intro?: string;
-  /** Only the accessibility statement uses this: a feedback section whose
-   * address comes from deployment config, not from page copy. */
-  feedback?: Feedback;
 }
 
 interface Props {
   frontmatter: Frontmatter;
 }
 
-const { title, description, meta, intro, feedback } = Astro.props.frontmatter;
+const { title, description, meta, intro } = Astro.props.frontmatter;
 const { contactEmail } = getPublicSiteConfig();
+// The accessibility statement writes CONTACT_EMAIL where the address goes, so the
+// address comes from deployment config, not from page copy.
+const body = (await Astro.slots.render('default')).replaceAll('CONTACT_EMAIL', contactEmail);
 ---
 
 <Layout title={title} description={description}>
@@ -36,18 +30,6 @@ const { contactEmail } = getPublicSiteConfig();
       {meta && <p class="page-meta">{meta}</p>}
       {intro && <p>{intro}</p>}
     </section>
-    <slot />
-    {
-      feedback && (
-        <>
-          <h2>{feedback.title}</h2>
-          <p>
-            {feedback.lead}{' '}
-            <a href={`mailto:${contactEmail}`}>{contactEmail}</a>.{' '}
-            {feedback.trail}
-          </p>
-        </>
-      )
-    }
+    <Fragment set:html={body} />
   </div>
 </Layout>
