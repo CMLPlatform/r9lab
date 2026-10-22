@@ -29,11 +29,12 @@ R9lab is pronounced “Relab”. Screen readers may read the name as “R nine l
 
 ## Known problems
 
-- The endpoint lists in the API reference on the documentation site scroll, but nothing in them takes keyboard focus. This is the third-party viewer we use (Scalar). Instead, read the raw OpenAPI schema, for example `/api/schemas/openapi.public.json` on the documentation site. We do not control the viewer and no fix is planned. (2.1.1 Keyboard)
-- One MCP link in that viewer is smaller than 24 by 24 CSS pixels. It is the same viewer, so we cannot change it. Instead, open the link from the surrounding text. No fix is planned. (2.5.8 Target Size)
+We know of no problems in the parts we build ourselves. The ones below are in content from other suppliers.
 
 ### Content we don’t control
 
+- The endpoint lists in the API reference on the documentation site scroll, but nothing in them takes keyboard focus. The reference uses Scalar’s viewer, which we do not control. Instead, read the raw OpenAPI schema, for example `/api/schemas/openapi.public.json` on the documentation site. No fix is planned. (2.1.1 Keyboard)
+- One MCP link in that viewer is smaller than 24 by 24 CSS pixels, so it can be hard to hit. It is the same Scalar viewer. Instead, zoom in on the page. No fix is planned. (2.5.8 Target Size)
 - Videos are embedded from YouTube. You may find they have no captions or the wrong ones, because the person who published each video decides. Instead, look for the same material in the documentation. No fix is planned. (1.2.2 Captions)
 
 ## Tell us about a problem
