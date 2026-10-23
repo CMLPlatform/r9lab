@@ -67,7 +67,6 @@
 [dependency-groups]
   # Developer tooling and local maintenance scripts
   dev = [
-    "hypothesis>=6.170.1", # Property tests for the irreversible dataset release steps
     "mjml>=0.11.1",
     "ruff>=0.12.1",
     "ty>=0.0.15",
@@ -106,6 +105,9 @@
 
     # HTTP and async testing
     "httpx[http2]>=0.27.0", # Modern async HTTP client
+
+    # Property tests for the irreversible dataset release steps
+    "hypothesis>=6.170.1",
 
     # Test data generation, shared with the CI/E2E/perf seeders
     { include-group = "seed-fixtures" },

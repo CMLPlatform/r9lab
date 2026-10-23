@@ -1,5 +1,5 @@
 version = 1
-revision = 3
+revision = 5
 requires-python = ">=3.14"
 resolution-markers = [
     "sys_platform == 'win32'",
@@ -2279,7 +2279,6 @@ dataset-release = [
     { name = "pyarrow" },
 ]
 dev = [
-    { name = "hypothesis" },
     { name = "mjml" },
     { name = "ruff" },
     { name = "ty" },
@@ -2314,6 +2313,7 @@ tests = [
     { name = "faker" },
     { name = "fakeredis", extra = ["lua"] },
     { name = "httpx", extra = ["http2"] },
+    { name = "hypothesis" },
     { name = "polyfactory" },
     { name = "psycopg", extra = ["binary"] },
     { name = "pytest" },
@@ -2362,7 +2362,6 @@ dataset-release = [
     { name = "pyarrow", specifier = ">=21.0.0" },
 ]
 dev = [
-    { name = "hypothesis", specifier = ">=6.170.1" },
     { name = "mjml", specifier = ">=0.11.1" },
     { name = "ruff", specifier = ">=0.12.1" },
     { name = "ty", specifier = ">=0.0.15" },
@@ -2393,6 +2392,7 @@ tests = [
     { name = "faker", specifier = ">=33.3.0" },
     { name = "fakeredis", extras = ["lua"], specifier = ">=2.25.0" },
     { name = "httpx", extras = ["http2"], specifier = ">=0.27.0" },
+    { name = "hypothesis", specifier = ">=6.170.1" },
     { name = "polyfactory", specifier = ">=2.15.0" },
     { name = "psycopg", extras = ["binary"], specifier = ">=3.2.9" },
     { name = "pytest", specifier = ">=8.4.1" },
