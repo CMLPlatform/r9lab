@@ -1415,6 +1415,7 @@ def test_property_selection_partitions_records_and_keeps_only_whole_consenting_t
     assert not set(kept_ids) & set(excluded_ids)
     for row in kept:
         assert has_release_consent(owners[row["owner_id"]]["terms_version"])
+        assert release._direct_exclusion(row, owners[row["owner_id"]], rules) is None
         # Parents are kept or dropped as a whole, so a kept parent rules out a dropped ancestor.
         assert row["parent_id"] is None or row["parent_id"] in kept_ids
 
@@ -1449,11 +1450,17 @@ def _rows(schema: pa.Schema) -> st.SearchStrategy[list[dict[str, Any]]]:
 def _as_written(row: dict[str, Any], schema: pa.Schema) -> dict[str, Any]:
     """Return *row* as write_parquet stores it: list cells sorted, nulls last."""
     return {
-        field.name: sorted(row[field.name], key=lambda item: (item is None, item or ""))
+        field.name: sorted(item for item in row[field.name] if item is not None) + [None] * row[field.name].count(None)
         if isinstance(row[field.name], list)
         else row[field.name]
         for field in schema
     }
+
+
+def test_as_written_sorts_falsy_and_null_list_items() -> None:
+    """Zero sorts with the other ints and nulls go last, as write_parquet stores them."""
+    schema = pa.schema([pa.field("ids", pa.list_(pa.int64()))])
+    assert _as_written({"ids": [3, None, 0, 1]}, schema) == {"ids": [0, 1, 3, None]}
 
 
 @pytest.mark.parametrize("table", RELEASE_TABLES, ids=lambda table: table.path)
@@ -1581,9 +1588,8 @@ def _write_build(root: Path, build: dict[str, Any]) -> None:
     write_checksums(root)
 
 
-# mlcroissant validation costs a fraction of a second per example; a handful is enough.
 @given(_builds())
-@settings(max_examples=5, deadline=None, suppress_health_check=[HealthCheck.too_slow])
+@_PROPERTY_SETTINGS
 def test_property_verify_passes_on_any_generated_build(build) -> None:
     """A build whose references all resolve must verify clean, whatever the data holds."""
     with tempfile.TemporaryDirectory() as tmp:
