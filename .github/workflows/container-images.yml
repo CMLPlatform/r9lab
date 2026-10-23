@@ -4,7 +4,6 @@ name: Container Images
 # Builds every runtime image with placeholder URLs, scans it with Trivy (blocking
 # unless `blocking: false`) and keeps a working-copy SBOM. ci.yml calls it; the
 # images that deploy are built by publish-images.yml.
-# Permissions come from the calling job.
 on:
   workflow_call:
     inputs:
@@ -13,6 +12,11 @@ on:
         required: false
         type: boolean
         default: true
+
+# The caller can only lower this, never raise it. Checkout needs read access;
+# the build cache and artifact upload use the runtime token, not GITHUB_TOKEN.
+permissions:
+  contents: read
 
 jobs:
   image:
