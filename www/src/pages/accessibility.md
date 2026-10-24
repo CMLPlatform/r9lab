@@ -1,46 +1,71 @@
 ---
 layout: ../layouts/ContentLayout.astro
 title: Accessibility statement
-description: What we check, what we have not checked, and how to tell us about a barrier.
-meta: "Last updated: October 11, 2026"
-intro: This statement covers the R9lab website, the documentation site, and the web app.
-feedback:
-  title: Tell us what does not work
-  lead: If you cannot use something, email
-  trail: Tell us the page you were on and what went wrong.
+description: What R9lab does for accessibility, what is known to be wrong, and how to tell us about a barrier.
+intro: This statement covers the R9lab website (r9lab.io), the documentation site (docs.r9lab.io) and the web app (app.r9lab.io). The R9lab team at Leiden University, CML, is responsible for it.
 ---
 
-<!-- The public accessibility statement, required of Leiden University public sites by the
-EU Web Accessibility Directive (EN 301 549). It claims partial conformance and names
-what is untested. Every fact must stay checkable in the repository (axe tags in
-e2e/helpers.ts, the contrast unit tests, the target-size rules). When a gap closes,
-move its line from "What we have not checked" to "What we check". -->
+<!-- The public accessibility statement. Leiden University is a public body and, for sites it
+runs, the EU Web Accessibility Directive (EN 301 549) applies. Every fact must stay checkable in
+the repository (axe tags in e2e/helpers.ts, the contrast unit tests, the target-size rules).
+When a gap closes, move its bullet from "Known problems" to "How we check" in the same pull
+request. The address mirrors the PUBLIC_CONTACT_EMAIL default in src/config/public.ts (Markdown cannot read config, and set:html is banned); accessibility-statement.spec.ts fails if they differ. -->
+
+## Using R9lab
+
+You should be able to:
+
+- Read the text in the light and the dark theme. Text colours are checked for a 4.5:1 contrast ratio.
+- Use buttons, links and icon controls of at least 24 by 24 CSS pixels, or with equivalent spacing.
+- Turn off motion: animations follow your operating system’s “reduce motion” setting.
+
+We have not yet recorded a full check by keyboard alone or with a screen reader, so we do not promise those.
 
 ## How accessible R9lab is
 
+We aim to meet WCAG 2.2, level AA. Conformance with it is **not assessed**: no one has checked R9lab against every criterion. The checks listed below cover part of them. This is a self-assessment by the people who build R9lab, not an audit. R9lab is in English only.
+
 R9lab is pronounced “Relab”. Screen readers may read the name as “R nine lab”.
 
-R9lab aims to meet WCAG 2.2, level AA. It is partially conformant: some of it meets that standard and some has not been assessed.
+## Known problems
 
-We target 2.2 because Leiden University’s public sites fall under the EU Web Accessibility Directive through EN 301 549.
+We know of no problems in the parts we build ourselves. The ones below are in content from other suppliers.
 
-This is a self-evaluation by the people who build R9lab. There has been no external audit.
+### Content we don’t control
 
-## What we check
+- The endpoint lists in the API reference on the documentation site scroll, but nothing in them takes keyboard focus. The reference uses Scalar’s viewer, which we do not control. Instead, read the raw OpenAPI schema, for example `/api/schemas/openapi.public.json` on the documentation site. No fix is planned. (2.1.1 Keyboard)
+- One MCP link in that viewer is smaller than 24 by 24 CSS pixels, so it can be hard to hit. It is the same Scalar viewer. Instead, zoom in on the page. No fix is planned. (2.5.8 Target Size)
+- Videos are embedded from YouTube. You may find they have no captions or the wrong ones, because the person who published each video decides. Instead, look for the same material in the documentation. No fix is planned. (1.2.2 Captions)
 
-Every release scans the website and documentation site fully with axe, an accessibility testing tool, against the level A and AA rules for WCAG 2.0, 2.1, and 2.2. The web app is scanned the same way on its public screens and its account screen; colour contrast is excluded from that automated check.
+## Tell us about a problem
 
-- Every text colour clears 4.5:1 against its background, in both the light and dark themes.
-- Buttons, links, and icon controls are at least 24 by 24 CSS pixels, or have equivalent spacing, per WCAG 2.2 success criterion 2.5.8.
-- Animations follow your operating system’s “reduce motion” setting.
+Email [info@r9lab.io](mailto:info@r9lab.io), or open an issue on [GitHub](https://github.com/CMLPlatform/r9lab/issues). Please give the page you were on, what went wrong, and the browser and assistive technology you used. We reply within 10 working days. If you need any content in another format, ask and we will provide it.
 
-## What we have not checked
+## How we check
 
-These are the gaps we know about.
+Automated checks use axe, a testing tool, against the level A and AA rules for WCAG 2.0, 2.1 and 2.2. They run in Chromium and cover these screens. The website and web app scans run on every pull request; the documentation scan runs locally with `just docs/test-e2e`, outside the pull request checks.
 
-- Nobody has worked through R9lab by keyboard alone, or with a screen reader.
-- Two criteria have no automated test available: 2.4.11 Focus Not Obscured and 2.4.13 Focus Appearance. We check those by hand.
-- The app is tested in a browser, so VoiceOver and TalkBack are untested.
-- R9lab is in English only.
-- Videos are embedded from YouTube. Captions are up to whoever published them.
-- The documentation site’s API reference pages use a third-party viewer with two known problems we cannot fix ourselves. Its endpoint lists scroll, but nothing in them takes keyboard focus. One of its MCP links is smaller than 24 by 24 CSS pixels.
+- Website: the landing page in both themes, the privacy, terms and accessibility pages ([landing.spec.ts](https://github.com/CMLPlatform/r9lab/blob/main/www/e2e/landing.spec.ts), [accessibility.spec.ts](https://github.com/CMLPlatform/r9lab/blob/main/www/e2e/accessibility.spec.ts)).
+- Documentation site: the home page in both themes, the getting-started guide, two architecture pages, and the page around each API reference. The API reference viewer itself is left out because it is third-party ([accessibility.spec.ts](https://github.com/CMLPlatform/r9lab/blob/main/docs/e2e/accessibility.spec.ts)).
+- Web app: the product list, a product page and the account screen. These report only serious and critical findings, and colour contrast is not part of this scan. The sign-in, onboarding and other screens are not scanned ([accessibility.spec.ts](https://github.com/CMLPlatform/r9lab/blob/main/app/e2e/accessibility.spec.ts)).
+
+Other checks: unit tests on the app’s colour pairs, and on the app a test that keyboard focus paints a visible indicator. Linting runs on every pull request.
+
+Automated tools find only part of the problems. Two criteria have no automated rule and no recorded check: 2.4.11 Focus Not Obscured, and 2.4.13 Focus Appearance outside the app. Nobody has yet worked through R9lab by keyboard alone or with a screen reader.
+
+## Tested with
+
+- Chromium with axe: website, documentation site and web app.
+- Firefox and WebKit: only the smoke tests, with no assistive technology. VoiceOver, TalkBack, NVDA and JAWS are untested.
+
+R9lab relies on HTML, CSS, JavaScript and WAI-ARIA. The web app is built with React Native for the web.
+
+## About this statement
+
+Prepared: 11 October 2026
+
+Last reviewed: 22 October 2026
+
+Next review by: 22 October 2027
+
+Method: self-assessment by the developer.
