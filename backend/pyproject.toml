@@ -123,6 +123,9 @@
     # Mocking and assertions
     "dirty-equals>=0.8.0", # Flexible assertions for dynamic data
     "pytest-mock>=3.14.0", # Better mocking with cleaner pytest integration
+
+    # Performance benchmarks (tests/benchmarks), measured by CodSpeed in CI
+    "pytest-codspeed>=5.0.3",
   ]
 mutation = [
     "mutmut>=3.8.0",

@@ -1,0 +1,50 @@
+# yaml-language-server: $schema=https://json.schemastore.org/github-workflow.json
+
+# Backend CPU benchmarks (backend/tests/benchmarks), measured by CodSpeed in its CPU
+# simulation mode so results are stable across GitHub-hosted runners. Lives outside
+# ci.yml because the CodSpeed upload needs `id-token: write` (OIDC) for this job only.
+name: CodSpeed
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  # Lets CodSpeed trigger a backtest of the performance data on main.
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions: {}
+
+jobs:
+  benchmarks:
+    name: Backend Benchmarks
+    runs-on: ubuntu-26.04
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      id-token: write # OIDC authentication with CodSpeed
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up runtime
+        uses: ./.github/actions/setup-runtime
+        with:
+          setup-python: "true"
+          uv-cache-dependency-glob: backend/uv.lock
+
+      - name: Install dependencies
+        run: just backend/install
+
+      - name: Run benchmarks
+        uses: CodSpeedHQ/action@821a40cd6c80e3cfe387caf55668287addd808da # v5.5.0
+        with:
+          mode: simulation
+          working-directory: backend
+          run: uv run pytest tests/benchmarks --codspeed
