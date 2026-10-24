@@ -81,3 +81,5 @@ minimumReleaseAgeExclude:
   - jest-expo
   # Renovate security update: zod@4.6.6
   - zod@4.6.6
+  # Renovate security update: happy-dom@21.0.4
+  - happy-dom@21.0.4
