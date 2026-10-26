@@ -5,6 +5,7 @@ import '@/styles/global.css';
 
 import SiteFooter from '@/components/SiteFooter.astro';
 import SiteHeader from '@/components/SiteHeader.astro';
+import StructuredData from '@/components/StructuredData.astro';
 import { getPublicSiteConfig } from '@/config/public.ts';
 import { siteLinks, siteMeta } from '@/copy/site-meta.ts';
 
@@ -72,17 +73,7 @@ const currentYear = new Date().getFullYear();
     {/* Resolve theme before first paint. A classic external script in <head> is
         render-blocking like an inline one and satisfies CSP script-src 'self'. */}
     <script is:inline src="/theme-init.js"></script>
-    {
-      structuredData && (
-        // A JSON-LD data block never executes, so script-src 'self' does not apply.
-        // Escaping `<` keeps a stray `</script>` in a value from ending the block.
-        <script
-          type="application/ld+json"
-          is:inline
-          set:html={JSON.stringify(structuredData).replaceAll('<', '\\u003c')}
-        />
-      )
-    }
+    {structuredData && <StructuredData data={structuredData} />}
     <title>{pageTitle}</title>
   </head>
   <body>

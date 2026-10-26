@@ -72,6 +72,8 @@ RULES = (
         "Do not render unsanitized HTML with Astro set:html; use structured components instead.",
         re.compile(r"\bset:html\s*="),
         include=("docs/src/**/*.astro", "www/src/**/*.astro"),
+        # JSON-LD needs raw text inside its <script>; the component escapes `<` itself.
+        exclude=("www/src/components/StructuredData.astro",),
     ),
     Rule(
         "dom-html-sink",
