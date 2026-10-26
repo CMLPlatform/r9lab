@@ -572,3 +572,5 @@
 9 app.core.static.xǁUploadedFileAttachmentStaticFilesǁfile_response
 5 app.core.telemetry.x__init_log_export
 8 app.core.telemetry.x_shutdown_telemetry
+2 scripts.build_dataset_release.x_select_records  # owners.get(child owner) default {} -> None: a child whose owner is missing fails consent first, so the loop never reaches it
+2 scripts.build_dataset_release.x_verify  # read_text("utf-8") -> None or "UTF-8": the same codec on a UTF-8 locale
