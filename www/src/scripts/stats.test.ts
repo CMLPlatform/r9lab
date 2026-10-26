@@ -248,6 +248,18 @@ describe('chart tooltip', () => {
     expect(escapeKey.defaultPrevented).toBe(false);
   });
 
+  // WCAG 1.4.13: a hover readout must close on Escape without moving the pointer,
+  // and a hovering user's keyboard focus is usually somewhere else on the page.
+  it('dismisses a hover tooltip on Escape while focus is outside the chart', async () => {
+    const { panel } = await buildChart();
+    panel.querySelectorAll('.stats-chart-hits rect')[5].dispatchEvent(new MouseEvent('mouseenter'));
+    expect(isVisible(panel)).toBe(true);
+
+    document.body.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+
+    expect(isVisible(panel)).toBe(false);
+  });
+
   it('shows the tooltip on hit-target mouseenter and hides it on mouseleave', async () => {
     const { panel, root } = await buildChart();
     const hits = panel.querySelectorAll('.stats-chart-hits rect');
