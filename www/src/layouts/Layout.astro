@@ -15,6 +15,8 @@ interface Props {
   noIndex?: boolean;
   /** True when this page's hero carries the mark; see SiteHeader's `heroBrand`. */
   heroBrand?: boolean;
+  /** schema.org JSON-LD for search engines. */
+  structuredData?: Record<string, unknown>;
 }
 
 const {
@@ -23,6 +25,7 @@ const {
   image = '/images/og.png',
   noIndex = false,
   heroBrand = false,
+  structuredData,
 } = Astro.props;
 
 const publicSiteConfig = getPublicSiteConfig();
@@ -69,6 +72,17 @@ const currentYear = new Date().getFullYear();
     {/* Resolve theme before first paint. A classic external script in <head> is
         render-blocking like an inline one and satisfies CSP script-src 'self'. */}
     <script is:inline src="/theme-init.js"></script>
+    {
+      structuredData && (
+        // A JSON-LD data block never executes, so script-src 'self' does not apply.
+        // Escaping `<` keeps a stray `</script>` in a value from ending the block.
+        <script
+          type="application/ld+json"
+          is:inline
+          set:html={JSON.stringify(structuredData).replaceAll('<', '\\u003c')}
+        />
+      )
+    }
     <title>{pageTitle}</title>
   </head>
   <body>

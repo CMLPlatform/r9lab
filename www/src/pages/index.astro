@@ -6,7 +6,7 @@ import MethodSteps from '@/components/MethodSteps.astro';
 import StatsPanel from '@/components/StatsPanel.astro';
 import WhyRelab from '@/components/WhyRelab.astro';
 import { getPublicSiteConfig } from '@/config/public.ts';
-import { siteMeta } from '@/copy/site-meta.ts';
+import { siteLinks, siteMeta } from '@/copy/site-meta.ts';
 import Layout from '@/layouts/Layout.astro';
 import { loadLandingData } from '@/lib/landing.ts';
 
@@ -14,12 +14,35 @@ const publicSiteConfig = getPublicSiteConfig();
 
 // Runs at build time only. Never throws; falls back to a committed fixture.
 const landing = await loadLandingData();
+
+// Mirrors codemeta.json at the repository root.
+const structuredData = {
+  '@context': 'https://schema.org',
+  '@type': 'SoftwareSourceCode',
+  name: siteMeta.name,
+  description: siteMeta.defaultDescription,
+  url: publicSiteConfig.siteUrl,
+  codeRepository: siteLinks.github,
+  identifier: 'https://doi.org/10.5281/zenodo.16637742',
+  license: 'https://spdx.org/licenses/AGPL-3.0-or-later',
+  author: {
+    '@type': 'Person',
+    '@id': 'https://orcid.org/0009-0006-6953-909X',
+    name: 'Simon van Lierde',
+  },
+  sourceOrganization: {
+    '@type': 'Organization',
+    name: 'Institute of Environmental Sciences (CML), Leiden University',
+  },
+  sameAs: [siteLinks.github, 'https://doi.org/10.5281/zenodo.16637742'],
+};
 ---
 
 <Layout
   title="R9lab | Product data and disassembly records for the circular economy"
   description={siteMeta.defaultDescription}
   heroBrand={true}
+  structuredData={structuredData}
 >
   {/* Order: hero (pitch beside one real record) -> motivation -> method ->
       stats. Citation and licence live in the footer colophon. */}
