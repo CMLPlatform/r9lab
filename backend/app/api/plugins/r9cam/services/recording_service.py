@@ -261,8 +261,9 @@ async def _resolve_existing_recording(
         )
         stream_view = _validate_stream_view(response.json())
     except APIError as exc:
-        # Only a YouTube APIError means the session is dead; an HTTPException is a
-        # transient relay failure, and clearing on it would orphan a live broadcast.
+        # Only an APIError (a malformed stream reply from the Pi) clears the session. The
+        # relay raises HTTPException for both relay failures and Pi error statuses, and
+        # clearing on it would orphan a live broadcast.
         logger.warning(
             "Cached recording session for camera %s could not be verified (%s); clearing",
             sanitize_log_value(camera_id),

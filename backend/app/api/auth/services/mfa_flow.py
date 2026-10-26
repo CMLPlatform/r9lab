@@ -111,8 +111,8 @@ async def confirm_totp_setup(
 
     setup = await mfa_service.consume_totp_setup(redis, setup_token, user_id=current_user.id)
     await mfa_service.enable_totp(redis, user_manager, user, setup.secret)
-    # Burn only after enrollment is committed, so a failed commit can be retried with
-    # the same code. The one-time setup token above already blocks replay.
+    # Burn only after enrollment is committed. The setup token is already consumed, so a
+    # failed commit needs a new setup, not a retry; that token also blocks replay.
     await mfa_service.burn_totp_counter(redis, user_id=current_user.id, counter=counter)
     codes, hashes = mfa_service.generate_recovery_codes()
     await mfa_service.set_recovery_codes(user_manager, user, hashes)

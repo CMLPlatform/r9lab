@@ -157,7 +157,8 @@ async def load_component_subtree(
     Callers are expected to have already verified ``parent_id`` exists
     (e.g. via the summary loader on the read route). Raises
     ``ComponentTreeTooLargeError`` once more than ``max_nodes`` components load,
-    counting every level, before the rest of the tree is fetched.
+    counting every level, before the rest of the tree is fetched. ``product_filter``
+    selects only the direct components; each one comes back with all its descendants.
     """
     # Components render as ComponentRead, which needs only the owner: the summary profile
     # keeps the class-level eager loads (components, images, bill of materials) from firing.
