@@ -1,8 +1,11 @@
 import { act, render, screen } from '@testing-library/react-native';
-import { createRef } from 'react';
+import { createRef, useRef } from 'react';
 import { StyleSheet } from 'react-native';
 import { Gesture } from 'react-native-gesture-handler';
 import ZoomableImage, { type ZoomableImageHandle } from '@/components/product/ZoomableImage';
+
+const Reanimated =
+  jest.requireMock<typeof import('react-native-reanimated')>('react-native-reanimated');
 
 describe('ZoomableImage', () => {
   const testUri = 'https://example.com/image.jpg';
@@ -271,11 +274,46 @@ describe('ZoomableImage', () => {
 
     const onEnd = mockTap.onEnd.mock.calls[0][0];
     await act(() => {
-      onEnd();
+      onEnd({ x: 0, y: 0 });
     });
 
     expect(onScaleChange).toHaveBeenLastCalledWith(2);
     expect(setIsZoomed).toHaveBeenLastCalledWith(true);
+  });
+
+  // WCAG 2.5.7: panning a zoomed photo is a drag, so double-tapping a spot must bring
+  // that spot into view without one. The tapped point stays under the finger.
+  it('zooms in on the double-tapped point', async () => {
+    const mockTap = {
+      numberOfTaps: jest.fn().mockReturnThis(),
+      onEnd: jest.fn().mockReturnThis(),
+    };
+    jest.spyOn(Gesture, 'Tap').mockReturnValue(mockTap as unknown as TapGestureType);
+    // The shared jest mock makes a fresh shared value on every render; keep each one
+    // across renders, as the real hook does, so the style can be read after the tap.
+    jest.spyOn(Reanimated, 'useSharedValue').mockImplementation((initial) => {
+      let value = initial;
+      return useRef({
+        get: () => value,
+        set: (next: typeof initial) => {
+          value = next;
+        },
+      }).current as unknown as ReturnType<typeof Reanimated.useSharedValue>;
+    });
+
+    await render(<ZoomableImage uri={testUri} />);
+    await act(() => {
+      screen.getByTestId('zoomable-image').props.onLayout({
+        nativeEvent: { layout: { width: 100, height: 80 } },
+      });
+    });
+    const onEnd = mockTap.onEnd.mock.calls[0][0];
+    await act(() => {
+      onEnd({ x: 10, y: 70 });
+    });
+
+    const { transform } = StyleSheet.flatten(screen.getByTestId('zoomable-image').props.style);
+    expect(transform).toEqual([{ translateX: 40 }, { translateY: -30 }, { scale: 2 }]);
   });
 
   it('resets a zoomed image when double tapped again', async () => {
@@ -305,7 +343,7 @@ describe('ZoomableImage', () => {
     await act(() => {
       pinchUpdate({ scale: 2 });
       pinchEnd();
-      onEnd();
+      onEnd({ x: 0, y: 0 });
     });
 
     expect(onScaleChange).toHaveBeenLastCalledWith(1);
