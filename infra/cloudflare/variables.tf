@@ -54,21 +54,3 @@ variable "github_reviewers" {
   type        = list(string)
   default     = []
 }
-
-# TODO(drop-by 2027-01-31): delete legacy_zone_name, local.legacy_tunnel_routes, their tests and the
-# old-zone ingress once the old zone's redirects are permanent (README: "Once the old zone").
-variable "legacy_zone_name" {
-  description = <<-EOT
-    Previous zone whose tunnel hostnames stay in the ingress while its redirect rules go
-    live. Only the ingress changes: no DNS record or custom domain is created there.
-    Defaults to the previous zone for the move, so an apply that leaves it unset keeps the
-    old hosts reachable. Empty leaves the previous zone out entirely.
-  EOT
-  type        = string
-  default     = "cml-relab.org"
-
-  validation {
-    condition     = var.legacy_zone_name != var.cloudflare_zone_name
-    error_message = "legacy_zone_name must differ from cloudflare_zone_name: export TF_VAR_cloudflare_zone_name for the new zone."
-  }
-}

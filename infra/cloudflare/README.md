@@ -166,10 +166,9 @@ Do not commit tokens, tunnel tokens, or state files.
 
 ## Moving the edge to another zone
 
-Used once, to move from `cml-relab.org` to `r9lab.io`. While the old zone's redirect rules are
-not live, its tunnel hostnames must keep reaching the tunnel. `legacy_zone_name` keeps them in the
-ingress only: no record or custom domain is created for them. It defaults to `cml-relab.org` for
-the move, so an apply that leaves it unset still serves the old hosts.
+Used once, to move from `cml-relab.org` to `r9lab.io`; kept as the record of how. During the move a
+`legacy_zone_name` variable kept the old tunnel hostnames in the ingress until the old zone
+redirected. It was removed once the redirects became permanent, so a repeat needs it back.
 
 0. Apply the zone root for the new zone first (`just cloudflare-zone-apply r9lab.io`, then with
    `YES`), so its WAF and rate-limit rulesets are live before any proxied record exists there.
@@ -252,15 +251,13 @@ the move, so an apply that leaves it unset still serves the old hosts.
       the redirect apply, while the codes are still 302/307: apply the old zone without
       `redirect_to_zone_name` (revert its committed tfvars first if it already lists the
       environment), then revert the `.env`.
-2. Once the old zone's redirects are permanent (301/308, checked with `REDIRECT_PERMANENT=1 just
-   smoke-redirects`), export `TF_VAR_legacy_zone_name=''` and apply each environment again to
-   drop the legacy ingress rules. Then change the variable's default to `""`. After that,
-   delete the variable, `local.legacy_tunnel_routes`, their tests and the old-zone ingress,
-   by 2027-01-31.
+2. Make the redirects permanent: set `redirect_permanent = true` in `cml-relab.org.tfvars`, run
+   `just cloudflare-zone-apply cml-relab.org`, check with `REDIRECT_PERMANENT=1 just
+   smoke-redirects cml-relab.org r9lab.io <env>`, then drop the legacy ingress from each
+   environment.
 
 `generate-imports.sh` defaults to the new zone. To adopt resources on the old one, export
-`TF_VAR_cloudflare_zone_name=cml-relab.org` and its zone id first, and `TF_VAR_legacy_zone_name=''`
-for the plan, since the legacy zone must differ from the zone.
+`TF_VAR_cloudflare_zone_name=cml-relab.org` and its zone id first.
 
 ## Moving a hostname onto a Worker
 
