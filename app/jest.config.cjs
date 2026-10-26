@@ -1,6 +1,11 @@
 // jest-expo exposes its preset as CommonJS.
 const expoPreset = require('jest-expo/jest-preset');
 
+// Keep React Native's XMLHttpRequest-based fetch instead of expo/fetch. msw 3 intercepts
+// XMLHttpRequest, but never sees expo/fetch, whose native module is stubbed in Jest.
+// Set here so the test workers inherit it before Expo's runtime installs fetch.
+process.env.EXPO_PUBLIC_USE_RN_FETCH = '1';
+
 // Shared base for both test projects, spread into each project below so
 // transform, module resolution, and coverage collection apply identically to
 // the unit and integration lanes.
@@ -14,7 +19,7 @@ const base = {
   testPathIgnorePatterns: ['/node_modules/', '/e2e/'],
   setupFiles: [...(expoPreset.setupFiles ?? []), '<rootDir>/config/setup.node.ts'],
   transformIgnorePatterns: [
-    'node_modules/(?!(?:.pnpm/.*?/node_modules/)?((jest-)?react-native|@react-native(-community)?|expo(nent)?|@expo(nent)?/.*|@expo-google-fonts/.*|@unimodules/.*|unimodules|sentry-expo|native-base|react-native-svg|standard-navigation|msw|@mswjs|@open-draft/.*|until-async|rettime|@rn-primitives/.*|lucide-react-native|uniwind))',
+    'node_modules/(?!(?:.pnpm/.*?/node_modules/)?((jest-)?react-native|@react-native(-community)?|expo(nent)?|@expo(nent)?/.*|@expo-google-fonts/.*|@unimodules/.*|unimodules|sentry-expo|native-base|react-native-svg|standard-navigation|msw|@msw/.*|@mswjs|cookie|tough-cookie|@open-draft/.*|until-async|rettime|@rn-primitives/.*|lucide-react-native|uniwind))',
   ],
   transform: {
     ...expoPreset.transform,
