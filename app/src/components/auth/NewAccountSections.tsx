@@ -20,7 +20,7 @@ import {
 import { openExternalUrl } from '@/services/externalLinks';
 import { useAppTheme } from '@/theme/appThemeContext';
 import { getStatusTone } from '@/theme/color';
-import { describedBy, requiredField } from '@/utils/a11y';
+import { describedBy, heading, requiredField } from '@/utils/a11y';
 import { cn } from '@/utils/cn';
 
 // Minimum-height slots so nothing moves as the error message comes and goes; they grow
@@ -230,6 +230,7 @@ function NewAccountStep({
         className="mt-20 mb-10"
         style={[styles.questionText, { color: headlineColor }]}
         maxFontSizeMultiplier={MAX_FONT_SCALE}
+        {...heading(1)}
       >
         {lines[2]}
       </Text>
