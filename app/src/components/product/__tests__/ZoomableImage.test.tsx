@@ -274,7 +274,7 @@ describe('ZoomableImage', () => {
 
     const onEnd = mockTap.onEnd.mock.calls[0][0];
     await act(() => {
-      onEnd({ x: 0, y: 0 });
+      onEnd({ x: 0, y: 0 }, true);
     });
 
     expect(onScaleChange).toHaveBeenLastCalledWith(2);
@@ -309,11 +309,38 @@ describe('ZoomableImage', () => {
     });
     const onEnd = mockTap.onEnd.mock.calls[0][0];
     await act(() => {
-      onEnd({ x: 10, y: 70 });
+      onEnd({ x: 10, y: 70 }, true);
     });
 
     const { transform } = StyleSheet.flatten(screen.getByTestId('zoomable-image').props.style);
     expect(transform).toEqual([{ translateX: 40 }, { translateY: -30 }, { scale: 2 }]);
+  });
+
+  // A double tap that fails (the finger drifted, or a pinch took over) must not zoom.
+  it('ignores a double tap that did not complete', async () => {
+    const mockTap = {
+      numberOfTaps: jest.fn().mockReturnThis(),
+      onEnd: jest.fn().mockReturnThis(),
+    };
+    jest.spyOn(Gesture, 'Tap').mockReturnValue(mockTap as unknown as TapGestureType);
+    jest.spyOn(Reanimated, 'useSharedValue').mockImplementation((initial) => {
+      let value = initial;
+      return useRef({
+        get: () => value,
+        set: (next: typeof initial) => {
+          value = next;
+        },
+      }).current as unknown as ReturnType<typeof Reanimated.useSharedValue>;
+    });
+
+    await render(<ZoomableImage uri={testUri} />);
+    const onEnd = mockTap.onEnd.mock.calls[0][0];
+    await act(() => {
+      onEnd({ x: 10, y: 70 }, false);
+    });
+
+    const { transform } = StyleSheet.flatten(screen.getByTestId('zoomable-image').props.style);
+    expect(transform).toEqual([{ translateX: 0 }, { translateY: 0 }, { scale: 1 }]);
   });
 
   it('resets a zoomed image when double tapped again', async () => {
@@ -343,7 +370,7 @@ describe('ZoomableImage', () => {
     await act(() => {
       pinchUpdate({ scale: 2 });
       pinchEnd();
-      onEnd({ x: 0, y: 0 });
+      onEnd({ x: 0, y: 0 }, true);
     });
 
     expect(onScaleChange).toHaveBeenLastCalledWith(1);
