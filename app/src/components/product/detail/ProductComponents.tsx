@@ -100,23 +100,27 @@ export default function ProductComponents({ product, editMode, canEdit }: Props)
         <WeightTotal productId={product.id} />
       ) : null}
       <LayoutAnimationConfig skipEntering skipExiting>
-        {visibleComponents.map((component) => (
-          // Always the same wrapper, so a row keeps its identity (and its expanded
-          // state) when "Show more" changes which rows are past the fold. Rows
-          // added or revealed fade in; the rest slide to make room.
-          <Animated.View
-            key={component.id}
-            entering={FADE_ENTER}
-            exiting={FADE_EXIT}
-            layout={ROW_MOVE}
-          >
-            <ComponentRow
-              component={component}
-              enabled={!editMode}
-              onDuplicate={editMode && canEdit ? () => duplicate(component) : undefined}
-            />
-          </Animated.View>
-        ))}
+        {/* A list on the web too, so a screen reader says how many rows there are. */}
+        <View role="list">
+          {visibleComponents.map((component) => (
+            // Always the same wrapper, so a row keeps its identity (and its expanded
+            // state) when "Show more" changes which rows are past the fold. Rows
+            // added or revealed fade in; the rest slide to make room.
+            <Animated.View
+              key={component.id}
+              role="listitem"
+              entering={FADE_ENTER}
+              exiting={FADE_EXIT}
+              layout={ROW_MOVE}
+            >
+              <ComponentRow
+                component={component}
+                enabled={!editMode}
+                onDuplicate={editMode && canEdit ? () => duplicate(component) : undefined}
+              />
+            </Animated.View>
+          ))}
+        </View>
       </LayoutAnimationConfig>
       {collapsible && (
         <DisclosureRow
