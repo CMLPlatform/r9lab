@@ -57,9 +57,7 @@ async def update_user_override(user_db: UserDatabaseAsync, user: User, user_upda
 
     # Merge preferences (shallow) instead of replacing the whole dict
     if user_update.preferences is not None:
-        user_update.preferences = merge_user_preferences(
-            user.preferences,
-            user_update.preferences,
-        ).model_dump(mode="json")
+        merged = merge_user_preferences(user.preferences, user_update.preferences)
+        user_update = user_update.model_copy(update={"preferences": merged.model_dump(mode="json")})
 
     return user_update

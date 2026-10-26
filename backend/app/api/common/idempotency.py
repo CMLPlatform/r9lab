@@ -24,7 +24,7 @@ from app.core.http_headers import IDEMPOTENCY_KEY_HEADER
 from app.core.redis import delete_redis_key, get_redis_value, set_redis_value, set_redis_value_nx
 
 if TYPE_CHECKING:
-    from collections.abc import AsyncIterator
+    from collections.abc import AsyncGenerator
     from uuid import UUID
 
     from pydantic import BaseModel
@@ -134,7 +134,7 @@ async def idempotent_request(
     endpoint: str,
     key: str | None,
     body: BaseModel,
-) -> AsyncIterator[IdempotentRequest]:
+) -> AsyncGenerator[IdempotentRequest]:
     """Claim *key* for *user_id*/*endpoint*/*body*, or hand back a prior result to replay.
 
     Wrap only the create-and-commit call::

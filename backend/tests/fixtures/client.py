@@ -38,7 +38,7 @@ class _NoNetworkTransport(httpx.AsyncBaseTransport):
 
 
 if TYPE_CHECKING:
-    from collections.abc import AsyncGenerator, Generator, Iterator
+    from collections.abc import AsyncGenerator, Generator
     from pathlib import Path
 
     from redis.asyncio import Redis
@@ -63,7 +63,7 @@ def override_authenticated_user(
     verified: bool = True,
     optional: bool = True,
     superuser: bool = False,
-) -> Iterator[None]:
+) -> Generator[None]:
     """Temporarily bind auth dependencies to a specific test user.
 
     The fastapi-users routers (`/users/me` and friends) build their own `current_user`

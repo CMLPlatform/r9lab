@@ -4,7 +4,7 @@ from typing import ClassVar  # Runtime import required by fastapi-filters get_ty
 
 from fastapi_filters import FilterField, FilterOperator
 
-from app.api.common.crud.filtering import BaseFilterSet, filter_field
+from app.api.common.crud.filtering import BaseFilterSet, SearchColumns, filter_field
 from app.api.file_storage.models import File, Image, MediaParentType, Video
 
 _TEXT_OPERATORS = [FilterOperator.ilike]
@@ -15,7 +15,7 @@ class FileFilter(BaseFilterSet):
 
     filter_model: ClassVar[type[File]] = File
     sortable_fields: ClassVar[tuple[str, ...]] = ("filename", "created_at")
-    search_columns: ClassVar[tuple[object, ...]] = (File.filename, File.description)
+    search_columns: ClassVar[SearchColumns] = (File.filename, File.description)
 
     filename: FilterField[str] = filter_field(_TEXT_OPERATORS)
     description: FilterField[str] = filter_field(_TEXT_OPERATORS)
@@ -27,7 +27,7 @@ class ImageFilter(BaseFilterSet):
 
     filter_model: ClassVar[type[Image]] = Image
     sortable_fields: ClassVar[tuple[str, ...]] = ("filename", "created_at")
-    search_columns: ClassVar[tuple[object, ...]] = (Image.filename, Image.description)
+    search_columns: ClassVar[SearchColumns] = (Image.filename, Image.description)
 
     filename: FilterField[str] = filter_field(_TEXT_OPERATORS)
     description: FilterField[str] = filter_field(_TEXT_OPERATORS)
@@ -39,7 +39,7 @@ class VideoFilter(BaseFilterSet):
 
     filter_model: ClassVar[type[Video]] = Video
     sortable_fields: ClassVar[tuple[str, ...]] = ("url", "created_at")
-    search_columns: ClassVar[tuple[object, ...]] = (Video.url, Video.description)
+    search_columns: ClassVar[SearchColumns] = (Video.url, Video.description)
 
     url: FilterField[str] = filter_field(_TEXT_OPERATORS)
     description: FilterField[str] = filter_field(_TEXT_OPERATORS)

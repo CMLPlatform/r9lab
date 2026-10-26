@@ -14,7 +14,7 @@ from app.api.common.rate_limiting import limiter, rate_limit_bucket_key
 from app.core.config.core import settings as core_settings
 
 if TYPE_CHECKING:
-    from collections.abc import AsyncIterator
+    from collections.abc import AsyncGenerator
     from uuid import UUID
 
 LOGIN_RATE_LIMIT = f"{auth_settings.rate_limit_login_attempts_per_minute}/minute"
@@ -51,7 +51,7 @@ API_EXPORT_RATE_LIMIT_DEPENDENCY = limiter.dependency(
 
 
 @asynccontextmanager
-async def account_guess_budget(user_id: UUID) -> AsyncIterator[None]:
+async def account_guess_budget(user_id: UUID) -> AsyncGenerator[None]:
     """Charge a password, TOTP or recovery-code check to the account's guess budget.
 
     One per-account budget, sized like the failed-login budget per minute and capped at

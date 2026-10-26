@@ -21,7 +21,7 @@ from app.core.runtime import AppServices
 from app.main import DOMAIN_LIFECYCLES
 
 if TYPE_CHECKING:
-    from collections.abc import Iterator
+    from collections.abc import Generator
     from pathlib import Path
 
 
@@ -90,7 +90,7 @@ class RuntimeMocks:
 
 
 @contextmanager
-def patched_runtime_services(config: RuntimePatchConfig | None = None) -> Iterator[RuntimeMocks]:
+def patched_runtime_services(config: RuntimePatchConfig | None = None) -> Generator[RuntimeMocks]:
     """Patch external runtime services and expose the mocks used by a test."""
     config = RuntimePatchConfig() if config is None else config
     mock_redis = MagicMock() if config.redis is None else config.redis

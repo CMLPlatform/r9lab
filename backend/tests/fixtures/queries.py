@@ -7,11 +7,11 @@ from sqlalchemy import event
 from sqlalchemy.engine import Engine
 
 if TYPE_CHECKING:
-    from collections.abc import Iterator
+    from collections.abc import Generator
 
 
 @contextmanager
-def count_queries() -> Iterator[list[str]]:
+def count_queries() -> Generator[list[str]]:
     """Collect the SQL of every statement any engine runs inside the block.
 
     Assert on ``len()`` at two input sizes (say n and 10n): an equal count shows the
