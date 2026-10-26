@@ -21,6 +21,15 @@ if TYPE_CHECKING:
     from httpx_oauth.oauth2 import OAuth2Token
 
 
+def session_returning(account: object) -> MagicMock:
+    """Return a mock DB session whose OAuth-account lookup finds ``account`` (or None)."""
+    session = MagicMock()
+    session.execute = AsyncMock(
+        return_value=MagicMock(scalars=MagicMock(return_value=MagicMock(first=MagicMock(return_value=account))))
+    )
+    return session
+
+
 def make_base_config() -> OAuthFlowConfig:
     """Create a base OAuth flow config with a mock client."""
     mock_client = MagicMock()

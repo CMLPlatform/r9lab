@@ -3622,13 +3622,27 @@
       },
       "MfaTotpDisableRequest": {
         "additionalProperties": false,
-        "description": "Request to turn off TOTP MFA, confirmed with a current code or a recovery code.",
+        "description": "Request to turn off TOTP MFA, confirmed with the password and a current or recovery code.",
         "properties": {
           "code": {
             "maxLength": 20,
             "minLength": 6,
             "title": "Code",
             "type": "string"
+          },
+          "password": {
+            "anyOf": [
+              {
+                "format": "password",
+                "type": "string",
+                "writeOnly": true
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Current account password, to reauthenticate the change. Required unless the account has no usable password (OAuth-only).",
+            "title": "Password"
           }
         },
         "required": [
@@ -6907,6 +6921,9 @@
               }
             },
             "description": "Validation Error"
+          },
+          "429": {
+            "description": "Too many attempts for this address or account. See the Retry-After header."
           }
         },
         "summary": "Login with email and password for bearer-token clients",
@@ -7280,7 +7297,7 @@
     },
     "/v1/auth/mfa/totp/disable": {
       "post": {
-        "description": "Turn off TOTP MFA after confirming a current code.",
+        "description": "Turn off TOTP MFA after confirming the password and a current or recovery code.\n\nAccounts without a usable password (signed up with Google or GitHub) send only the code.",
         "operationId": "disable_totp_v1_auth_mfa_totp_disable_post",
         "requestBody": {
           "content": {
@@ -7296,6 +7313,15 @@
           "204": {
             "description": "Successful Response"
           },
+          "400": {
+            "description": "The password or the code is missing."
+          },
+          "401": {
+            "description": "MFA is not on for this account."
+          },
+          "403": {
+            "description": "The password or the code is wrong."
+          },
           "422": {
             "content": {
               "application/json": {
@@ -7305,6 +7331,9 @@
               }
             },
             "description": "Validation Error"
+          },
+          "429": {
+            "description": "Too many guesses for this account. See the Retry-After header."
           }
         },
         "security": [
@@ -7571,6 +7600,9 @@
               }
             },
             "description": "Validation Error"
+          },
+          "429": {
+            "description": "Too many attempts for this address or account. See the Retry-After header."
           }
         },
         "summary": "Login with email and password for browser sessions",
@@ -11830,6 +11862,9 @@
               }
             },
             "description": "Successful Response"
+          },
+          "400": {
+            "description": "redirect_uri is not allowed, or was sent to the bearer (token) route, which returns its tokens in the callback body."
           }
         },
         "summary": "Oauth:Github.Cookie.Authorize",
@@ -11955,6 +11990,9 @@
               }
             },
             "description": "Successful Response"
+          },
+          "400": {
+            "description": "redirect_uri is not allowed, or was sent to the bearer (token) route, which returns its tokens in the callback body."
           }
         },
         "summary": "Oauth:Github.Bearer.Authorize",
@@ -12420,6 +12458,9 @@
               }
             },
             "description": "Successful Response"
+          },
+          "400": {
+            "description": "redirect_uri is not allowed, or was sent to the bearer (token) route, which returns its tokens in the callback body."
           }
         },
         "summary": "Oauth:Google.Cookie.Authorize",
@@ -12545,6 +12586,9 @@
               }
             },
             "description": "Successful Response"
+          },
+          "400": {
+            "description": "redirect_uri is not allowed, or was sent to the bearer (token) route, which returns its tokens in the callback body."
           }
         },
         "summary": "Oauth:Google.Bearer.Authorize",

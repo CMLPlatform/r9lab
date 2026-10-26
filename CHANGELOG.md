@@ -61,6 +61,33 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - `just stack <env> compose ...` keeps quoted arguments that contain spaces whole.
 - The rename guard also refuses while the old `relab_<env>` project still runs or its uploads
   volume has not been copied.
+- Signing in with Google, or linking Google again, no longer disconnects YouTube streaming.
+- Usernames sign in whatever their letter case.
+- A failed social-login link now shows its error in the app instead of failing silently. The
+  link callback redirects to the app with `status=error` and the error in the URL fragment, as
+  the login callback does, instead of returning JSON.
+- Forgot password, reset password and email verification each have their own hourly limit, so
+  retrying a reset after a weak-password rejection no longer hits "too many requests".
+
+### Security
+
+- Turning off two-step verification now needs your password as well as a code. API clients
+  send it as `password` to `POST /v1/auth/mfa/totp/disable`; a request with only `code` gets a
+  400. Accounts without a password (Google or GitHub sign-in only) still send only the code.
+- Logging out with a stolen, already-rotated refresh token no longer hides the theft, and a
+  device holding a token revoked by "log out everywhere" no longer logs you out again.
+- Parallel password guesses from many addresses can no longer get past the per-account login
+  limit, and password login for an account stops after 100 wrong passwords in a row, as NIST
+  SP 800-63B asks; a correct password starts the count again. A browser or app that has signed
+  in to the account before keeps its own count in a device cookie (for bearer clients also in
+  an `X-Device-Token` header), so someone guessing at your address cannot lock you out of your
+  own devices. Login answers 429 with `Retry-After` when a
+  limit is reached.
+- The common-password and disposable-email checks keep working when their Redis cache is
+  flushed or evicted, and the common-password list refills its cache on the next check.
+- `GET /v1/oauth/{provider}/token/authorize` refuses a `redirect_uri`: the bearer flow returns
+  its tokens in the response body, which a redirect would drop. Use the `session` transport to
+  redirect.
 
 ## [0.5.0] - 2026-10-13
 

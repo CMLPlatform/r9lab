@@ -45,9 +45,13 @@ def rate_limit_bucket_key(prefix: str, value: str) -> str:
     return f"{prefix}:{keyed_digest(prefix, value)}"
 
 
-def request_ip_rate_limit_key(request: Request) -> str:
-    """Return a privacy-preserving rate-limit key for the request client IP."""
-    return rate_limit_bucket_key("client:ip", get_client_ip(request))
+def request_ip_rate_limit_key(request: Request, scope: str | None = None) -> str:
+    """Return a privacy-preserving rate-limit key for the request client IP.
+
+    Without a scope, every route limited at the same rate shares one per-IP bucket (the
+    login and MFA routes rely on that). A scope gives a route a bucket of its own.
+    """
+    return rate_limit_bucket_key(f"client:ip:{scope}" if scope else "client:ip", get_client_ip(request))
 
 
 type RequestUserId = Callable[[Request], Awaitable[str | None]]
@@ -61,11 +65,8 @@ class Limiter:
         self.enabled = enabled
         self._limiter = FixedWindowRateLimiter(storage_from_string(storage_uri)) if enabled else None
 
-    async def ahit_key(self, rate_string: str, key: str, *, consume: bool = True) -> None:
+    async def ahit_key(self, rate_string: str, key: str) -> None:
         """Enforce *rate_string* for an explicit bucket key.
-
-        ``consume=False`` only checks the bucket, for budgets that count some outcomes,
-        such as failed logins: check before the work, hit only when the outcome counts.
 
         The ``limits`` Redis backend is synchronous (its async backend would pull in a
         second Redis client, coredis), so its calls run in a worker thread: a direct call
@@ -82,7 +83,7 @@ class Limiter:
 
         parsed = parse(rate_string)
         try:
-            allowed = await anyio.to_thread.run_sync(self._limiter.hit if consume else self._limiter.test, parsed, key)
+            allowed = await anyio.to_thread.run_sync(self._limiter.hit, parsed, key)
         except RedisError, ConnectionError, TimeoutError, OSError:
             logger.warning("Rate limiter backend unavailable; failing open for limit %s", rate_string)
             return
@@ -96,11 +97,40 @@ class Limiter:
                 raise RateLimitExceededError from None
             raise RateLimitExceededError(retry_after=max(1, math.ceil(stats.reset_time - time.time())))
 
+    async def arefund_key(self, rate_string: str, key: str) -> None:
+        """Give back one hit that ``ahit_key`` charged, for budgets that keep only some outcomes.
+
+        Charging up front and refunding the outcomes that do not count keeps parallel
+        requests from all passing the check before any is charged. A refund that lands
+        after its window expired credits the next window with one extra attempt.
+        """
+        if not self.enabled or self._limiter is None:
+            return
+
+        parsed = parse(rate_string)
+        storage = self._limiter.storage
+        try:
+            await anyio.to_thread.run_sync(lambda: storage.incr(parsed.key_for(key), parsed.get_expiry(), amount=-1))
+        except RedisError, ConnectionError, TimeoutError, OSError:
+            logger.warning("Rate limiter backend unavailable; refund skipped for limit %s", rate_string)
+
+    async def areset_key(self, rate_string: str, key: str) -> None:
+        """Empty one bucket, for budgets that count failures in a row and restart on a success."""
+        if not self.enabled or self._limiter is None:
+            return
+
+        parsed = parse(rate_string)
+        try:
+            await anyio.to_thread.run_sync(self._limiter.clear, parsed, key)
+        except RedisError, ConnectionError, TimeoutError, OSError:
+            logger.warning("Rate limiter backend unavailable; reset skipped for limit %s", rate_string)
+
     def dependency(
         self,
         rate_string: str,
         *,
         name: str = "rate_limit",
+        scope: str | None = None,
         per_user: tuple[str, RequestUserId] | None = None,
         signed_in_ip_ceiling: str | None = None,
     ) -> DependsParam:
@@ -113,13 +143,15 @@ class Limiter:
 
         ``signed_in_ip_ceiling`` also charges signed-in requests to a per-IP bucket of their
         own, so a stack of throwaway accounts on one IP cannot multiply the per-user budget.
+
+        ``scope`` keeps the per-IP bucket apart from other routes at the same rate.
         """
 
         async def dependency(request: Request) -> None:
             if not self.enabled:
                 return
             if per_user is None:
-                await self.ahit_key(rate_string, request_ip_rate_limit_key(request))
+                await self.ahit_key(rate_string, request_ip_rate_limit_key(request, scope))
                 return
             user_rate_string, user_id_of = per_user
             # No user id, or a Redis error resolving one, keeps the IP bucket, so rotating junk
@@ -129,7 +161,7 @@ class Limiter:
             except RedisError, ConnectionError, TimeoutError, OSError:
                 user_id = None
             if user_id is None:
-                await self.ahit_key(rate_string, request_ip_rate_limit_key(request))
+                await self.ahit_key(rate_string, request_ip_rate_limit_key(request, scope))
             else:
                 await self.ahit_key(user_rate_string, rate_limit_bucket_key("client:user", user_id))
                 if signed_in_ip_ceiling is not None:

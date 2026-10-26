@@ -40,6 +40,10 @@ just migrate-create "description"  # create a migration from the current model c
 just fix           # lint autofix + format
 ```
 
+After `uv add --group <g>`, run `uv sync --all-groups --frozen` (or `just install`). `uv add` syncs only
+the default groups plus `<g>`, which removes alembic and the test dependencies from `.venv`. The
+error then reads `cannot import name 'command' from 'alembic'`.
+
 The disposable-email validator starts from the committed list in
 [app/api/auth/resources/disposable_email_domains.txt](app/api/auth/resources/disposable_email_domains.txt),
 so startup works offline. The background refresh or the command above updates it.

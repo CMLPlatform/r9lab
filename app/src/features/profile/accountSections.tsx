@@ -106,6 +106,7 @@ export const ACCOUNT_SECTIONS: AccountSectionDef[] = [
           />
           <ProfileSecuritySection
             mfaEnabled={profile.profile.mfaEnabled}
+            hasUsablePassword={profile.profile.hasUsablePassword}
             onEnrolled={onRefetchAuth}
           />
           <ProfileLinkedAccountsSection

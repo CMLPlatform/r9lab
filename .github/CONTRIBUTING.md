@@ -110,6 +110,9 @@ Three layers, each check in one of them: hooks fix and guard staged files, `just
 Scorecard, dependency review). Do not add a verification to the hooks; add it to the recipe CI
 already runs.
 
+Every new Dockerfile needs a sibling `<name>.dockerignore` and an entry in the `docker-lint` specs
+in the root `justfile`.
+
 Keep new settings in the smallest surface that needs them. If a change adds or renames env vars,
 update the examples, validation rules, and affected docs in the same PR.
 
@@ -135,6 +138,8 @@ ladder, cheapest first:
 | `just test`    | every test suite except the browser and Docker ones                         |
 | `just ci`      | the everyday local gate: `pre-commit` hooks, `check`, `test-ci`, `policy-check` |
 | `just ci-full` | everything GitHub Actions runs: `ci` plus `audit`, `cloudflare-check`, `docker-smoke`, `test-e2e` |
+
+`just stack`, `backup`, `restore`, and `deploy` change live hosts. Do not run them to test a change.
 
 Pull requests also run `cloudflare-check`, the www E2E suite, and `docker-smoke`, so a green
 `just ci` can still leave a red PR check. `just ci-full` covers them; it takes tens of minutes and
@@ -181,6 +186,15 @@ Docker smoke already proves the images build, and base-image advisories move fas
 rebuild. After a merge a finding is reported without failing the run; the weekly and manual runs
 fail on it. Run `just security` before marking a pull request ready to get that signal early.
 
+To reproduce a failed `Container Security` job, build the image with the repo root as context
+(for example `docker build -f app/Dockerfile .`) and scan it with the flags from
+`.github/workflows/container-images.yml`: `trivy image --ignore-unfixed --severity HIGH,CRITICAL
+--ignorefile .github/trivyignore.yaml <image>`. Rebuild with `--no-cache` first: a cached layer
+keeps an old package set and shows alpine findings that are already fixed. A finding in an OS
+package with a fix means the pinned base digest is stale, so bump it. A Go CVE in the `caddy`
+binary has no upstream rebuild: add it to `.github/trivyignore.yaml` with an expiry and a note on
+why it is not reachable.
+
 ## Backend Development
 
 [backend/README.md](../backend/README.md) has the backend quick start, the migration commands, and
@@ -206,6 +220,23 @@ just test-ci
 - Update `backend/tests/integration/api/test_openapi_endpoints.py` when changing examples
 
 After backend API changes, run `just app/codegen` to regenerate the app's TypeScript types.
+
+### Generated Files
+
+Do not hand-edit generated files. Change the source and regenerate. `just check` fails on a stale
+copy.
+
+| Output | Regenerate with |
+| ------ | --------------- |
+| `app/src/types/openapi.json` | `just backend/openapi` |
+| `app/src/types/api.generated.ts` | `just app/codegen` |
+| `docs/src/components/datamodel/*.generated.mdx` | `just backend/datamodel` |
+| `backend/app/templates/emails/build/` (edit the MJML in `src/`) | `just backend/compile-email` |
+| brand outputs: `*.generated.*` under `app/src/theme/`, `www/src/styles/`, `docs/src/styles/`, and `www/src/copy/research.generated.ts` | `just assets-sync` |
+| `www/src/styles/brand.css`, `docs/src/styles/brand.css` (copies of `assets/brand.css`; a hand edit passes the subrepo checks but fails root `just check-root`) | `just assets-sync` |
+
+`app/src/components/base/ui/` is vendored react-native-reusables output: regenerate it with the RNR
+CLI, do not refactor it by hand.
 
 ### Schema Changes
 
@@ -268,7 +299,8 @@ If you are new to the repo, start with the architecture docs before making struc
 
 1. Push your branch.
 
-1. Open a pull request.
+1. Open a pull request. `main` takes changes only through pull requests. To catch up, merge
+   `origin/main` into your branch and push the branch.
 
 1. Address review feedback.
 

@@ -182,3 +182,13 @@ async def test_init_email_checker_seeds_a_deployed_environment(
     assert checker._initialized
     assert await redis_client.exists(REDIS_DISPOSABLE_DOMAINS_KEY)
     await checker.close()
+
+
+async def test_email_checker_falls_back_to_memory_when_the_redis_set_is_gone(redis_client: Redis) -> None:
+    """An evicted or flushed set answers every lookup with "not disposable", so it must not be trusted."""
+    checker = EmailChecker(redis_client)
+    await checker._store_domains({"mailinator.com"})
+    checker._initialized = True
+    await redis_client.delete(REDIS_DISPOSABLE_DOMAINS_KEY)
+
+    assert await checker.is_disposable("user@mailinator.com")

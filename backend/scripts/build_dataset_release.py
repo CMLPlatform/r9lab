@@ -360,7 +360,7 @@ class ReleaseMetadata:
     # data was exported from comes from --software-doi; the concept record lists them.
     software_concept_doi: str = "10.5281/zenodo.16637742"
     # Must equal the title in the repository's CITATION.cff (tests/test_project_identity.py).
-    software_title: str = "R9lab - Data Collection Platform"
+    software_title: str = "R9lab: an open research platform for product disassembly data"
     software_version_doi: str = "10.5281/zenodo.XXXXXXX"
     affiliation: str = "Institute of Environmental Sciences (CML), Leiden University"
     licence_name: str = "CC BY 4.0"
@@ -685,11 +685,14 @@ def _parquet_value(value: object, arrow_type: pa.DataType) -> object:
     """Coerce a database value into something the declared Arrow type accepts.
 
     A list or set bound for a list column stays a list, sorted so the file is stable between
-    builds. Only a text column gets JSON: pyarrow would split a JSON string bound for a list
-    column into one-character items.
+    builds. Nulls sort last, since None does not compare with a value and the build would
+    stop on it. Only a text column gets JSON: pyarrow would split a JSON string bound for a
+    list column into one-character items.
     """
     if pa.types.is_list(arrow_type) and isinstance(value, list | tuple | set | frozenset):
-        return sorted(_parquet_value(item, arrow_type.value_type) for item in value)  # ty: ignore[invalid-argument-type]
+        items = [_parquet_value(item, arrow_type.value_type) for item in value]
+        nulls = [item for item in items if item is None]
+        return sorted(item for item in items if item is not None) + nulls  # ty: ignore[invalid-argument-type]
     if isinstance(value, dict | list):
         return json.dumps(value, sort_keys=True)
     if isinstance(value, Enum):

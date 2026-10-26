@@ -30,7 +30,7 @@
   },
   "dependencies": {
     "@expo/metro-runtime": "~57.0.9",
-    "@hookform/resolvers": "^5.2.2",
+    "@hookform/resolvers": "^6.0.0",
     "@react-native-async-storage/async-storage": "3.1.1",
     "@rn-primitives/separator": "^1.5.2",
     "@rn-primitives/switch": "^1.5.2",
@@ -103,6 +103,7 @@
     "eslint-plugin-react-hooks": "7.1.1",
     "eslint-plugin-react-native-a11y": "3.5.1",
     "eslint-plugin-react-refresh": "0.5.7",
+    "fast-check": "4.10.2",
     "jest": "30.5.2",
     "jest-expo": "~57.0.4",
     "jest-junit": "17.0.0",

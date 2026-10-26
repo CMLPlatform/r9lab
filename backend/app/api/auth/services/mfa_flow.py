@@ -152,15 +152,21 @@ async def disable_totp(
     redis: Redis,
     background_tasks: BackgroundTasks,
 ) -> None:
-    """Turn off TOTP MFA after confirming ownership with a current code or a recovery code."""
+    """Turn off TOTP MFA after the password step-up and a current code or a recovery code.
+
+    Recovery codes are accepted so a lost authenticator can still turn MFA off.
+    """
     user = await _load_enrolled_mfa_user(user_manager, current_user)
-    # Recovery codes are accepted so a lost authenticator can still turn MFA off.
-    # clear_totp wipes the codes, so the matched one needs no persisting.
-    async with account_guess_budget(user.id):
-        verified = await _verify_challenge_code(payload.code, user=user, redis=redis)
-    if verified is None:
-        audit_mfa_failure(user, reason="invalid_totp_disable_code")
-        raise MfaStepUpCodeInvalidError
+    # clear_totp wipes the codes, so a matched recovery code needs no burning.
+    await require_step_up(
+        user,
+        user_manager=user_manager,
+        redis=redis,
+        current_password=payload.password.get_secret_value() if payload.password else None,
+        mfa_code=payload.code,
+        action="turn off two-step verification",
+        burn_recovery_code=False,
+    )
     await mfa_service.clear_totp(user_manager, user)
     audit_event(user.id, AuditAction.MFA_SUCCESS, "mfa", user.id, context=AuditContext(flow="totp_disable"))
     await send_mfa_changed_notification(user.email, user.username, enabled=False, background_tasks=background_tasks)

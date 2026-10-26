@@ -12,6 +12,9 @@ import { authRuntime } from './authRuntime';
 export const ACCESS_TOKEN_KEY = 'access_token';
 export const REFRESH_TOKEN_KEY = 'refresh_token';
 export const WEB_SESSION_FLAG = 'web_has_session';
+// Kept across sign-out on purpose: it marks this phone as one that has signed in before, so
+// strangers guessing at the account cannot spend its login budget (backend device_cookie.py).
+export const DEVICE_TOKEN_KEY = 'device_token';
 
 export async function loadStoredAccessToken() {
   if (isWeb()) return;
@@ -31,6 +34,16 @@ export async function loadStoredRefreshToken() {
 export async function persistStoredRefreshToken(nextToken: string) {
   if (isWeb()) return;
   await setSecureItem(REFRESH_TOKEN_KEY, nextToken);
+}
+
+export async function loadStoredDeviceToken() {
+  if (isWeb()) return;
+  return getSecureItem(DEVICE_TOKEN_KEY);
+}
+
+export async function persistStoredDeviceToken(nextToken: string) {
+  if (isWeb()) return;
+  await setSecureItem(DEVICE_TOKEN_KEY, nextToken);
 }
 
 export async function clearStoredAccessToken() {

@@ -22,7 +22,7 @@ async def test_authenticate_first_factor_audits_bad_credentials() -> None:
         patch("app.api.auth.services.login_flow.audit_event") as audit_event,
         pytest.raises(HTTPException) as exc_info,
     ):
-        await login_flow.authenticate_first_factor(credentials, user_manager, "bearer")
+        await login_flow.authenticate_first_factor(credentials, user_manager, "bearer", response=Response())
 
     assert exc_info.value.status_code == status.HTTP_400_BAD_REQUEST
     assert exc_info.value.detail == ErrorCode.LOGIN_BAD_CREDENTIALS

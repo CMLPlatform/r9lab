@@ -189,10 +189,11 @@ export async function regenerateRecoveryCodes(code: string): Promise<string[]> {
   return mapRecoveryCodes(await response.json());
 }
 
-export async function disableTotp(code: string): Promise<void> {
+/** `password` is left out for an account without one (signed up with Google or GitHub). */
+export async function disableTotp(code: string, password?: string): Promise<void> {
   await postMfaJson(
     '/auth/mfa/totp/disable',
-    { code },
+    password === undefined ? { code } : { code, password },
     'Unable to turn off two-step verification.',
     { signedIn: true },
   );

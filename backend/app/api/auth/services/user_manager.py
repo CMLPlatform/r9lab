@@ -17,9 +17,10 @@ from app.api.auth.config import settings as auth_settings
 from app.api.auth.crud import update_user_override
 from app.api.auth.models import OAuthAccount, User
 from app.api.auth.runtime_dependencies import get_common_password_checker
-from app.api.auth.schemas import UserCreateBase, UserUpdate
+from app.api.auth.schemas import UserCreateBase, UserUpdate, normalize_username
 from app.api.auth.services.account_security import revoke_user_refresh_tokens, sensitive_update_fields
 from app.api.auth.services.auth_backends import build_authentication_backends
+from app.api.auth.services.device_cookie import device_id_for
 from app.api.auth.services.email.service import (
     email_log_token,
     send_email_changed_notification,
@@ -33,7 +34,7 @@ from app.api.auth.services.email.service import (
 from app.api.auth.services.email_identity import account_rate_limit_identity
 from app.api.auth.services.password_hashing import build_password_helper
 from app.api.auth.services.password_validator import validate_password as _validate_password
-from app.api.auth.services.rate_limiter import LOGIN_RATE_LIMIT
+from app.api.auth.services.rate_limiter import ACCOUNT_GUESS_DAILY_RATE_LIMIT, LOGIN_RATE_LIMIT
 from app.api.auth.services.user_database import UserDatabaseAsync
 from app.api.auth.terms import CURRENT_TERMS_VERSION
 from app.api.common.audit import AuditAction, audit_event
@@ -62,9 +63,16 @@ RESET_PASSWORD_TOKEN_AUDIENCE = "fastapi-users:reset"  # noqa: S105 # This value
 VERIFICATION_TOKEN_AUDIENCE = "fastapi-users:verify"  # noqa: S105 # This value is not a secret.
 
 
-def _login_identifier_rate_limit_key(identifier: str) -> str:
-    """Return a privacy-preserving login rate-limit key for a submitted identifier."""
-    return rate_limit_bucket_key("auth:login:account", account_rate_limit_identity(identifier))
+def _login_identifier_rate_limit_keys(identifier: str, device_token: str | None = None) -> tuple[str, str]:
+    """Return the privacy-preserving per-minute and per-day login rate-limit keys.
+
+    A client with a valid device cookie for this account gets buckets of its own, so
+    guesses from unknown clients cannot lock the owner out of their devices.
+    """
+    device_id = device_id_for(device_token, identifier)
+    prefix = "auth:login:device" if device_id else "auth:login:account"
+    value = device_id or account_rate_limit_identity(identifier)
+    return rate_limit_bucket_key(prefix, value), rate_limit_bucket_key(f"{prefix}:day", value)
 
 
 class UserManager(UUIDIDMixin, BaseUserManager[User, UUID4]):
@@ -92,8 +100,13 @@ class UserManager(UUIDIDMixin, BaseUserManager[User, UUID4]):
     verification_token_lifetime_seconds = VERIFICATION_TOKEN_TTL
     verification_token_audience = VERIFICATION_TOKEN_AUDIENCE
 
-    async def authenticate(self, credentials: OAuth2PasswordRequestForm) -> User | None:
-        """Support login with either email or username."""
+    async def authenticate(
+        self, credentials: OAuth2PasswordRequestForm, *, device_token: str | None = None
+    ) -> User | None:
+        """Support login with either email or username.
+
+        ``device_token`` is the request's device cookie, if any (``device_cookie``).
+        """
         is_email = False
         try:
             TypeAdapter(EmailStr).validate_python(credentials.username)
@@ -103,22 +116,29 @@ class UserManager(UUIDIDMixin, BaseUserManager[User, UUID4]):
             pass
 
         if not is_email:
-            statement = select(User).where(User.username == credentials.username)
+            # Stored usernames are normalized the same way (UsernameValue).
+            statement = select(User).where(User.username == normalize_username(credentials.username))
             result = await self.user_db.session.execute(statement)
             db_user = result.scalars().unique().one_or_none()
             if db_user:
                 credentials.username = db_user.email
 
         # Bucket on the resolved email so a username and its email share one budget. Only
-        # failures count: a room signing in to one shared account must not lock it, while a
-        # password guesser still gets LOGIN_RATE_LIMIT tries per account however many IPs
-        # it uses. NOTE: check-then-hit is not atomic, so a burst of concurrent guesses can
-        # overshoot by the number in flight; the per-IP login limit bounds that per source.
-        account_key = _login_identifier_rate_limit_key(credentials.username)
-        await limiter.ahit_key(LOGIN_RATE_LIMIT, account_key, consume=False)
+        # failures stay charged: a room signing in one after another to a shared account must
+        # not lock it, while a password guesser gets LOGIN_RATE_LIMIT tries a minute and
+        # ACCOUNT_GUESS_DAILY_RATE_LIMIT failures in a row per account (NIST SP 800-63B),
+        # however many IPs it uses. Every attempt is charged before the hash, so parallel
+        # guesses cannot all pass the check before any is charged; a success refunds its
+        # minute slot and clears the failure streak. Logins that overlap a hash in flight
+        # still share the minute budget.
+        minute_key, day_key = _login_identifier_rate_limit_keys(credentials.username, device_token)
+        # Minute first: a guess the minute limit refuses does not spend the daily ceiling.
+        await limiter.ahit_key(LOGIN_RATE_LIMIT, minute_key)
+        await limiter.ahit_key(ACCOUNT_GUESS_DAILY_RATE_LIMIT, day_key)
         user = await self._authenticate_offloading_hashes(credentials)
-        if user is None:
-            await limiter.ahit_key(LOGIN_RATE_LIMIT, account_key)
+        if user is not None:
+            await limiter.arefund_key(LOGIN_RATE_LIMIT, minute_key)
+            await limiter.areset_key(ACCOUNT_GUESS_DAILY_RATE_LIMIT, day_key)
         return user
 
     async def _authenticate_offloading_hashes(self, credentials: OAuth2PasswordRequestForm) -> User | None:
@@ -171,19 +191,23 @@ class UserManager(UUIDIDMixin, BaseUserManager[User, UUID4]):
 
         An unverified account has not proven it owns its email, so the provider identity
         must not join it; the login is refused as an existing-user conflict instead.
-        A provider already linked to the account still logs in as before.
+        A provider already linked to the account still logs in as before, and its stored
+        tokens are left alone: sign-in only proves identity, while the stored Google tokens
+        may be the YouTube grant, which a sign-in token (base scopes, no refresh token) would
+        replace. Only the association flows write tokens.
         """
+        try:
+            return await self.get_by_oauth_account(oauth_name, account_id)
+        except exceptions.UserNotExists:
+            pass
         if associate_by_email:
             try:
-                await self.get_by_oauth_account(oauth_name, account_id)
+                existing_user = await self.get_by_email(account_email)
             except exceptions.UserNotExists:
-                try:
-                    existing_user = await self.get_by_email(account_email)
-                except exceptions.UserNotExists:
-                    pass
-                else:
-                    if not existing_user.is_verified:
-                        raise exceptions.UserAlreadyExists from None
+                pass
+            else:
+                if not existing_user.is_verified:
+                    raise exceptions.UserAlreadyExists from None
         return await super().oauth_callback(
             oauth_name,
             access_token,

@@ -83,6 +83,12 @@ async def confirm_totp_setup(
     "/totp/disable",
     status_code=status.HTTP_204_NO_CONTENT,
     response_model=None,
+    responses={
+        400: {"description": "The password or the code is missing."},
+        401: {"description": "MFA is not on for this account."},
+        403: {"description": "The password or the code is wrong."},
+        429: {"description": "Too many guesses for this account. See the Retry-After header."},
+    },
 )
 async def disable_totp(
     payload: MfaTotpDisableRequest,
@@ -91,7 +97,10 @@ async def disable_totp(
     user_manager: UserManagerDep,
     redis: RedisDep,
 ) -> None:
-    """Turn off TOTP MFA after confirming a current code."""
+    """Turn off TOTP MFA after confirming the password and a current or recovery code.
+
+    Accounts without a usable password (signed up with Google or GitHub) send only the code.
+    """
     await mfa_flow.disable_totp(
         payload,
         current_user=current_user,

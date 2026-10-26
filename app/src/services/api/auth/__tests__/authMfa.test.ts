@@ -217,7 +217,7 @@ describe('MFA request authentication', () => {
     await startTotpSetup();
     await confirmTotpSetup('t', '123456', 'pw');
     await regenerateRecoveryCodes('123456');
-    await disableTotp('123456');
+    await disableTotp('123456', 'pw');
     await completeMfaChallenge('mfa-token', '123456');
 
     expect(signedInCalls).toEqual([
@@ -349,14 +349,14 @@ describe('TOTP enrolment', () => {
     expect(JSON.parse(body)).toEqual({ code: '654321' });
   });
 
-  it('disables TOTP behind a fresh code', async () => {
+  it('disables TOTP behind the password and a fresh code', async () => {
     fetchWithTimeout.mockResolvedValueOnce({ ok: true, status: 204 } as never);
 
-    await expect(disableTotp('654321')).resolves.toBeUndefined();
+    await expect(disableTotp('654321', 'pw')).resolves.toBeUndefined();
     const { path, body, method } = lastRequest();
     expect(method).toBe('POST');
     expect(path).toBe('/v1/auth/mfa/totp/disable');
-    expect(JSON.parse(body)).toEqual({ code: '654321' });
+    expect(JSON.parse(body)).toEqual({ code: '654321', password: 'pw' });
   });
 
   it('does not swallow a rejected disable', async () => {
@@ -366,7 +366,7 @@ describe('TOTP enrolment', () => {
       json: async () => ({ detail: 'Invalid code.' }),
     } as never);
 
-    await expect(disableTotp('000000')).rejects.toThrow('Invalid code.');
+    await expect(disableTotp('000000', 'pw')).rejects.toThrow('Invalid code.');
   });
 });
 

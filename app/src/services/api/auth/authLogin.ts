@@ -7,10 +7,17 @@ import { getAuthLoginPath } from './authHelpers';
 import { type MfaLoginPending, parseMfaPendingPayload } from './authMfa';
 import { clearCachedAuthState, persistAccessToken, persistRefreshToken } from './authRefresh';
 import { authRuntime } from './authRuntime';
-import { loadStoredAccessToken, loadStoredRefreshToken, markWebSessionActive } from './authSession';
+import {
+  loadStoredAccessToken,
+  loadStoredDeviceToken,
+  loadStoredRefreshToken,
+  markWebSessionActive,
+  persistStoredDeviceToken,
+} from './authSession';
 import { getUser } from './authUser';
 
 const UNREACHABLE_SERVER_MESSAGE = 'Unable to reach server. Please try again later.';
+const DEVICE_TOKEN_HEADER = 'X-Device-Token';
 
 export type LoginResult =
   | { status: 'authenticated' }
@@ -21,9 +28,12 @@ export async function login(username: string, password: string): Promise<LoginRe
   const web = isWeb();
   const authPath = getAuthLoginPath(web);
   const url = new URL(API_URL + authPath);
-  const headers = {
+  // Native fetch may not keep the device cookie, so the app carries the token itself.
+  const deviceToken = web ? undefined : await loadStoredDeviceToken().catch(() => undefined);
+  const headers: Record<string, string> = {
     'Content-Type': 'application/x-www-form-urlencoded',
     Accept: 'application/json',
+    ...(deviceToken ? { [DEVICE_TOKEN_HEADER]: deviceToken } : {}),
   };
   const body = new URLSearchParams({ username, password }).toString();
 
@@ -34,6 +44,13 @@ export async function login(username: string, password: string): Promise<LoginRe
       body,
       credentials: 'include',
     });
+
+    const issuedDeviceToken = response.headers?.get(DEVICE_TOKEN_HEADER);
+    if (!web && issuedDeviceToken) {
+      await persistStoredDeviceToken(issuedDeviceToken).catch((err: unknown) => {
+        logError('[Device Token Store Error]:', err);
+      });
+    }
 
     if (response.status === 204) {
       if (web) {
