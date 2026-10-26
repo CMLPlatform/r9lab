@@ -47,6 +47,19 @@
   },
   "overrides": [
     {
+      // The sites already ship light-dark() and mask-image without fallbacks,
+      // so the target is Baseline newly available, not widely. An override,
+      // so a subrepo's `"suspicious": "on"` does not reset the option.
+      "includes": ["**/*.css"],
+      "linter": {
+        "rules": {
+          "suspicious": {
+            "useBaseline": { "level": "warn", "options": { "available": "newly" } }
+          }
+        }
+      }
+    },
+    {
       // Standalone .svg assets are decorative icon sources; the component that
       // renders one supplies the accessible name (title/aria-label), not the file.
       "includes": ["**/*.svg"],
@@ -60,8 +73,13 @@
       "linter": {
         "rules": {
           "complexity": { "noExcessiveLinesPerFunction": "off" },
-          "performance": { "useTopLevelRegex": "off" },
-          "security": { "noSecrets": "off" }
+          // Playwright's locator.innerText() returns the text as rendered, which is
+          // what the tests assert on; textContent would include hidden nodes.
+          "performance": { "useDomNodeTextContent": "off", "useTopLevelRegex": "off" },
+          "security": { "noSecrets": "off" },
+          // Assertions often live in shared expect* helpers, and `if (!result.success)`
+          // guards narrow types after the outcome is already asserted.
+          "suspicious": { "noConditionalExpect": "off", "useExpect": "off" }
         }
       }
     }
@@ -85,5 +103,15 @@
     "formatter": {
       "trailingCommas": "none"
     }
+  },
+  // rumdl (prek hook) owns Markdown style, and YAML is hand-formatted or
+  // tool-written (pnpm-lock.yaml, prek's frozen revs). Keep Biome to code.
+  "markdown": {
+    "formatter": { "enabled": false },
+    "linter": { "enabled": false }
+  },
+  "yaml": {
+    "formatter": { "enabled": false },
+    "linter": { "enabled": false }
   }
 }

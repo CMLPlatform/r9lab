@@ -37,6 +37,7 @@ export function lazyWithRetry<T extends ComponentType<any>>(
       }),
     );
   let current = make();
+  // biome-ignore lint/correctness/noComponentHookFactories: called once at module scope, like React.lazy.
   return function LazyWithRetry(props: ComponentProps<T>) {
     return createElement(current, props);
   };

@@ -9,6 +9,7 @@
   --radius-card: var(--r9lab-radius-card);
 }
 
+/* biome-ignore lint/suspicious/noDuplicateSelectors: :root blocks are grouped by topic, each with its own comment. */
 :root {
   /* Starlight's 54rem default put prose at ~106 characters a line. Wide mermaid
      diagrams break out of the column instead (.r9lab-mermaid, components.css). */
@@ -47,6 +48,7 @@ body {
    @layer starlight.base and these styles are unlayered, so a plain :root
    outranks it whatever the source order. color-scheme is set per data-theme in
    brand.css. */
+/* biome-ignore lint/suspicious/noDuplicateSelectors: :root blocks are grouped by topic, each with its own comment. */
 :root {
   --sl-color-bg: var(--r9lab-brand-background);
   /* Chrome one faint step off the page ground, in the blue family; Starlight's
