@@ -76,6 +76,11 @@ test-ci:
     mkdir -p reports/coverage
     {{ pytest }} tests/unit tests/integration -n auto --dist=loadgroup --durations=20 --junitxml=reports/junit.xml --cov --cov-report=xml --cov-report=term
 
+# Run the CPU benchmarks once as plain tests. CodSpeed counts their instructions in CI;
+# `just bench --codspeed` times them locally instead.
+bench *args:
+    {{ pytest }} tests/benchmarks {{ args }}
+
 # Mutation testing against one throwaway Postgres; the full app takes hours. Narrow
 # it with mutant globs: `just mutation 'app.core.images*'`. Survivors never fail the
 # run; it lists functions with more survivors than tests/mutation-baseline.txt.
