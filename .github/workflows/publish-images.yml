@@ -115,19 +115,19 @@ jobs:
 
       # Same policy as the scan in ci.yml; suppressions live in .github/trivyignore.yaml.
       - name: Scan image with Trivy
-        uses: docker://aquasec/trivy:0.75.0@sha256:af6acf9a6b85dfe389a1941505c0ce9efef52a4719635e1a962f022a3d855daa
+        uses: docker://aquasec/trivy:0.76.1@sha256:790fd66d1697395d8693d1acaa1ea702406a20f109b6fc7bac8db623eca6c06c
         with:
           args: >-
             image --exit-code 1 --ignore-unfixed --severity HIGH,CRITICAL --ignorefile .github/trivyignore.yaml ${{ steps.meta.outputs.ref }}
 
       - name: Generate SPDX SBOM
-        uses: docker://aquasec/trivy:0.75.0@sha256:af6acf9a6b85dfe389a1941505c0ce9efef52a4719635e1a962f022a3d855daa
+        uses: docker://aquasec/trivy:0.76.1@sha256:790fd66d1697395d8693d1acaa1ea702406a20f109b6fc7bac8db623eca6c06c
         with:
           args: >-
             image --format spdx-json --output ${{ steps.meta.outputs.sbom }} ${{ steps.meta.outputs.ref }}
 
       - name: Log in to GHCR
-        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+        uses: docker/login-action@81c6f93d4bc991e510b342a00b419b3bb4efc5c6 # v4.7.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
