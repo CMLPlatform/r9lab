@@ -44,7 +44,7 @@ resource "cloudflare_zero_trust_tunnel_cloudflared_config" "relab" {
   config = {
     ingress = concat(
       [
-        for route in concat(values(local.tunnel_routes), values(local.legacy_tunnel_routes)) : {
+        for route in values(local.tunnel_routes) : {
           hostname = route.hostname
           service  = route.origin
         }
