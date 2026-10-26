@@ -25,7 +25,7 @@ if (typeof window !== 'undefined' && typeof window.history?.replaceState !== 'fu
 // ── MSW server lifecycle ───────────────────────────────────────────────────
 // Open a fresh interceptor layer per test so worker processes don't keep
 // long-lived network hooks around until suite teardown.
-beforeEach(() => server.listen({ onUnhandledRequest: 'error' }));
+beforeEach(() => server.listen({ onUnhandledFrame: 'error' }));
 afterEach(() => {
   server.resetHandlers();
   server.close();
@@ -34,7 +34,6 @@ afterEach(() => {
 afterAll(() => {
   jest.clearAllTimers();
   jest.useRealTimers();
-  server.close();
 });
 
 // The native connectivity listener the app root registers on onlineManager.
