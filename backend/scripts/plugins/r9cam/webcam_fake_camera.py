@@ -31,7 +31,7 @@ from datetime import UTC, datetime
 from typing import TYPE_CHECKING, ClassVar
 
 if TYPE_CHECKING:
-    from collections.abc import AsyncIterator
+    from collections.abc import AsyncGenerator
 
 import cv2
 import uvicorn
@@ -108,7 +108,7 @@ def _create_http_app() -> FastAPI:
     captured_images: dict[str, bytes] = {}
 
     @asynccontextmanager
-    async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
+    async def lifespan(_app: FastAPI) -> AsyncGenerator[None]:
         grab_frame()  # fail fast if no webcam
         logger.info("Webcam ready")
         yield

@@ -12,7 +12,7 @@ from scripts.users import create_user as create_user_script
 SCRIPT_TEST_PASSWORD = "correct-horse-battery-staple-v42"
 
 if TYPE_CHECKING:
-    from collections.abc import AsyncIterator
+    from collections.abc import AsyncGenerator
 
     from pytest_mock import MockerFixture
 
@@ -31,7 +31,7 @@ async def test_create_user_forwards_optional_name(
     session = object()
 
     @asynccontextmanager
-    async def fake_session_context() -> AsyncIterator[object]:
+    async def fake_session_context() -> AsyncGenerator[object]:
         yield session
 
     create_user_mock = mocker.AsyncMock()
@@ -55,7 +55,7 @@ async def test_create_user_creates_expected_user(
     session = object()
 
     @asynccontextmanager
-    async def fake_session_context() -> AsyncIterator[object]:
+    async def fake_session_context() -> AsyncGenerator[object]:
         yield session
 
     create_user_mock = mocker.AsyncMock()
@@ -85,7 +85,7 @@ async def test_create_user_swallows_duplicate_user_errors(
     """Existing users should not make the function crash."""
 
     @asynccontextmanager
-    async def fake_session_context() -> AsyncIterator[object]:
+    async def fake_session_context() -> AsyncGenerator[object]:
         yield object()
 
     warning_mock = mocker.patch.object(create_user_script.logger, "warning")

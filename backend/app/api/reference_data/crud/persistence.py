@@ -1,6 +1,6 @@
 """Shared helpers for reference-data CRUD operations."""
 
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING
 
 from app.api.common.crud.persistence import delete_and_commit, update_and_commit
 from app.api.common.crud.query import require_locked_model, require_model
@@ -24,7 +24,7 @@ async def create_reference_model[ModelT: Taxonomy | Material | ProductType](
     exclude_fields: set[str],
 ) -> ModelT:
     """Create and flush a reference-data model from a request payload."""
-    model_data = cast("dict[str, Any]", payload.model_dump(exclude=exclude_fields))
+    model_data = payload.model_dump(exclude=exclude_fields)
     db_model = model(**model_data)
     db.add(db_model)
     await db.flush()

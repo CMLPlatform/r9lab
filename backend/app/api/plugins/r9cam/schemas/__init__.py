@@ -1,6 +1,6 @@
 """Pydantic models used to validate CRUD operations for the Raspberry Pi Camera plugin."""
 
-from typing import TYPE_CHECKING, Any, ClassVar, Self
+from typing import TYPE_CHECKING, ClassVar, Self
 
 from fastapi_filters import FilterField, FilterOperator
 from pydantic import UUID4, BaseModel, ConfigDict, Field
@@ -8,7 +8,7 @@ from r9cam_models import DevicePublicKeyJWK
 from r9cam_models.telemetry import TelemetrySnapshot
 
 from app.api.auth.models import User
-from app.api.common.crud.filtering import BaseFilterSet, RelationshipFilterJoin, filter_field
+from app.api.common.crud.filtering import BaseFilterSet, RelationshipFilterJoin, SearchColumns, filter_field
 from app.api.common.schemas.base import BaseCreateSchema, BaseUpdateSchema, UUIDIdReadSchemaWithTimeStamp
 from app.api.common.validation import MultilineUserText, SingleLineUserText
 from app.api.plugins.r9cam.examples import CAMERA_CREATE_EXAMPLES, CAMERA_READ_EXAMPLES, CAMERA_UPDATE_EXAMPLES
@@ -33,7 +33,7 @@ class CameraFilter(BaseFilterSet):
 
     filter_model: ClassVar[type[Camera]] = Camera
     sortable_fields: ClassVar[tuple[str, ...]] = ("name", "created_at")
-    search_columns: ClassVar[tuple[Any, ...]] = (Camera.name, Camera.description)
+    search_columns: ClassVar[SearchColumns] = (Camera.name, Camera.description)
 
     name: FilterField[str] = filter_field([FilterOperator.ilike])
     description: FilterField[str] = filter_field([FilterOperator.ilike])

@@ -39,7 +39,9 @@
     "httpx[http2]>=0.28.1",
     "r9cam-models>=0.6.0,<0.7",
     # Configuration, validation, and utility types
-    "pydantic>=2.12",
+    # 2.14.0 and 2.14.1 cannot pickle parametrized generics such as the cached Page
+    # responses (pydantic#13991); drop the exclusion once 2.14.2 ships the fix.
+    "pydantic>=2.12,!=2.14.0,!=2.14.1",
     "pydantic-settings>=2.10.1",
     "python-json-logger>=4.1.0",
     # Media and image processing
@@ -193,6 +195,11 @@ mutation = [
 # Its own section keeps ty from adopting the repo-root pyproject.toml as the project,
 # which checks only the root scripts and tests.
 [tool.ty]
+
+[tool.ty.rules]
+# Pydantic schemas narrow a parent's field type on purpose (id: int | UUID becomes
+# PositiveInt), and Pydantic checks the narrower type at runtime.
+invalid-mutable-override = "ignore"
 
 [tool.ruff]
   fix            = true

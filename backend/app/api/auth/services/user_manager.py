@@ -208,7 +208,9 @@ class UserManager(UUIDIDMixin, BaseUserManager[User, UUID4]):
             else:
                 if not existing_user.is_verified:
                     raise exceptions.UserAlreadyExists from None
-        return await super().oauth_callback(
+        # User.oauth_accounts is a SQLAlchemy Mapped[list[...]], which ty does not match to
+        # fastapi-users' plain list protocol attribute.
+        return await super().oauth_callback(  # ty: ignore[invalid-argument-type]
             oauth_name,
             access_token,
             account_id,

@@ -49,13 +49,16 @@ class RelationshipFilterJoin:
     isouter: bool = False
 
 
+SearchColumns = tuple[ColumnElement[Any] | InstrumentedAttribute[Any], ...]
+
+
 class BaseFilterSet(FilterSet):
     """Base FilterSet with R9lab-specific search, sorting, and join metadata."""
 
     filter_model: ClassVar[type[Any]]
     relationship_joins: ClassVar[tuple[RelationshipFilterJoin, ...]] = ()
     sortable_fields: ClassVar[tuple[str, ...]] = ()
-    search_columns: ClassVar[tuple[ColumnElement[Any] | InstrumentedAttribute[Any], ...]] = ()
+    search_columns: ClassVar[SearchColumns] = ()
 
     _search: str | None = None
     _sorting: SortingValues | None = None

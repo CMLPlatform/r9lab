@@ -13,7 +13,7 @@ from app.core.config.core import settings
 from app.core.config.models import Environment
 
 if TYPE_CHECKING:
-    from collections.abc import Iterator
+    from collections.abc import Generator
 
 ### Logging formats
 LOG_FORMAT = "%(asctime)s | %(levelname)-8s | req=%(request_id)s | %(name)s:%(funcName)s:%(lineno)d - %(message)s"
@@ -48,7 +48,7 @@ def _add_request_context(record: logging.LogRecord) -> None:
 
 
 @contextmanager
-def log_context(**values: object) -> Iterator[None]:
+def log_context(**values: object) -> Generator[None]:
     """Temporarily add request-scoped values to stdlib log records."""
     context = {**(_LOG_CONTEXT.get() or {}), **values}
     token = _LOG_CONTEXT.set(context)
