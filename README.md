@@ -14,6 +14,7 @@
 [![OpenSSF Best Practices](https://www.bestpractices.dev/projects/14492/badge)](https://www.bestpractices.dev/projects/14492)
 [![FAIR checklist badge](https://fairsoftwarechecklist.net/badge.svg)](https://fairsoftwarechecklist.net/v0.2?f=31&a=32113&i=22322&r=123)
 [![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-2.1-4baaaa.svg)](.github/CODE_OF_CONDUCT.md)
+[![CodSpeed](https://img.shields.io/endpoint?url=https://codspeed.io/badge.json)](https://app.codspeed.io/CMLPlatform/r9lab?utm_source=badge)
 [![Deployed](https://img.shields.io/website?url=https%3A%2F%2Fr9lab.io&label=website)](https://r9lab.io)
 
 R9lab is an open-source research platform for collecting and publicly viewing data on the
