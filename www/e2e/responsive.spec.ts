@@ -20,4 +20,14 @@ test.describe('Responsive layout', () => {
     await page.goto('/privacy');
     await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
   });
+
+  // WCAG 1.4.10: at 320 CSS px (1280 px at 400% zoom) no page may scroll sideways.
+  for (const path of ['/', '/privacy', '/terms', '/accessibility', '/accessibility-assessment']) {
+    test(`${path} does not scroll sideways at 320 px`, async ({ page }) => {
+      await page.setViewportSize({ width: 320, height: 800 });
+      await page.goto(path);
+      const scrollWidth = await page.evaluate(() => document.documentElement.scrollWidth);
+      expect(scrollWidth).toBeLessThanOrEqual(320);
+    });
+  }
 });

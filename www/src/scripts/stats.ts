@@ -249,14 +249,22 @@ function buildTooltip(
   const { crosshairLayer, crosshair, tip, tipGroup, dot, tipLabel, tipValue } = buildTipNodes();
 
   let active: number | null = null;
+  // On the document: a hovering user's focus is rarely on the chart (WCAG 1.4.13).
+  const onEscape = (event: KeyboardEvent): void => {
+    if (event.key === 'Escape') {
+      show(null);
+    }
+  };
   const show = (i: number | null): void => {
     active = i;
     for (const layer of [tip, crosshairLayer]) {
       layer.classList.toggle('is-visible', i !== null);
     }
     if (i === null) {
+      document.removeEventListener('keydown', onEscape);
       return;
     }
+    document.addEventListener('keydown', onEscape);
     const value = series[i][measure.key];
     const cx = x(i);
     const cy = y(value);

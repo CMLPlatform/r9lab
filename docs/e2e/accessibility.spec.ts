@@ -78,6 +78,18 @@ test.describe('Accessibility', () => {
   }
 });
 
+// WCAG 4.1.3: Pagefind writes the result count into a plain paragraph, so a screen
+// reader hears nothing after typing. src/scripts/search-status.ts mirrors it into a
+// status region that exists before the search runs.
+test('search announces its result count in a status region', async ({ page }) => {
+  await page.goto('/');
+  await page.keyboard.press('Control+k');
+  await page.locator('dialog[open] input').fill('camera');
+  await expect(page.locator('dialog[open]').getByRole('status')).toHaveText(/results? for camera/, {
+    timeout: 10_000,
+  });
+});
+
 test.describe('Viewport overflow', () => {
   const VIEWPORT_WIDTH = 375;
   const TOLERANCE_PX = 1;

@@ -85,6 +85,12 @@ describe('NewAccount screen', () => {
     expect(screen.getByText('Who are you?')).toBeOnTheScreen();
   });
 
+  // WCAG 1.3.1: each step's question is drawn as a headline, so it is the screen's heading.
+  it("marks the step's question as the screen heading", async () => {
+    await renderWithProviders(<NewAccount />, { withDialog: true });
+    expect(screen.getByRole('header', { name: 'Who are you?' }).props['aria-level']).toBe(1);
+  });
+
   it('shows validation error for invalid username', async () => {
     await renderWithProviders(<NewAccount />, { withDialog: true });
     await act(async () => {

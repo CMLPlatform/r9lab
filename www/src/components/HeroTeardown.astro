@@ -95,14 +95,15 @@ const assembly = teardown?.photos[0] ?? null;
                   : `Teardown №${teardown.id} · live record`}
               </p>
               {/* Citation link to the source record, in the caption register, not a
-                  button. No target="_blank": the app is the same product. */}
+                  button. No target="_blank": the app is the same product. The name starts
+                  with the visible text, so a speech user can say what they see (2.5.3). */}
               <a
                 class="blueprint-open"
                 href={recordHref}
                 aria-label={
                   fromFixture
-                    ? 'Browse teardown records in the app'
-                    : `Open teardown ${teardown.id}, ${teardown.name}, in the app`
+                    ? 'Browse the records in the app'
+                    : `Open this record, teardown ${teardown.id}, ${teardown.name}, in the app`
                 }
               >
                 {fromFixture ? 'Browse the records' : 'Open this record'}
