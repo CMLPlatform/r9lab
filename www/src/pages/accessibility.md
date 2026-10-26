@@ -7,7 +7,8 @@ intro: This statement covers the R9lab website (r9lab.io), the documentation sit
 
 <!-- The public accessibility statement. Leiden University is a public body and, for sites it
 runs, the EU Web Accessibility Directive (EN 301 549) applies. Every fact must stay checkable in
-the repository (axe tags in e2e/helpers.ts, the contrast unit tests, the target-size rules).
+the repository (axe tags in e2e/helpers.ts, the contrast unit tests, the target-size rules, the
+criterion-by-criterion table in accessibility-assessment.md).
 When a gap closes, move its bullet from "Known problems" to "How we check" in the same pull
 request. The address mirrors the PUBLIC_CONTACT_EMAIL default in src/config/public.ts (Markdown cannot read config, and set:html is banned); accessibility-statement.spec.ts fails if they differ. -->
 
@@ -18,12 +19,14 @@ You should be able to:
 - Read the text in the light and the dark theme. Text colours are checked for a 4.5:1 contrast ratio.
 - Use buttons, links and icon controls of at least 24 by 24 CSS pixels, or with equivalent spacing.
 - Turn off motion: animations follow your operating system’s “reduce motion” setting.
+- Zoom to 400%, or use a screen 320 CSS pixels wide, without scrolling sideways to read the text.
+- Use the pages and app screens we build with a keyboard alone, with a visible focus outline.
 
-We have not yet recorded a full check by keyboard alone or with a screen reader, so we do not promise those.
+Nobody has yet used R9lab with a screen reader, so we do not promise that.
 
 ## How accessible R9lab is
 
-We aim to meet WCAG 2.2, level AA. Conformance with it is **not assessed**: no one has checked R9lab against every criterion. The checks listed below cover part of them. This is a self-assessment by the people who build R9lab, not an audit. R9lab is in English only.
+We aim to meet WCAG 2.2, level AA. R9lab is **partially conformant** with it. The parts we build passed every level A and AA criterion we could check on a sample of pages, as the [WCAG 2.2 self-assessment](/accessibility-assessment) shows criterion by criterion. Content from other suppliers fails 1.2.2 Captions, 2.1.1 Keyboard and 2.5.8 Target Size (see below), and four checks in the app and the documentation site still need a screen reader. This is a self-assessment by the people who build R9lab, not an audit. R9lab is in English only.
 
 R9lab is pronounced “Relab”. Screen readers may read the name as “R nine lab”.
 
@@ -51,11 +54,12 @@ Automated checks use axe, a testing tool, against the level A and AA rules for W
 
 Other checks: unit tests on the app’s colour pairs, and on the app a test that keyboard focus paints a visible indicator. Linting runs on every pull request.
 
-Automated tools find only part of the problems. Two criteria have no automated rule and no recorded check: 2.4.11 Focus Not Obscured, and 2.4.13 Focus Appearance outside the app. Nobody has yet worked through R9lab by keyboard alone or with a screen reader.
+Automated tools find only part of the problems. So the developer also checked every level A and AA criterion on a sample of all three sites: keyboard-only walks, zoom and narrow screens, text spacing, contrast in both themes, target sizes, reduced motion and the app’s form errors. The [WCAG 2.2 self-assessment](/accessibility-assessment) lists the sample, the method and each result. Nobody has yet worked through R9lab with a screen reader.
 
 ## Tested with
 
 - Chromium with axe: website, documentation site and web app.
+- Chromium, by keyboard and with scripted checks of zoom, spacing, contrast and target size: the self-assessment’s sample, 26 October 2026.
 - Firefox and WebKit: only the smoke tests, with no assistive technology. VoiceOver, TalkBack, NVDA and JAWS are untested.
 
 R9lab relies on HTML, CSS, JavaScript and WAI-ARIA. The web app is built with React Native for the web.
@@ -64,8 +68,10 @@ R9lab relies on HTML, CSS, JavaScript and WAI-ARIA. The web app is built with Re
 
 Prepared: 11 October 2026
 
-Last reviewed: 22 October 2026
+Last reviewed: 26 October 2026
 
-Next review by: 22 October 2027
+Last tested: 26 October 2026
+
+Next review by: 26 October 2027
 
 Method: self-assessment by the developer.

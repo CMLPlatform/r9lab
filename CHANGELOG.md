@@ -31,6 +31,12 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   `git remote set-url origin https://github.com/CMLPlatform/r9lab.git`. GitHub redirects the old
   name for now.
 
+### Added
+
+- An accessibility statement at `/accessibility` on the website, backed by a WCAG 2.2
+  self-assessment of the website, the documentation site and the web app at
+  `/accessibility-assessment`.
+
 ### Changed
 
 - The landing page and docs Workers are named `r9lab-www-<env>` and `r9lab-docs-<env>`.
@@ -68,6 +74,11 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   the login callback does, instead of returning JSON.
 - Forgot password, reset password and email verification each have their own hourly limit, so
   retrying a reset after a weak-password rejection no longer hits "too many requests".
+- Accessibility fixes from the WCAG 2.2 self-assessment: the accessibility statement no longer
+  scrolls sideways on a 320 px screen, the landing page's record link is named after its visible
+  text, the activity chart's readout closes on Escape while the pointer rests on it, the app's
+  username screen has its own heading and offers autofill, and each sign-up step's question is a
+  heading.
 
 ### Security
 

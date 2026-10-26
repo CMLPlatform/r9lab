@@ -22,7 +22,7 @@ test.describe('Responsive layout', () => {
   });
 
   // WCAG 1.4.10: at 320 CSS px (1280 px at 400% zoom) no page may scroll sideways.
-  for (const path of ['/', '/privacy', '/terms', '/accessibility']) {
+  for (const path of ['/', '/privacy', '/terms', '/accessibility', '/accessibility-assessment']) {
     test(`${path} does not scroll sideways at 320 px`, async ({ page }) => {
       await page.setViewportSize({ width: 320, height: 800 });
       await page.goto(path);

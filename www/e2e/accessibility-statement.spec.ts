@@ -38,6 +38,22 @@ test('accessibility statement renders', async ({ page }) => {
   await expectCanonicalUrl(page, '/accessibility/');
 });
 
+// A "partially conformant" claim needs the full check behind it: one row per level A and AA
+// criterion of WCAG 2.2, linked from the status sentence.
+const WCAG22_A_AA_CRITERIA = 55;
+
+test('the status links to a self-assessment that judges every criterion', async ({ page }) => {
+  await page.goto('/accessibility');
+  await page
+    .locator('.content-page')
+    .getByRole('link', { name: 'WCAG 2.2 self-assessment' })
+    .first()
+    .click();
+  await expect(page).toHaveURL(/\/accessibility-assessment\/?$/);
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('WCAG 2.2 self-assessment');
+  await expect(page.locator('.content-page tbody tr')).toHaveCount(WCAG22_A_AA_CRITERIA);
+});
+
 test('accessibility statement was reviewed within the last 400 days', async ({ page }) => {
   await page.goto('/accessibility');
   const text = await page.locator('.content-page').innerText();

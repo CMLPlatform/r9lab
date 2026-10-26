@@ -46,6 +46,27 @@
   overflow-wrap: anywhere;
 }
 
+/* The self-assessment's results tables. Below 40rem a table scrolls inside its
+   own labelled, focusable region rather than squeezing five columns into a phone
+   width; WCAG 1.4.10 allows that for data tables. */
+.content-page .table-scroll {
+  overflow-x: auto;
+}
+
+.content-page table {
+  min-width: 36rem;
+  border-collapse: collapse;
+  font-size: var(--font-size-meta);
+}
+
+.content-page th,
+.content-page td {
+  padding: 0.45rem 0.6rem 0.45rem 0;
+  border-bottom: 1px solid var(--color-page-border);
+  text-align: left;
+  vertical-align: top;
+}
+
 .content-page p,
 .content-page li {
   font-size: var(--content-page-body-size);

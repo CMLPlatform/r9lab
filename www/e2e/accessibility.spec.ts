@@ -4,7 +4,7 @@ import { analyzeAccessibility } from './helpers.ts';
 
 // The landing page is scanned in both themes in landing.spec.ts.
 test.describe('Accessibility', () => {
-  for (const path of ['/privacy', '/terms', '/accessibility']) {
+  for (const path of ['/privacy', '/terms', '/accessibility', '/accessibility-assessment']) {
     test(`${path} has no critical a11y violations`, async ({ page }) => {
       await page.goto(path);
       const results = await analyzeAccessibility(page);
