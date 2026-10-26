@@ -40,6 +40,12 @@
   max-width: 40rem;
 }
 
+/* A long path or address in inline code would otherwise push the page past a
+   320 px viewport (WCAG 1.4.10). */
+.content-page code {
+  overflow-wrap: anywhere;
+}
+
 .content-page p,
 .content-page li {
   font-size: var(--content-page-body-size);
