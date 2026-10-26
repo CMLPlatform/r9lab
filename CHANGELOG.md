@@ -79,6 +79,10 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   text, the activity chart's readout closes on Escape while the pointer rests on it, the app's
   username screen has its own heading and offers autofill, and each sign-up step's question is a
   heading.
+- More accessibility fixes from the same check: double-tapping a photo in the app's viewer zooms
+  in on that spot, so no drag is needed to see part of it; the account screen's theme and
+  visibility choices respond to Space; a product's components are read as a list; and the
+  documentation search announces its result count.
 
 ### Security
 

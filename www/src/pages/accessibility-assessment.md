@@ -13,13 +13,13 @@ accessibility.md if the change affects it, in the same pull request. -->
 - **Date:** 26 October 2026, on production builds of the commit that added this page.
 - **Who:** the developer. This is not an external audit.
 - **Browser:** Chromium (Playwright’s desktop Chrome profile) at 1280, 640 and 320 px wide, in the light and dark themes.
-- **Not done yet:** a screen-reader pass, and Firefox and Safari. Rows that only a screen reader can settle say “Needs screen reader”.
+- **Not done yet:** a screen-reader pass, and Firefox and Safari. Rows judged from the accessibility tree rather than by listening say so; [what a screen reader still has to confirm](#screen-reader-pass) is listed below.
 
 ## Sample
 
 - Website: the landing page (with and without live data), the accessibility statement, the privacy and terms pages, and the not-found page.
 - Documentation site: the home page, the getting-started and data-collection guides, the system-design page with its diagrams, the public API page around Scalar’s viewer, and the search dialog.
-- Web app, against a seeded test backend: sign-in, the first step of creating an account, choosing a username after the first sign-in, the product list with its filters, a product page with its photo viewer and export menu, and the account screen.
+- Web app, against a seeded test backend: sign-in, the first step of creating an account, choosing a username after the first sign-in, the product list with its filters, a product page with its photo viewer and export menu, removing a photo while editing a product, and the account screen.
 
 ## How each criterion was judged
 
@@ -32,13 +32,14 @@ Each verdict rests on something seen in the browser, not on reading the code alo
 - reflow at 320 px, text at 200% (640 px), and the WCAG 1.4.12 text spacing, checking every text box for clipping;
 - target sizes measured from bounding boxes, with the spacing and inline exceptions;
 - reduced motion emulated, then every running animation listed;
-- error messages triggered on purpose in the app’s forms.
+- error messages triggered on purpose in the app’s forms;
+- the accessibility tree of the app’s product and account screens read with Playwright’s `ariaSnapshot()`, and each control’s `aria-checked`, `aria-pressed`, `aria-expanded` and `aria-current` read from the page.
 
 Where a failure was found and fixed, the Evidence column names the test that now guards it. Each of those tests failed before its fix.
 
 ## Results
 
-Pass: no failure found after a real check. Fail: at least one failure in the sample. N/A: the sample has no content the criterion applies to. Needs screen reader: the parts a browser check can see pass, but the verdict depends on what a screen reader announces. Not tested: not checked yet.
+Pass: no failure found after a real check. Fail: at least one failure in the sample. N/A: the sample has no content the criterion applies to.
 
 Content from other suppliers is judged in the statement, not here: Scalar’s API viewer on the documentation site and videos embedded from YouTube.
 
@@ -54,8 +55,8 @@ Content from other suppliers is judged in the statement, not here: Scalar’s AP
 | 1.2.3 Audio Description or Media Alternative (A) | N/A | N/A | N/A | No video of our own. |
 | 1.2.4 Captions (Live) (AA) | N/A | N/A | N/A | Camera live streams play on YouTube, outside the sample. |
 | 1.2.5 Audio Description (AA) | N/A | N/A | N/A | No video of our own. |
-| 1.3.1 Info and Relationships (A) | Pass | Pass | Needs screen reader | Landmarks, one level-1 heading per page, ordered heading levels, real lists and labelled fields. Fixed: the app’s sign-up steps drew their question as a headline that was not a heading (`new-account.integration.test.tsx`). |
-| 1.3.2 Meaningful Sequence (A) | Pass | Pass | Needs screen reader | Page order matches the visual order and the Tab order follows it. The app’s reading order on the product page needs a screen reader to confirm. |
+| 1.3.1 Info and Relationships (A) | Pass | Pass | Pass | Landmarks, one level-1 heading per page, ordered heading levels, real lists and labelled fields; the app’s product page reads h1, then Overview, Components and Properties at level 2, then their parts at level 3. Fixed: the app’s sign-up steps drew their question as a headline that was not a heading (`new-account.integration.test.tsx`), and a product’s component rows were not a list (`ProductComponents.test.tsx`). |
+| 1.3.2 Meaningful Sequence (A) | Pass | Pass | Pass | Page order matches the visual order and the Tab order follows it. On the app’s product page the accessibility tree reads photo, title, overview, components, properties, owner and export, the order they are drawn in. |
 | 1.3.3 Sensory Characteristics (A) | Pass | Pass | Pass | Instructions name controls by their text, not by shape, colour or place. |
 | 1.3.4 Orientation (AA) | Pass | Pass | Pass | Nothing locks the orientation on the web. The portrait lock in the app’s configuration applies to the phone builds only. |
 | 1.3.5 Identify Input Purpose (AA) | N/A | N/A | Pass | Fixed: the username field after the first sign-in had no `autocomplete="username"` (`onboarding.test.tsx`). Sign-in and sign-up fields carry username, email and password tokens. The website has no form; the docs only a search box. |
@@ -77,10 +78,10 @@ Content from other suppliers is judged in the statement, not here: Scalar’s AP
 
 | Criterion | Website | Docs | App | Evidence |
 | --- | --- | --- | --- | --- |
-| 2.1.1 Keyboard (A) | Pass | Pass | Pass | Every control in the Tab walks works from the keyboard, including the website chart (arrow keys), docs search (Ctrl+K), and in the app the filters, export menu (arrow keys), photo viewer, shortcuts dialog, and the account screen’s choices and switches. |
+| 2.1.1 Keyboard (A) | Pass | Pass | Pass | Every control in the Tab walks works from the keyboard, including the website chart (arrow keys), docs search (Ctrl+K), and in the app the filters, export menu (arrow keys), photo viewer, shortcuts dialog, and the account screen’s choices and switches. The account screen’s choices answered Enter but not Space; they now take both (`e2e/accessibility.spec.ts`). |
 | 2.1.2 No Keyboard Trap (A) | Pass | Pass | Pass | Every Tab walk wrapped back to the first stop. Dialogs and menus close on Escape and return focus to the control that opened them. |
 | 2.1.4 Character Key Shortcuts (A) | N/A | Pass | Pass | Docs search opens on Ctrl+K only. The app’s single-key shortcuts can be turned off in its shortcuts dialog. |
-| 2.2.1 Timing Adjustable (A) | N/A | N/A | Pass | No time limits in the sample. Outside it, product editing shows “Photo removed” with Undo for 8 seconds; whether a removal can be undone another way is still to check. |
+| 2.2.1 Timing Adjustable (A) | N/A | N/A | Pass | No time limits in the sample. Product editing shows “Photo removed” with Undo for 8 seconds, but nothing is lost when it goes: the removal is saved only with Save product, and leaving with Discard brings the photo back (checked in the browser). |
 | 2.2.2 Pause, Stop, Hide (A) | Pass | N/A | Pass | The website’s header mark moves with scrolling, not on its own. With reduced motion on, no sampled page runs an animation. |
 | 2.3.1 Three Flashes or Below Threshold (A) | Pass | Pass | Pass | Nothing flashes. |
 | 2.4.1 Bypass Blocks (A) | Pass | Pass | Pass | Docs have a skip link. The website (three links) and the app (four controls) have header, navigation and main landmarks, and the app moves focus to each screen’s heading. |
@@ -95,7 +96,7 @@ Content from other suppliers is judged in the statement, not here: Scalar’s AP
 | 2.5.2 Pointer Cancellation (A) | Pass | Pass | Pass | Links, buttons and the app’s pressable controls act on release. |
 | 2.5.3 Label in Name (A) | Pass | Pass | Pass | Fixed: the website hero’s record link showed “Browse the records” but was named “Browse teardown records in the app” (`HeroTeardown.test.ts`). Every other name contains its visible text. |
 | 2.5.4 Motion Actuation (A) | N/A | N/A | N/A | No motion input. |
-| 2.5.7 Dragging Movements (AA) | N/A | N/A | Not tested | Panning a zoomed photo in the photo viewer is a drag. Whether there is another way was not checked. |
+| 2.5.7 Dragging Movements (AA) | N/A | N/A | Pass | Fixed: panning a zoomed photo needed a drag. Double-tapping now zooms in on the tapped spot, so with a double-tap out between, any part of a photo can be reached by tapping (`ZoomableImage.test.tsx`). |
 | 2.5.8 Target Size (Minimum) (AA) | Pass | Pass | Pass | Website header links (29 by 20 px) and docs heading anchors (20 by 29 px) meet the spacing exception, links in text the inline exception. App controls are at least 44 px. |
 
 </div>
@@ -128,8 +129,8 @@ Content from other suppliers is judged in the statement, not here: Scalar’s AP
 
 | Criterion | Website | Docs | App | Evidence |
 | --- | --- | --- | --- | --- |
-| 4.1.2 Name, Role, Value (A) | Pass | Pass | Needs screen reader | axe’s ARIA rules pass everywhere. The app’s choices and switches expose their role and checked state; whether each is announced right needs a screen reader. |
-| 4.1.3 Status Messages (AA) | Pass | Needs screen reader | Pass | The website’s figures and the app’s product count update in polite live regions; app errors are alerts and confirmations are status messages. The docs search region stayed empty after a search, so whether the result count is announced needs a screen reader. |
+| 4.1.2 Name, Role, Value (A) | Pass | Pass | Pass | axe’s ARIA rules pass everywhere. In the app, the theme and visibility choices are named radios in named groups whose `aria-checked` follows a change, the switches carry `aria-checked`, expanders `aria-expanded`, filters `aria-pressed`, and the current screen and section `aria-current`. |
+| 4.1.3 Status Messages (AA) | Pass | Pass | Pass | The website’s figures and the app’s product count update in polite live regions; app errors are alerts and confirmations are status messages. Fixed: the docs search wrote its result count where no screen reader would hear it; it is now copied into a status region (`docs/e2e/accessibility.spec.ts`). |
 
 </div>
 
@@ -137,10 +138,23 @@ WCAG 2.2 removed 4.1.1 Parsing, so it is not listed.
 
 ## Summary
 
-Of the 55 level A and AA criteria, no failure remains in the sample. Six failures were found and fixed, each with a test: 1.3.1, 1.3.5, 1.4.10, 1.4.13, 2.4.6 and 2.5.3.
+Of the 55 level A and AA criteria, no failure remains in the sample. Nine failures were found and fixed, each with a test: 1.3.1 (twice), 1.3.5, 1.4.10, 1.4.13, 2.4.6, 2.5.3, 2.5.7 and 4.1.3.
 
 - Website: 37 pass, 18 do not apply.
-- Documentation site: 36 pass, 1 needs a screen reader, 18 do not apply.
-- Web app: 44 pass, 3 need a screen reader, 1 is not tested, 7 do not apply.
+- Documentation site: 37 pass, 18 do not apply.
+- Web app: 48 pass, 7 do not apply.
 
-Next: a screen-reader pass, which may change the rows that say so, and a check of dragging in the photo viewer.
+## Screen-reader pass
+
+The rows above read the accessibility tree, which is what a screen reader works from, but nobody has listened yet. This is what the maintainer’s pass with NVDA or VoiceOver has to confirm:
+
+1. App, sign-in: entering a wrong password announces “Invalid email or password” and leaves focus on the password field.
+2. App, create account: pressing Continue announces the next step’s question as a heading.
+3. App, product list: typing in the search box announces the new “N of M products” count.
+4. App, product page: the screen opens on the product name as a heading, and the components are read as a list with its length.
+5. App, product page: a “Show components of …” button says collapsed, then expanded once pressed.
+6. App, account: each theme and visibility choice is read as a radio button, “n of 3”, with its checked state, which changes on Space.
+7. App, account: the update and camera switches say on or off, and the new state after Space.
+8. App, photo viewer: opening it announces the image gallery dialog, and Escape returns to the photo button.
+9. Docs, search: typing a word announces “N results for …” once the results arrive.
+10. Website, landing page: the figures under “What has been recorded so far” are read once when they load, not on every change.
