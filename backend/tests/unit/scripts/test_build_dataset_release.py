@@ -1,9 +1,12 @@
 """Unit tests for the pure logic of the dataset release builder."""
 
 import asyncio
+import hashlib
 import json
 import logging
 import re
+import tempfile
+from collections import Counter
 from datetime import UTC, date, datetime
 from pathlib import Path
 from types import SimpleNamespace
@@ -15,6 +18,8 @@ import pyarrow as pa
 import pyarrow.parquet as pq
 import pytest
 import yaml
+from hypothesis import HealthCheck, given, settings
+from hypothesis import strategies as st
 from PIL import Image as PILImage
 from PIL.ExifTags import IFD
 
@@ -26,6 +31,7 @@ from scripts.build_dataset_release import (
     CATEGORIES_SCHEMA,
     CATEGORY_MATERIAL_LINKS_SCHEMA,
     CATEGORY_PRODUCT_TYPE_LINKS_SCHEMA,
+    CHECKSUM_FILE,
     CROISSANT_FILES,
     DEFAULT_EXCLUDED_NAME_WORDS,
     EXCLUSION_HEADER,
@@ -1358,3 +1364,235 @@ def test_dataset_citation_names_the_software_it_was_exported_from() -> None:
     assert software["type"] == "software"
     assert software["title"] == ReleaseMetadata().software_title
     assert "Teardown Dataset" not in software["title"]
+
+
+### Properties of the irreversible steps ###
+# A published release cannot be recalled, so these steps get generated inputs on top of the
+# examples above. Example counts stay small to keep the unit suite fast.
+_PROPERTY_SETTINGS = settings(max_examples=25, deadline=None, suppress_health_check=[HealthCheck.too_slow])
+
+# Letters only, so generated text cannot spell an email or IP address that verify() rejects.
+_WORDS = st.text(alphabet=st.characters(categories=["L"]), min_size=1, max_size=12)
+_OWNER_IDS = ("u1", "u2", "u3")
+
+
+@st.composite
+def _record_forests(draw: st.DrawFn) -> tuple[list[dict[str, Any]], dict[str, dict[str, Any]], SelectionRules]:
+    """Draw records whose parents come earlier in the list, their owners, and a set of rules."""
+    count = draw(st.integers(min_value=0, max_value=12))
+    names = st.one_of(_WORDS, st.sampled_from(sorted(DEFAULT_EXCLUDED_NAME_WORDS)).map(lambda word: f"{word} rig"))
+    records = [
+        {
+            "id": record_id,
+            "owner_id": draw(st.sampled_from(_OWNER_IDS)),
+            "parent_id": draw(st.one_of(st.none(), st.integers(1, record_id - 1))) if record_id > 1 else None,
+            "name": draw(names),
+        }
+        for record_id in range(1, count + 1)
+    ]
+    terms_versions = st.sampled_from(
+        [None, MINIMUM_RELEASE_TERMS_VERSION - 1, MINIMUM_RELEASE_TERMS_VERSION, MINIMUM_RELEASE_TERMS_VERSION + 1]
+    )
+    usernames = st.sampled_from(["lab", "other", "third", *sorted(SHARED_ACCOUNTS)])
+    owners = {owner_id: _owner(draw(usernames), draw(terms_versions)) for owner_id in _OWNER_IDS}
+    rules = SelectionRules(
+        excluded_owner_usernames=draw(st.frozensets(st.sampled_from(["lab", "other"]), max_size=1)),
+        excluded_product_ids=draw(st.frozensets(st.integers(1, max(count, 1)), max_size=2)),
+    )
+    return records, owners, rules
+
+
+@given(_record_forests())
+@_PROPERTY_SETTINGS
+def test_property_selection_partitions_records_and_keeps_only_whole_consenting_trees(forest) -> None:
+    """Every record is kept or dropped, never both, and nothing kept outlives its consent or its parent."""
+    records, owners, rules = forest
+    kept, excluded = select_records(records, owners, rules)
+    kept_ids = [row["id"] for row in kept]
+    excluded_ids = [row["id"] for row in excluded]
+
+    assert sorted(kept_ids + excluded_ids) == [row["id"] for row in records]
+    assert not set(kept_ids) & set(excluded_ids)
+    for row in kept:
+        assert has_release_consent(owners[row["owner_id"]]["terms_version"])
+        assert release._direct_exclusion(row, owners[row["owner_id"]], rules) is None
+        # Parents are kept or dropped as a whole, so a kept parent rules out a dropped ancestor.
+        assert row["parent_id"] is None or row["parent_id"] in kept_ids
+
+
+_INT64 = st.integers(min_value=-(2**63), max_value=2**63 - 1)
+
+
+def _arrow_values(arrow_type: pa.DataType) -> st.SearchStrategy[Any]:
+    """Return a strategy for values a column of *arrow_type* holds."""
+    if pa.types.is_list(arrow_type):
+        return st.lists(st.one_of(st.none(), _arrow_values(arrow_type.value_type)), max_size=4)
+    if pa.types.is_int64(arrow_type):
+        return _INT64
+    if pa.types.is_float64(arrow_type):
+        return st.floats(allow_nan=False)
+    if pa.types.is_boolean(arrow_type):
+        return st.booleans()
+    if pa.types.is_timestamp(arrow_type):
+        return st.datetimes(timezones=st.just(UTC))
+    return st.text()
+
+
+def _rows(schema: pa.Schema) -> st.SearchStrategy[list[dict[str, Any]]]:
+    """Return a strategy for row lists that fit *schema*, nulls only where it allows them."""
+    columns = {
+        field.name: st.one_of(st.none(), _arrow_values(field.type)) if field.nullable else _arrow_values(field.type)
+        for field in schema
+    }
+    return st.lists(st.fixed_dictionaries(columns), max_size=5)
+
+
+def _as_written(row: dict[str, Any], schema: pa.Schema) -> dict[str, Any]:
+    """Return *row* as write_parquet stores it: list cells sorted, nulls last."""
+    return {
+        field.name: sorted(item for item in row[field.name] if item is not None) + [None] * row[field.name].count(None)
+        if isinstance(row[field.name], list)
+        else row[field.name]
+        for field in schema
+    }
+
+
+def test_as_written_sorts_falsy_and_null_list_items() -> None:
+    """Zero sorts with the other ints and nulls go last, as write_parquet stores them."""
+    schema = pa.schema([pa.field("ids", pa.list_(pa.int64()))])
+    assert _as_written({"ids": [3, None, 0, 1]}, schema) == {"ids": [0, 1, 3, None]}
+
+
+@pytest.mark.parametrize("table", RELEASE_TABLES, ids=lambda table: table.path)
+@given(data=st.data())
+@_PROPERTY_SETTINGS
+def test_property_parquet_round_trips_every_release_table(table, data) -> None:
+    """Reading a release table back returns the rows written, for every declared schema."""
+    rows = data.draw(_rows(table.schema))
+    with tempfile.TemporaryDirectory() as tmp:
+        path = Path(tmp) / "table.parquet"
+        write_parquet(path, table.schema, rows)
+        assert read_parquet(path) == [_as_written(row, table.schema) for row in rows]
+
+
+# No path separators or line breaks: sha256sum escapes those and the release never ships them.
+_FILE_NAMES = st.text(
+    alphabet=st.one_of(st.characters(categories=["L", "N"]), st.sampled_from(" ._-")), min_size=1, max_size=16
+).filter(lambda name: name not in {".", "..", CHECKSUM_FILE})
+
+
+@given(
+    files=st.dictionaries(
+        st.tuples(st.sampled_from(["", "images", "reference", "nested/dir"]), _FILE_NAMES), st.binary(), max_size=6
+    )
+)
+@_PROPERTY_SETTINGS
+def test_property_parse_checksums_inverts_write_checksums(files) -> None:
+    """Every published file reads back from SHA256SUMS under its own path and digest."""
+    with tempfile.TemporaryDirectory() as tmp:
+        root = Path(tmp)
+        expected = {}
+        for (folder, name), content in files.items():
+            path = root / folder / name
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_bytes(content)
+            expected[path.relative_to(root).as_posix()] = hashlib.sha256(content).hexdigest()
+        write_checksums(root)
+        assert parse_checksums((root / CHECKSUM_FILE).read_text(encoding="utf-8")) == expected
+
+
+@st.composite
+def _builds(draw: st.DrawFn) -> dict[str, Any]:
+    """Draw the inputs of a small release whose foreign keys all resolve."""
+    records, owners, rules = draw(_record_forests())
+    kept, _ = select_records(records, owners, rules)
+    product_types = [{"id": type_id, "name": draw(_WORDS)} for type_id in range(1, draw(st.integers(1, 3)) + 1)]
+    materials = [{"id": material_id, "name": draw(_WORDS)} for material_id in range(1, draw(st.integers(1, 3)) + 1)]
+    # Hypothesis takes naive bounds and attaches the zone itself.
+    start, end = datetime(2020, 1, 1), datetime(2030, 1, 1)  # noqa: DTZ001
+    moments = st.datetimes(min_value=start, max_value=end, timezones=st.just(UTC))
+    rows = [
+        _record(
+            id=row["id"],
+            parent_id=row["parent_id"],
+            name=row["name"],
+            owner_pseudonym=pseudonymise(row["owner_id"], "s" * 32),
+            product_type_id=draw(st.one_of(st.none(), st.sampled_from([pt["id"] for pt in product_types]))),
+            weight_g=draw(st.one_of(st.none(), st.floats(0, 1e6))),
+            created_at=draw(moments),
+        )
+        for row in kept
+    ]
+    record_ids = [row["id"] for row in rows]
+    lines = (
+        draw(
+            st.lists(
+                st.fixed_dictionaries(
+                    {
+                        "product_id": st.sampled_from(record_ids),
+                        "material_id": st.sampled_from([m["id"] for m in materials]),
+                        "quantity": st.floats(0, 1e3),
+                        "unit": st.just("kg"),
+                    }
+                ),
+                max_size=4,
+            )
+        )
+        if record_ids
+        else []
+    )
+    photographed = draw(st.lists(st.sampled_from(record_ids), max_size=2)) if record_ids else []
+    return {
+        "records": rows,
+        "record_materials": lines,
+        "product_types": product_types,
+        "materials": materials,
+        "photographed": photographed,
+    }
+
+
+def _write_build(root: Path, build: dict[str, Any]) -> None:
+    """Write *build* the way _build() does, short of the database."""
+    records = build["records"]
+    write_parquet(root / "records.parquet", RECORDS_SCHEMA, records)
+    write_parquet(root / "record_materials.parquet", RECORD_MATERIALS_SCHEMA, build["record_materials"])
+    (root / "images").mkdir()
+    manifest = []
+    for index, record_id in enumerate(build["photographed"]):
+        image = _write_jpeg(root / "images" / f"{index}.jpg")
+        manifest.append([f"images/{image.name}", record_id, file_sha256(image), 64, 48, image.stat().st_size, "JPEG"])
+    write_csv(root / "manifest.csv", ["file", "record_id", "sha256", "width", "height", "bytes", "format"], manifest)
+    reference = root / "reference"
+    write_parquet(
+        reference / "taxonomies.parquet", TAXONOMIES_SCHEMA, [{"id": 1, "name": "T", "domains": ["products"]}]
+    )
+    write_parquet(reference / "categories.parquet", CATEGORIES_SCHEMA, [{"id": 1, "name": "C", "taxonomy_id": 1}])
+    write_parquet(reference / "materials.parquet", MATERIALS_SCHEMA, build["materials"])
+    write_parquet(reference / "product_types.parquet", PRODUCT_TYPES_SCHEMA, build["product_types"])
+    write_parquet(reference / "units.parquet", UNITS_SCHEMA, [{"name": "kilogram", "symbol": "kg"}])
+    write_parquet(reference / "category_material_links.parquet", CATEGORY_MATERIAL_LINKS_SCHEMA, [])
+    write_parquet(reference / "category_product_type_links.parquet", CATEGORY_PRODUCT_TYPE_LINKS_SCHEMA, [])
+
+    labels = {row["id"]: product_type_label(row["name"], None) for row in build["product_types"]}
+    classes, untyped = tally_product_classes(records, labels)
+    created = [row["created_at"] for row in records]
+    stats = BuildStats(
+        records=len(records),
+        images=len(manifest),
+        owners=len({row["owner_pseudonym"] for row in records}),
+        collection_start=min(created, default=None),
+        collection_end=max(created, default=None),
+    )
+    meta = ReleaseMetadata(product_classes=classes, untyped_products=untyped)
+    write_artefacts(root, meta, stats, Counter(row["owner_pseudonym"] for row in records))
+    write_checksums(root)
+
+
+@given(_builds())
+@_PROPERTY_SETTINGS
+def test_property_verify_passes_on_any_generated_build(build) -> None:
+    """A build whose references all resolve must verify clean, whatever the data holds."""
+    with tempfile.TemporaryDirectory() as tmp:
+        root = Path(tmp)
+        _write_build(root, build)
+        assert verify(root) == []

@@ -25,6 +25,30 @@ const dynamicImportToRequire = ({ types: t }) => ({
   },
 });
 
+// msw's interceptors load their WASM HTTP parser relative to `import.meta.url`, which
+// CommonJS Jest leaves without a file URL. NOTE: tests only.
+const importMetaUrlToFileUrl = ({ types: t }) => ({
+  visitor: {
+    MemberExpression(path) {
+      const { object, property } = path.node;
+      if (object.type !== 'MetaProperty' || object.meta.name !== 'import') return;
+      if (property.type !== 'Identifier' || property.name !== 'url') return;
+      path.replaceWith(
+        t.memberExpression(
+          t.callExpression(
+            t.memberExpression(
+              t.callExpression(t.identifier('require'), [t.stringLiteral('node:url')]),
+              t.identifier('pathToFileURL'),
+            ),
+            [t.identifier('__filename')],
+          ),
+          t.identifier('href'),
+        ),
+      );
+    },
+  },
+});
+
 module.exports = (api) => {
   // Respect explicit Babel/NODE envs, then ENVIRONMENT (used by Docker builds),
   // otherwise default to development.
@@ -40,7 +64,7 @@ module.exports = (api) => {
     // React Compiler is useful, but running it during every dev transform slows
     // Metro feedback noticeably on this app. Keep it for production bundles.
     plugins: [
-      ...(env === 'test' ? [dynamicImportToRequire] : []),
+      ...(env === 'test' ? [dynamicImportToRequire, importMetaUrlToFileUrl] : []),
       ...(isProduction ? [['babel-plugin-react-compiler', { target: '19' }]] : []),
     ],
   };

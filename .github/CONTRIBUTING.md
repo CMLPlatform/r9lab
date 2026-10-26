@@ -144,7 +144,8 @@ ladder, cheapest first:
 Pull requests also run `cloudflare-check`, the www E2E suite, and `docker-smoke`, so a green
 `just ci` can still leave a red PR check. `just ci-full` covers them; it takes tens of minutes and
 needs Docker. Only CodeQL, Trivy, Scorecard, and dependency review stay GitHub-only: they scan built
-images or the repository itself.
+images or the repository itself. The CodSpeed benchmark comparison also runs only on GitHub, since
+it needs CodSpeed's instrumented runner; `just backend/bench` runs the same benchmarks once as tests.
 
 On a pull request, the subrepo jobs, their Docker smoke legs, and the CodeQL languages run only for
 the subrepos the diff touches (`scripts/ci_changed_areas.py`). A change outside the four subrepos
