@@ -107,8 +107,8 @@
       "automerge": false
     },
     {
-      "description": "A Python minor version has to move .tool-versions, backend/.python-version, ruff's target-version and the Docker base images together, and every dependency needs wheels for it. One PR, merged by hand, so CI never tests on a newer Python than the images run.",
-      "matchPackageNames": ["python"],
+      "description": "A Python minor version has to move .tool-versions, backend/.python-version, ruff's target-version and the Docker base images together, and every dependency needs wheels for it. One PR, merged by hand, so CI never tests on a newer Python than the images run. Matched by depName: .tool-versions looks Python up as python/cpython, which a packageName match misses.",
+      "matchDepNames": ["python"],
       "matchUpdateTypes": ["minor"],
       "groupName": "python minor",
       "groupSlug": "python-minor",
