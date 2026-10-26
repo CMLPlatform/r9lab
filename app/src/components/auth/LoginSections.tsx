@@ -73,12 +73,12 @@ export function LoginCard({ children }: { children: React.ReactNode }) {
  * The wordmark and the screen's h1 at the head of the auth card: on the card's
  * opaque ground, never on the photo.
  */
-export function LoginBrandHero() {
+export function LoginBrandHero({ title = 'Sign in' }: { title?: string }) {
   return (
     <View className="items-center gap-2 pt-2 pb-3">
       <BrandWordmark style={styles.brandLogo} />
       <AppText variant="title" {...heading(1)}>
-        Sign in
+        {title}
       </AppText>
     </View>
   );
