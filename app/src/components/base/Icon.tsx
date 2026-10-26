@@ -60,6 +60,7 @@ type BrandGlyphProps = { size?: number; color?: string; strokeWidth?: number };
 /** Turns a single-path brand SVG's `d` data into a Lucide-shaped component. */
 function createBrandGlyph(d: string) {
   // strokeWidth is ignored: brand marks are filled, not stroked.
+  // biome-ignore lint/correctness/noComponentHookFactories: called once per glyph at module load, not during render.
   return function BrandGlyph({ size = 24, color = 'currentColor' }: BrandGlyphProps) {
     return (
       <Svg viewBox="0 0 24 24" width={size} height={size}>

@@ -21,6 +21,7 @@
   padding: 0;
   margin: -1px;
   overflow: hidden;
+  /* biome-ignore lint/suspicious/useBaseline: deprecated but still honoured everywhere; part of the standard visually-hidden pattern */
   clip: rect(0, 0, 0, 0);
   white-space: nowrap;
   border: 0;

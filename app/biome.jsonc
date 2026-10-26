@@ -35,6 +35,25 @@
       },
       "correctness": {
         "noReactPropAssignments": "error",
+        // These components wrap string children in <Text> themselves; <title>
+        // renders inside expo-router's web-only <Head>.
+        "noReactNativeRawText": {
+          "level": "error",
+          "options": {
+            "skip": [
+              "AppButton",
+              "AppText",
+              "Chip",
+              "DocsLink",
+              "FilterChip",
+              "MutedText",
+              "RNText",
+              "ScreenTitle",
+              "UiText",
+              "title"
+            ]
+          }
+        },
         "useExhaustiveDependencies": "error",
         "useHookAtTopLevel": "error",
         "useImportExtensions": "off"
@@ -77,12 +96,21 @@
           "complexity": {
             "noExcessiveLinesPerFunction": "off"
           },
+          "correctness": {
+            // jest.mock factories are hoisted and must build their stub components inline.
+            "noComponentHookFactories": "off"
+          },
           "performance": {
             // Inline handlers in a test render once; rerender cost is not a concern.
             "noJsxPropsBind": "off"
           },
           "security": {
             "noSecrets": "off"
+          },
+          // Same reasons as the shared test override in biome.base.jsonc.
+          "suspicious": {
+            "noConditionalExpect": "off",
+            "useExpect": "off"
           }
         }
       }

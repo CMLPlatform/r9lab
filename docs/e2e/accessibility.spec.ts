@@ -102,6 +102,7 @@ test.describe('Viewport overflow', () => {
   for (const path of ['/architecture/datamodel/', '/architecture/system-design/', '/api/public/']) {
     test(`${path} has no horizontal overflow at ${VIEWPORT_WIDTH}px`, async ({ page }) => {
       await page.goto(path);
+      // biome-ignore lint/suspicious/noPlaywrightNetworkidle: the overflow check must run after fonts and diagrams have loaded.
       await page.waitForLoadState('networkidle');
       const scrollWidth = await page.evaluate(() => document.documentElement.scrollWidth);
       expect(scrollWidth).toBeLessThanOrEqual(VIEWPORT_WIDTH + TOLERANCE_PX);
