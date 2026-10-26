@@ -158,6 +158,19 @@ test.describe('Accessibility', () => {
     expect(await seriousViolations(page)).toEqual([]);
   });
 
+  // react-native-web presses on Space only for role=button, so a radio built on
+  // Pressable answered Enter but not Space, the key the radio pattern uses.
+  test('a preference radio is chosen with Space @auth', async ({ page }) => {
+    await loginAndReachProducts(page, SEEDED_MEMBER);
+    await page.goto('/account');
+    const light = page.getByRole('radio', { name: 'Light theme' });
+    await expect(light).toBeVisible({ timeout: 15_000 });
+    await light.focus();
+    await page.keyboard.press('Space');
+    await expect(light).toHaveAttribute('aria-checked', 'true');
+    await page.getByRole('radio', { name: 'Auto theme' }).click();
+  });
+
   /**
    * WCAG 2.2 SC 2.4.7 Focus Visible (A) and 2.4.13 Focus Appearance (AA).
    *

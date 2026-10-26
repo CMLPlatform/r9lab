@@ -1,4 +1,10 @@
-import { Platform, type TextInputProps, type TextProps, type ViewStyle } from 'react-native';
+import {
+  Platform,
+  type PressableProps,
+  type TextInputProps,
+  type TextProps,
+  type ViewStyle,
+} from 'react-native';
 
 /**
  * Props that associate an input with the `FormFieldError` sharing its `id`
@@ -56,4 +62,20 @@ export const visuallyHidden = {
  */
 export function heading(level: 1 | 2 | 3): Partial<TextProps> {
   return { accessibilityRole: 'header', 'aria-level': level } as Partial<TextProps>;
+}
+
+/**
+ * react-native-web presses a Pressable on Space only when its role is button, so a
+ * radio or other choice built on Pressable answers Enter alone. Spread this onto it
+ * so Space chooses it too, as the WAI-ARIA radio pattern expects. Web only: native
+ * platforms have no key events here.
+ */
+export function pressOnSpace(onPress: () => void): Partial<PressableProps> {
+  const onKeyDown = (event: { key: string; preventDefault(): void }) => {
+    if (event.key !== ' ') return;
+    // Space would otherwise scroll the page.
+    event.preventDefault();
+    onPress();
+  };
+  return { onKeyDown } as Partial<PressableProps>;
 }
