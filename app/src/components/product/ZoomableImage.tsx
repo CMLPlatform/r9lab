@@ -195,7 +195,8 @@ export default function ZoomableImage({
   // tap between, any part of the photo can be reached without a drag (WCAG 2.5.7).
   const doubleTapGesture = Gesture.Tap()
     .numberOfTaps(2)
-    .onEnd((e) => {
+    .onEnd((e, success) => {
+      if (!success) return;
       if (scale.get() > 1.1) {
         resetZoom();
       } else {
