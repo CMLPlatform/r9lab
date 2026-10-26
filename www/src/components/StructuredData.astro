@@ -1,0 +1,16 @@
+---
+/**
+ * schema.org JSON-LD for search engines. A data block never executes, so
+ * script-src 'self' does not apply. JSON.stringify escapes quotes and
+ * backslashes; escaping `<` keeps a `</script>` in a value from ending the block.
+ * This is the one file exempt from the policy's astro-set-html rule.
+ */
+interface Props {
+  data: Record<string, unknown>;
+}
+
+const { data } = Astro.props;
+const json = JSON.stringify(data).replaceAll('<', '\\u003c');
+---
+
+<script type="application/ld+json" is:inline set:html={json} />

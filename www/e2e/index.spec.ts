@@ -40,9 +40,19 @@ test.describe('Landing page', () => {
   test('ships no inline scripts, matching the production CSP @smoke', async ({ page }) => {
     // The production CSP (src/integrations/security-headers.ts) is script-src
     // 'self' with no 'unsafe-inline' and no hashes, so any inline <script> in the
-    // build would be silently dead in production.
+    // build would be silently dead in production. JSON-LD is data, not script.
     await page.goto('/');
-    await expect(page.locator('script:not([src])')).toHaveCount(0);
+    await expect(page.locator('script:not([src]):not([type="application/ld+json"])')).toHaveCount(
+      0,
+    );
+  });
+
+  test('describes the project as JSON-LD for search engines', async ({ page }) => {
+    await page.goto('/');
+    const json = await page.locator('script[type="application/ld+json"]').textContent();
+    const data = JSON.parse(json ?? '{}');
+    expect(data['@type']).toBe('SoftwareSourceCode');
+    expect(data.codeRepository).toBe('https://github.com/CMLPlatform/r9lab');
   });
 
   test('keeps the theme toggle at the right edge of the footer on desktop', async ({ page }) => {
