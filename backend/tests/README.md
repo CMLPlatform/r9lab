@@ -40,6 +40,13 @@ cache wiring, file cleanup, migration behavior. One subsystem per test.
 A few multi-step journeys that cross feature boundaries, such as authenticate -> mutate -> fetch or
 camera setup -> record -> persist. Keep them sparse; they are slower than the other tiers.
 
+### `tests/benchmarks/`
+
+CPU benchmarks for backend hot paths (image uploads, product create validation, the component tree
+read, and the export), written with `pytest-codspeed`. No database or network: they start from rows
+built in memory. The CodSpeed workflow measures them on every pull request that touches the
+backend. `just bench` runs them once as plain tests, and so does `just test`.
+
 ## Assertions
 
 - Assert what tells the paths apart, not just the outcome. Several paths often converge on one

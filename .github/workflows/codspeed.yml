@@ -1,0 +1,65 @@
+# yaml-language-server: $schema=https://json.schemastore.org/github-workflow.json
+
+# Backend CPU benchmarks (backend/tests/benchmarks), measured by CodSpeed in its CPU
+# simulation mode: it counts instructions, so results hold steady across hosted runners.
+# Lives outside ci.yml so the `id-token: write` the upload needs stays on this one job.
+name: CodSpeed
+
+on:
+  # Every run on main is the baseline a pull request is compared against. A PR is
+  # compared with the newest main commit that has a run, so main can skip commits
+  # that do not touch the backend too.
+  push:
+    branches: [main]
+    paths:
+      - backend/**
+      - .github/actions/setup-runtime/**
+      - .github/workflows/codspeed.yml
+      - .tool-versions
+  pull_request:
+    branches: [main]
+    paths:
+      - backend/**
+      - .github/actions/setup-runtime/**
+      - .github/workflows/codspeed.yml
+      - .tool-versions
+  # Lets CodSpeed backfill results for older main commits.
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions: {}
+
+jobs:
+  benchmarks:
+    name: Backend Benchmarks
+    runs-on: ubuntu-26.04
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      # The upload authenticates with OIDC. Pull requests from forks get no token, and
+      # CodSpeed accepts their uploads without one because the repository is public.
+      id-token: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up runtime
+        uses: ./.github/actions/setup-runtime
+        with:
+          setup-python: "true"
+          uv-cache-dependency-glob: backend/uv.lock
+
+      - name: Install dependencies
+        run: just backend/install
+
+      - name: Run benchmarks
+        uses: CodSpeedHQ/action@78102a468f96d8e0ccb92d0ec49425753fc42062 # v5.6.0
+        with:
+          mode: simulation
+          working-directory: backend
+          run: uv run pytest tests/benchmarks --codspeed
