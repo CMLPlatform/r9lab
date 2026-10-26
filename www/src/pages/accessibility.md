@@ -22,11 +22,11 @@ You should be able to:
 - Zoom to 400%, or use a screen 320 CSS pixels wide, without scrolling sideways to read the text.
 - Use the pages and app screens we build with a keyboard alone, with a visible focus outline.
 
-Nobody has yet used R9lab with a screen reader, so we do not promise that.
+Use the main tasks with a screen reader: the developer has listened to ten of them, listed in the [self-assessment](/accessibility-assessment#screen-reader-pass). Other screens have not been listened to yet.
 
 ## How accessible R9lab is
 
-We aim to meet WCAG 2.2, level AA. R9lab is **partially conformant** with it. The parts we build passed every level A and AA criterion we could check on a sample of pages, as the [WCAG 2.2 self-assessment](/accessibility-assessment) shows criterion by criterion. Content from other suppliers fails 1.2.2 Captions, 2.1.1 Keyboard and 2.5.8 Target Size (see below). Nobody has yet checked R9lab with a screen reader; the self-assessment lists what that check has to confirm. This is a self-assessment by the people who build R9lab, not an audit. R9lab is in English only.
+We aim to meet WCAG 2.2, level AA. R9lab is **partially conformant** with it. The parts we build passed every level A and AA criterion we could check on a sample of pages, as the [WCAG 2.2 self-assessment](/accessibility-assessment) shows criterion by criterion. Content from other suppliers fails 1.2.2 Captions, 2.1.1 Keyboard and 2.5.8 Target Size (see below). A screen-reader pass of ten main tasks found no problems; the self-assessment lists them. This is a self-assessment by the people who build R9lab, not an audit. R9lab is in English only.
 
 R9lab is pronounced “Relab”. Screen readers may read the name as “R nine lab”.
 
@@ -54,7 +54,7 @@ Automated checks use axe, a testing tool, against the level A and AA rules for W
 
 Other checks: unit tests on the app’s colour pairs, and on the app a test that keyboard focus paints a visible indicator. Linting runs on every pull request.
 
-Automated tools find only part of the problems. So the developer also checked every level A and AA criterion on a sample of all three sites: keyboard-only walks, zoom and narrow screens, text spacing, contrast in both themes, target sizes, reduced motion, the app’s form errors and its accessibility tree. The [WCAG 2.2 self-assessment](/accessibility-assessment) lists the sample, the method and each result. Nobody has yet worked through R9lab with a screen reader.
+Automated tools find only part of the problems. So the developer also checked every level A and AA criterion on a sample of all three sites: keyboard-only walks, zoom and narrow screens, text spacing, contrast in both themes, target sizes, reduced motion, the app’s form errors and its accessibility tree. The [WCAG 2.2 self-assessment](/accessibility-assessment) lists the sample, the method and each result. The developer then listened to ten main tasks with a screen reader, on 26 October 2026.
 
 ## Tested with
 

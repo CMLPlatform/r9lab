@@ -13,7 +13,8 @@ accessibility.md if the change affects it, in the same pull request. -->
 - **Date:** 26 October 2026, on production builds of the commit that added this page.
 - **Who:** the developer. This is not an external audit.
 - **Browser:** Chromium (Playwright’s desktop Chrome profile) at 1280, 640 and 320 px wide, in the light and dark themes.
-- **Not done yet:** a screen-reader pass, and Firefox and Safari. Rows judged from the accessibility tree rather than by listening say so; [what a screen reader still has to confirm](#screen-reader-pass) is listed below.
+- **Screen reader:** the ten checks under [Screen-reader pass](#screen-reader-pass), all confirmed on 26 October 2026. Other rows were judged from the accessibility tree and say so.
+- **Not done yet:** Firefox and Safari.
 
 ## Sample
 
@@ -146,7 +147,7 @@ Of the 55 level A and AA criteria, no failure remains in the sample. Nine failur
 
 ## Screen-reader pass
 
-The rows above read the accessibility tree, which is what a screen reader works from, but nobody has listened yet. This is what the maintainer’s pass with NVDA or VoiceOver has to confirm:
+The rows above read the accessibility tree, which is what a screen reader works from. On 26 October 2026 the maintainer listened to these ten tasks with a screen reader, and each one behaved as described:
 
 1. App, sign-in: entering a wrong password announces “Invalid email or password” and leaves focus on the password field.
 2. App, create account: pressing Continue announces the next step’s question as a heading.
