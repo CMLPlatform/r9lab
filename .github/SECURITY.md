@@ -145,10 +145,11 @@ Supply-chain and code-security checks:
   `.github/workflows/renovate.yml` as a GitHub App installed on this repository only. The
   workflow scopes each run's token to the permissions it lists, and the app's private key is an
   Actions secret: rotate it whenever the key, or a workflow that can read it, may have leaked.
-  Changes to `main` go through a pull request and must pass the required `CI Result` check;
-  no approving review is required, so the app can land what `.github/renovate.json` marks
-  automerge. It cannot skip that check, so a leaked key cannot reach `main` without a pull
-  request that passes CI. That is not all it can do: its `contents` and `workflows` write
+  Changes to `main` go through a pull request with one approving review, and must pass the
+  required `CI Result` check. The app bypasses the review (the `protect_main` ruleset) and
+  merges what `.github/renovate.json` marks automerge itself. It cannot skip the check, which
+  `protect_main_checks` requires with no app bypass, so a leaked key cannot reach `main`
+  without a pull request that passes CI. That is not all it can do: its `contents` and `workflows` write
   access reaches every other branch, and the workflows a push there starts run its changes.
   Release tags are held by the `release tags` ruleset (`infra/cloudflare/github.tf`), which only
   repository admins and maintainers bypass, so the key cannot mint or move the tag hosts deploy

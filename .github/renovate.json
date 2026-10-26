@@ -8,6 +8,7 @@
     "enabled": true
   },
   "minimumReleaseAge": "3 days",
+  "platformAutomerge": false,
   "labels": ["dependencies"],
   "osvVulnerabilityAlerts": true,
   "vulnerabilityAlerts": {
