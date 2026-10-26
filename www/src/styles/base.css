@@ -4,6 +4,7 @@
 
 html {
   /* Makes `height: auto` animatable for the teardown's part groups (HeroTeardown). */
+  /* biome-ignore lint/suspicious/useBaseline: progressive enhancement; without it the groups snap open */
   interpolate-size: allow-keywords;
 }
 
@@ -69,6 +70,7 @@ select {
 
 /* Mix with the page surface, not white: in dark mode a white mix puts
    near-white text on a near-white highlight. */
+/* biome-ignore lint/suspicious/useBaseline: cosmetic; browsers without it keep their default highlight */
 ::selection {
   background: color-mix(in srgb, var(--color-primary) 22%, var(--color-page-surface));
 }

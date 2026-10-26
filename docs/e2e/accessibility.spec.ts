@@ -25,7 +25,18 @@ async function analyzePage(page: Page, options: { exclude?: string[] } = {}) {
   for (const selector of options.exclude ?? []) {
     builder = builder.exclude(selector);
   }
-  return builder.analyze();
+  const results = await builder.analyze();
+  // Starlight's search button is named "Search" and also shows its "Ctrl K" shortcut.
+  // axe 4.14 counts the shortcut as label text; the name still holds the label, so
+  // 2.5.3 is met. Starlight won't change it (withastro/starlight#4260).
+  results.violations = results.violations.flatMap((violation) => {
+    if (violation.id !== 'label-content-name-mismatch') return [violation];
+    const nodes = violation.nodes.filter(
+      (node) => !node.html.startsWith('<button data-open-modal=""'),
+    );
+    return nodes.length > 0 ? [{ ...violation, nodes }] : [];
+  });
+  return results;
 }
 
 async function switchToDarkTheme(page: Page) {
@@ -102,6 +113,7 @@ test.describe('Viewport overflow', () => {
   for (const path of ['/architecture/datamodel/', '/architecture/system-design/', '/api/public/']) {
     test(`${path} has no horizontal overflow at ${VIEWPORT_WIDTH}px`, async ({ page }) => {
       await page.goto(path);
+      // biome-ignore lint/suspicious/noPlaywrightNetworkidle: the overflow check must run after fonts and diagrams have loaded.
       await page.waitForLoadState('networkidle');
       const scrollWidth = await page.evaluate(() => document.documentElement.scrollWidth);
       expect(scrollWidth).toBeLessThanOrEqual(VIEWPORT_WIDTH + TOLERANCE_PX);

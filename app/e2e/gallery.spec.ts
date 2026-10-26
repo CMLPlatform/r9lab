@@ -86,6 +86,7 @@ async function mockGalleryProductApi(page: Page) {
   });
 }
 
+// biome-ignore lint/correctness/usePlaywrightValidDescribeCallback: Playwright accepts a details object before the callback.
 test.describe('Product gallery (e2e)', { tag: '@cross-browser' }, () => {
   // Increase the per-test timeout for slower CI environments
   test.setTimeout(60_000);
