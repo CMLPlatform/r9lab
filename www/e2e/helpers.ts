@@ -6,7 +6,8 @@ const CANONICAL_URL_PATTERN =
 const HERO_HEADLINE = 'Open product data for circular-economy research';
 const HERO_LEAD_PATTERN = /every component named, weighed and photographed/i;
 
-export const BROWSE_RECORDS_LINK_NAME = 'Browse the records';
+// Anchored on the subline: the hero's record link also starts with "Browse the records".
+export const BROWSE_RECORDS_LINK_NAME = /^Browse the records\s*No account needed/;
 export const CONTRIBUTE_LINK_NAME = 'Contribute a teardown';
 
 // Aligned across www/docs/app: WCAG 2.0-2.2, level A + AA, the stated target.
