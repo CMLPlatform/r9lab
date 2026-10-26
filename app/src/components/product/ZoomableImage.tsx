@@ -191,12 +191,21 @@ export default function ZoomableImage({
       clampTranslationToBounds(e.velocityX, e.velocityY);
     });
 
+  // Zooms in on the tapped point, which stays under the finger: with a zoom-out
+  // tap between, any part of the photo can be reached without a drag (WCAG 2.5.7).
   const doubleTapGesture = Gesture.Tap()
     .numberOfTaps(2)
-    .onEnd(() => {
+    .onEnd((e) => {
       if (scale.get() > 1.1) {
         resetZoom();
       } else {
+        // Translation that keeps (x, y) fixed while scaling 2x about the centre.
+        const x = containerWidth.get() / 2 - e.x;
+        const y = containerHeight.get() / 2 - e.y;
+        translateX.set(withTiming(x, TIMING));
+        translateY.set(withTiming(y, TIMING));
+        savedTranslateX.set(x);
+        savedTranslateY.set(y);
         scale.set(withTiming(2, TIMING));
         savedScale.set(2);
         wasZoomed.set(true);

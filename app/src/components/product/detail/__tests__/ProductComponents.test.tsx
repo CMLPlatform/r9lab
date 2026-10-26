@@ -67,6 +67,33 @@ describe('ProductComponents', () => {
     });
   });
 
+  // WCAG 1.3.1: the rows read as a list of components, so they are marked up as one.
+  it('marks the component rows up as a list', async () => {
+    const componentProduct: Product = {
+      ...baseProduct,
+      id: 2,
+      role: 'component',
+      parentID: baseProduct.id,
+      name: 'Sub Component',
+    };
+    await renderWithProviders(
+      <ProductComponents
+        product={{ ...baseProduct, components: [componentProduct] }}
+        editMode={false}
+        canEdit
+      />,
+      { withDialog: true },
+    );
+    await waitFor(() => {
+      expect(screen.getByText('Sub Component')).toBeOnTheScreen();
+    });
+    // Read from the rendered tree: the role queries only match accessible elements,
+    // and react-native-web turns these props into role="list" and role="listitem".
+    const tree = JSON.stringify(screen.toJSON());
+    expect(tree.match(/"role":"list"/g)).toHaveLength(1);
+    expect(tree.match(/"role":"listitem"/g)).toHaveLength(1);
+  });
+
   it('lists up to eight components in full without a disclosure', async () => {
     const eight = Array.from({ length: 8 }, (_, index) => ({
       ...baseProduct,

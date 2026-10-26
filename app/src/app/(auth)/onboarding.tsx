@@ -26,10 +26,7 @@ function OnboardingBody({
       {/* The hero scrim is deliberately light: the card is what carries the mark and
           control legibility over the photo backdrop, so everything lives on it. */}
       <LoginCard>
-        <LoginBrandHero />
-        <AppText variant="title" className="font-bold text-center text-foreground">
-          Welcome!
-        </AppText>
+        <LoginBrandHero title="Welcome!" />
         <AppText variant="body" className="text-center mb-2.5 text-foreground">
           Choose a username to continue.
         </AppText>
@@ -40,6 +37,8 @@ function OnboardingBody({
           required
           autoCapitalize="none"
           autoCorrect={false}
+          autoComplete="username"
+          textContentType="username"
           placeholder="e.g. awesome_user"
           accessibilityLabel="Username"
           onSubmitEditing={submitUsername}

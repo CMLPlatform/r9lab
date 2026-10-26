@@ -50,6 +50,21 @@ describe('Onboarding screen rendering', () => {
     expect(screen.getByPlaceholderText('e.g. awesome_user')).toBeOnTheScreen();
     expect(screen.getByText('Continue')).toBeOnTheScreen();
   });
+
+  // WCAG 2.4.6: the screen's one heading names this step, not the sign-in screen it
+  // shares a card with.
+  it('titles the screen with its own heading', async () => {
+    await renderOnboardingScreen();
+    expect(screen.getByRole('header', { name: 'Welcome!' })).toBeOnTheScreen();
+    expect(screen.queryByText('Sign in')).toBeNull();
+  });
+
+  // WCAG 1.3.5: the field asks for the user's own username, so browsers and password
+  // managers can fill it.
+  it('marks the username field for autofill', async () => {
+    await renderOnboardingScreen();
+    expect(screen.getByPlaceholderText('e.g. awesome_user')).toHaveProp('autoComplete', 'username');
+  });
 });
 
 describe('Onboarding screen submission', () => {

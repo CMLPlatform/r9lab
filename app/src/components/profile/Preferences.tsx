@@ -7,6 +7,7 @@ import { Switch } from '@/components/base/ui/switch';
 import { useAppTheme } from '@/theme/appThemeContext';
 import { palette } from '@/theme/palette.generated';
 import type { ThemeMode, User } from '@/types/User';
+import { pressOnSpace } from '@/utils/a11y';
 import { cn } from '@/utils/cn';
 import { createProfileSectionStyles } from './styles';
 
@@ -168,6 +169,7 @@ function ThemeModeOption({
       className={cn('flex-1 items-center gap-1.5 rounded-md border py-3', PRESS_TINT)}
       style={[styles.themeModeOption, active && styles.themeModeOptionActive]}
       onPress={handlePress}
+      {...pressOnSpace(handlePress)}
       accessibilityRole="radio"
       // accessibilityState drives the native state; react-native-web drops it
       // entirely, so aria-checked has to be spelled out for the web build.
@@ -212,6 +214,7 @@ function VisibilityOption({
       )}
       style={isActive ? styles.visibilityOptionActive : undefined}
       onPress={handlePress}
+      {...(saving ? {} : pressOnSpace(handlePress))}
       disabled={saving}
       accessibilityRole="radio"
       // See the theme option above: role=radio needs both spellings.

@@ -270,6 +270,19 @@ describe('HeroTeardown', () => {
     expect(html).toContain('Browse the records');
   });
 
+  // WCAG 2.5.3: a speech user says what they see, so the link's name must start with it.
+  it.each([
+    [true, 'Browse the records'],
+    [false, 'Open this record'],
+  ])(
+    'starts the record link name with its visible text (fixture %s)',
+    async (fromFixture, text) => {
+      const html = await render({ fromFixture });
+      const label = /<a[^>]*class="blueprint-open"[^>]*aria-label="([^"]*)"/.exec(html)?.[1];
+      expect(label?.startsWith(text)).toBe(true);
+    },
+  );
+
   it('does not double the slash when the app URL has a trailing one', async () => {
     const html = await render({ fromFixture: false, appUrl: 'https://app.example.org/' });
     expect(html).toContain('href="https://app.example.org/products/47"');
