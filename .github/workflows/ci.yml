@@ -459,6 +459,7 @@ jobs:
             --exit-code 1 --severity HIGH,CRITICAL
             --ignorefile .github/trivyignore.yaml
             --skip-dirs .venv,backend/.venv,node_modules,app/node_modules,docs/node_modules,www/node_modules
+            --skip-files '**/*.dockerignore'
 
       - name: Upload Trivy IaC SARIF
         if: always()
