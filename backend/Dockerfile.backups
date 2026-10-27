@@ -1,7 +1,9 @@
 # syntax=docker/dockerfile:1@sha256:4edf897a3ffa55b89f906fc8cc78afdb3f1834cc9c7083565e611a8a7d5fe99e
 
 # Runtime image for encrypted R9lab backups.
-FROM postgres:18@sha256:5a5a84b19854a9ffaa54082c166ff4ec27473a361e496e5ea167f298f2da9722
+# Debian slim plus the PostgreSQL client, not postgres:18: only pg_dump runs here, and
+# the server and its JIT compiler more than doubled the image.
+FROM debian:trixie-slim@sha256:62bd423aeee912639ca8ee681c2b762cb3e25137e0a92b20be455898a9f034ad
 
 ARG WORKDIR=/opt/r9lab/backups
 ARG APP_USER=backupuser
@@ -10,10 +12,14 @@ ARG APP_UID=65532
 ARG RCLONE_VERSION=1.60.1+dfsg-4
 ARG RESTIC_VERSION=0.18.0-1+b4
 
+# The PostgreSQL apt signing key, fingerprint B97B0AFCAA1A47F044F244A07FCC7D46ACCC4CF8.
+ADD --chmod=644 --checksum=sha256:0144068502a1eddd2a0280ede10ef607d1ec592ce819940991203941564e8e76 \
+    https://www.postgresql.org/media/keys/ACCC4CF8.asc /usr/share/keyrings/pgdg.asc
+
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,target=/var/lib/apt/lists,sharing=locked \
     apt-get update \
-    # postgres:18 trails Debian's security updates by a rebuild cycle, and this image
+    # The base trails Debian's security updates by a rebuild cycle, and this image
     # talks TLS to the database and to the offsite remote. Take them all at build time,
     # before the pinned installs below so the upgrade cannot move rclone or restic.
     && apt-get upgrade -y \
@@ -24,10 +30,14 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     # semantics (exit 10 = repository does not exist).
     && apt-get install -y --no-install-recommends ca-certificates \
     "rclone=${RCLONE_VERSION}" "restic=${RESTIC_VERSION}" \
+    # pg_dump must be at least the server's major version, and Debian ships 17, so take
+    # the client from the PostgreSQL project's apt repository. Left unpinned: that
+    # repository keeps only the newest minor, so a pin would break the next rebuild.
+    && echo 'deb [signed-by=/usr/share/keyrings/pgdg.asc] https://apt.postgresql.org/pub/repos/apt trixie-pgdg main' \
+    >/etc/apt/sources.list.d/pgdg.list \
+    && apt-get update \
+    && apt-get install -y --no-install-recommends postgresql-client-18 \
     && rm -rf /var/lib/apt/lists/* \
-    # Postgres ships gosu for its own entrypoint; this image has its own and runs
-    # as an unprivileged user, so drop the setuid-capable Go binary.
-    && rm -f /usr/local/bin/gosu \
     && groupadd --gid "$APP_UID" "$APP_USER" && useradd --create-home --uid "$APP_UID" --gid "$APP_UID" --shell /usr/sbin/nologin "$APP_USER" \
     && install -d -o "$APP_UID" -g "$APP_UID" -m 0755 "$WORKDIR" \
     # restic's cache lives on a named volume so it survives --rm. Create it here,
@@ -41,7 +51,9 @@ WORKDIR $WORKDIR
 COPY --chmod=755 --chown=$APP_UID:$APP_UID scripts/backup/backup_r9lab_restic.sh .
 COPY --chmod=755 --chown=$APP_UID:$APP_UID scripts/backup/backup_r9lab_restic_entrypoint.sh .
 
-ENV BACKUP_SCRIPT=$WORKDIR/backup_r9lab_restic.sh
+# The versioned bin directory, not /usr/bin: those are Perl wrappers that pick a version.
+ENV PATH=/usr/lib/postgresql/18/bin:$PATH \
+    BACKUP_SCRIPT=$WORKDIR/backup_r9lab_restic.sh
 
 USER $APP_USER
 
