@@ -123,7 +123,7 @@ mutation-release:
     trap 'rm -rf "$work"' EXIT
     rsync -a --exclude .venv --exclude mutants --exclude reports --exclude '.*_cache' ./ "$work/backend/"
     # The copy keeps the app table under another name; mutmut reads only [tool.mutmut].
-    sed -i 's/^\[tool\.mutmut\]$/[tool.mutmut-app]/' "$work/backend/pyproject.toml"
+    sed -i.orig 's/^\[tool\.mutmut\]$/[tool.mutmut-app]/' "$work/backend/pyproject.toml"
     cat >> "$work/backend/pyproject.toml" <<'EOF'
 
     [tool.mutmut]
