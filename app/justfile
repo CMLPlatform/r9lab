@@ -28,17 +28,24 @@ check: codegen-check
 fix:
     pnpm run fix
 
-# Run the tests (unit + integration)
+# Run the tests (unit + integration). The test recipes pass any arguments on to jest,
+# for example a path pattern or a flag: `just test-unit src/services --listTests`.
+# pnpm forwards them as is, so they need no `--`. With one, jest reads every flag after
+# it as a path pattern.
+[doc('Run the tests (unit + integration)')]
 test *args:
-    pnpm run test -- {{ args }}
+    pnpm run test {{ args }}
 
-# Run the fast unit test suite only
+# The suite recipes put --selectProjects after the arguments. It takes a list, so a
+# path pattern right after it would be read as one more project name.
+
+# Run the fast unit test suite only. Takes jest arguments, like `test`.
 test-unit *args:
-    pnpm run test:unit -- {{ args }}
+    pnpm run test {{ args }} --selectProjects unit
 
-# Run the slower app-level Jest integration suite only
+# Run the slower app-level Jest integration suite only. Takes jest arguments, like `test`.
 test-integration *args:
-    pnpm run test:integration -- {{ args }}
+    pnpm run test {{ args }} --selectProjects integration
 
 # Run the CI test suite. Coverage quadruples the run time, so CI collects it on push
 # and on schedule only. Codecov carries the flag forward on pull requests.
