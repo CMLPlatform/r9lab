@@ -5,6 +5,15 @@
 # `purls` (scripts/check_todo_dates.py): the file is shared by every image scan, and an
 # unscoped id would also hide the finding in the backup and postgres images.
 vulnerabilities:
+  # caddy:2-alpine is still built with Go 1.26.8 (checked 2026-10-27: the pinned digest is
+  # the latest). This flaw is in x509 chain verification, which runs only when caddy acts
+  # as a TLS client or server: the app image serves plain HTTP on :8081 behind the
+  # tunnel, with no TLS, no reverse_proxy, no ACME and the admin API off.
+  - id: CVE-2026-111943
+    paths: ["usr/bin/caddy"]
+    expired_at: 2026-12-01
+    statement: Go crypto/x509 intermediate-certificate MITM; caddy here never verifies a certificate chain.
+
   # The caddy:2-alpine binary is built against Go 1.26.3; these need 1.26.4+,
   # which upstream had not shipped when reviewed on 2026-07-13, nor when re-checked
   # on 2026-10-02 (caddy v2.11.4, the pinned digest is still the latest). Re-check
