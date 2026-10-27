@@ -333,6 +333,34 @@ jobs:
         env:
           GITLEAKS_CONFIG: .github/gitleaks.toml
 
+  dco:
+    name: DCO Sign-off
+    # Every commit in a pull request must carry a Signed-off-by line (the Developer
+    # Certificate of Origin, see CONTRIBUTING.md), maintainers' and Renovate's included.
+    # Reads the commits through the API and never checks out the pull request's code.
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-26.04
+    timeout-minutes: 5
+    permissions:
+      pull-requests: read # to list the pull request's commits
+    steps:
+      - name: Check every commit
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          PR: ${{ github.event.pull_request.number }}
+        run: |-
+          missing=$(gh api --paginate "repos/$REPO/pulls/$PR/commits" --jq '.[]
+            | select((.parents | length) < 2)
+            | select([.commit.message | split("\n")[] | select(test("^Signed-off-by: .+ <[^>]+>\r?$"))] | length == 0)
+            | .sha[0:7] + " " + (.commit.message | split("\n")[0])')
+          if [[ -n "$missing" ]]; then
+            echo "These commits have no Signed-off-by line:"
+            echo "$missing"
+            echo "Add it with 'git rebase --signoff origin/main', then force-push the branch."
+            exit 1
+          fi
+
   dependency-review:
     name: Dependency Review
     if: github.event_name == 'pull_request'
@@ -535,6 +563,7 @@ jobs:
       - e2e-full-stack
       - docker-smoke
       - secret-scan
+      - dco
       - dependency-review
       - audit
       - container-security

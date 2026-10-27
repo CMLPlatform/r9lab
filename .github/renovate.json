@@ -10,6 +10,7 @@
   "minimumReleaseAge": "3 days",
   "platformAutomerge": false,
   "labels": ["dependencies"],
+  "commitBody": "Signed-off-by: {{{gitAuthor}}}",
   "osvVulnerabilityAlerts": true,
   "vulnerabilityAlerts": {
     "description": "`enabled` is forced onto alert matches, so packages a rule sets `enabled: false` (the Expo-owned group) still get vulnerability PRs.",
