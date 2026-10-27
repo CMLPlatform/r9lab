@@ -1,5 +1,5 @@
 # BuildKit reads this in place of backend/.dockerignore when building
-# Dockerfile.backups. This image is postgres:18 plus two shell scripts; an
+# Dockerfile.backups. This image is Debian with pg_dump, restic and rclone plus two shell scripts; an
 # allowlist keeps the whole backend tree out of its context.
 *
 

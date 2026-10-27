@@ -39,6 +39,8 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Changed
 
+- The `r9lab-backup` image is built on Debian slim with only the PostgreSQL client, not the
+  full `postgres:18` server image. It is about 71 MB to pull instead of 186 MB.
 - The landing page and docs Workers are named `r9lab-www-<env>` and `r9lab-docs-<env>`.
   Self-hosters who run the Cloudflare root follow "Renaming the repository or the Workers" in
   `infra/cloudflare/README.md`.
