@@ -82,3 +82,12 @@ check above instead.
 
 Log calls are not mutated, but only on the call's first line: the argument lines of a multi-line
 call still are, and their survivors belong in the baseline.
+
+## API fuzzing
+
+`tests/integration/api/test_schemathesis.py` fuzzes every GET route in the public OpenAPI schema
+with Schemathesis, once as a guest and once logged in. It fails on a 500 or on a response body
+the schema does not describe. Each test is one pytest item: a failing route shows as a subtest
+with the request that broke it. The integration suite tries 5 examples per route. `just fuzz`
+tries 100 (`just fuzz 20` for fewer), and the Ops workflow runs it weekly. The OAuth callbacks are
+left out, because they call the real provider; the TODO in the test file says why.

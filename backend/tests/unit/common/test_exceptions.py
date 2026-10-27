@@ -4,6 +4,7 @@ import json
 from unittest.mock import MagicMock, patch
 
 from fastapi import FastAPI, HTTPException, status
+from sqlalchemy.exc import DBAPIError
 
 from app.api.common.audit import AuditAction, AuditContext
 from app.api.common.exceptions import (
@@ -208,6 +209,49 @@ async def test_api_error_5xx_suppresses_details_in_response() -> None:
     assert body["detail"] == "Temporarily unavailable"
     assert "errors" not in body
     assert "redis://internal-cache" not in bytes(response.body).decode()
+
+
+async def test_nul_text_database_error_is_a_bad_request() -> None:
+    """Postgres refusing a NUL byte from the request is the client's error, not a 500."""
+    handler = create_exception_handler(status.HTTP_500_INTERNAL_SERVER_ERROR)
+    mock_request = MagicMock()
+    mock_request.state.request_id = "req-nul"
+    exc = DBAPIError("SELECT 1", None, MagicMock(sqlstate="22021"))
+
+    with patch("app.api.common.routers.exceptions.logger"):
+        response = await handler(mock_request, exc)
+
+    assert response.status_code == 400
+    body = json.loads(bytes(response.body))
+    assert body["detail"] == "Text values must not contain NUL characters"
+    assert body["code"] == "BadRequestError"
+
+
+async def test_out_of_range_database_argument_is_a_bad_request() -> None:
+    """Asyncpg refusing an id past the int32 range is the client's error, not a 500."""
+    handler = create_exception_handler(status.HTTP_500_INTERNAL_SERVER_ERROR)
+    mock_request = MagicMock()
+    mock_request.state.request_id = "req-int"
+    exc = DBAPIError("SELECT 1", None, MagicMock(sqlstate="22000"))
+
+    with patch("app.api.common.routers.exceptions.logger"):
+        response = await handler(mock_request, exc)
+
+    assert response.status_code == 400
+    assert json.loads(bytes(response.body))["detail"] == "A value in the request is out of range"
+
+
+async def test_other_database_error_stays_a_server_error() -> None:
+    """A SQLSTATE outside the client-value list stays a server error."""
+    handler = create_exception_handler(status.HTTP_500_INTERNAL_SERVER_ERROR)
+    mock_request = MagicMock()
+    mock_request.state.request_id = "req-db"
+    exc = DBAPIError("SELECT 1", None, MagicMock(sqlstate="40001"))
+
+    with patch("app.api.common.routers.exceptions.logger"):
+        response = await handler(mock_request, exc)
+
+    assert response.status_code == 500
 
 
 def test_registers_catch_all_exception_handler() -> None:

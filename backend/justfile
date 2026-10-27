@@ -71,6 +71,11 @@ test-flows *args:
 test-integration *args:
     {{ pytest }} tests/integration -n auto --dist=loadgroup {{ args }}
 
+# Fuzz the public API's GET routes from its OpenAPI schema with more examples per route
+# than the integration suite's 5. The Ops workflow runs this weekly.
+fuzz examples="100" *args:
+    SCHEMATHESIS_MAX_EXAMPLES={{ examples }} {{ pytest }} tests/integration -n 2 -k schemathesis {{ args }}
+
 # Run the CI test suite
 test-ci:
     mkdir -p reports/coverage

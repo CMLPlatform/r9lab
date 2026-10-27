@@ -99,3 +99,24 @@ async def test_unhandled_exception_returns_generic_problem_details(test_app: Fas
     assert body["detail"] == "Internal server error"
     assert body["code"] == "RuntimeError"
     assert "database password" not in response.text
+
+
+async def test_overlong_search_returns_422(api_client_light: AsyncClient) -> None:
+    """A free-text search past the length bound is refused as input, not a 500."""
+    response = await api_client_light.get("/v1/taxonomies", params={"search": "x" * 101})
+    assert response.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
+    assert "at most 100 characters" in response.text
+
+
+async def test_nul_byte_in_filter_returns_400(api_client_light: AsyncClient) -> None:
+    """Postgres refuses NUL in text; a filter value carrying one is the client's error."""
+    response = await api_client_light.get("/v1/taxonomies", params={"name[ilike]": "a\x00b"})
+    assert response.status_code == status.HTTP_400_BAD_REQUEST
+    assert response.json()["detail"] == "Text values must not contain NUL characters"
+
+
+async def test_id_past_int32_range_returns_400(api_client_light: AsyncClient) -> None:
+    """An id no int32 column can hold is refused as input, not a 500."""
+    response = await api_client_light.get(f"/v1/taxonomies/{2**31}")
+    assert response.status_code == status.HTTP_400_BAD_REQUEST
+    assert response.json()["detail"] == "A value in the request is out of range"

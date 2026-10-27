@@ -19,6 +19,7 @@ on:
         options:
           - perf-baseline
           - bundle-budget
+          - fuzz
           - mutation
       git_ref:
         description: Git ref to test
@@ -107,6 +108,39 @@ jobs:
             repo/backend/reports/performance/latest-k6-summary.json
             repo/backend/reports/performance/*.md
           retention-days: 14
+
+  # The integration suite fuzzes with 5 examples per route; this pass tries 100.
+  backend-fuzz:
+    name: Backend API Fuzzing
+    if: github.event.schedule == '0 5 * * 1' || inputs.operation == 'fuzz'
+    runs-on: ubuntu-26.04
+    timeout-minutes: 60
+    steps:
+      - name: Checkout trusted workflow ref
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up runtime
+        uses: ./.github/actions/setup-runtime
+        with:
+          setup-python: "true"
+          uv-cache-dependency-glob: backend/uv.lock
+
+      - name: Checkout requested repository ref
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ inputs.git_ref || github.ref_name }}
+          path: repo
+          persist-credentials: false
+
+      - name: Install dependencies
+        working-directory: repo
+        run: just backend/install
+
+      - name: Fuzz the public API
+        working-directory: repo
+        run: just backend/fuzz
 
   # Tracks the survivor count rather than gating on it: it never reaches zero. Triage
   # the functions listed above baseline, then rebaseline (backend/tests/README.md).
