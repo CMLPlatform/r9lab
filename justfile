@@ -605,7 +605,7 @@ release-prep version:
     echo "Write the [$version] section of CHANGELOG.md, then commit and open a PR."
 
 [group('release')]
-[doc('Draft the GitHub release for a merged version from its CHANGELOG section')]
+[doc('Sign and push the tag for a merged version, then draft its GitHub release from its CHANGELOG section')]
 release-publish version:
     #!/usr/bin/env bash
     set -euo pipefail
@@ -623,8 +623,27 @@ release-publish version:
         found && /^## \[/ { exit }
         found { print }')"
     [[ -n "${notes//[[:space:]]/}" ]] || { echo "CHANGELOG.md on origin/main has no v$version section" >&2; exit 1; }
-    gh release create "v$version" --draft --target "$(git rev-parse origin/main)" \
-        --title "v$version" --notes "$notes"
+    tag="v$version"
+    sha="$(git rev-parse origin/main)"
+    # Tag with your own key so GitHub shows it verified; a tag gh creates is unsigned. A tag left by
+    # an earlier run that stopped after the push is reused, but only on the same commit.
+    if git rev-parse --quiet --verify "refs/tags/$tag" >/dev/null; then
+        [[ "$(git rev-parse "$tag^{commit}")" == "$sha" ]] || { echo "tag $tag exists locally on another commit" >&2; exit 1; }
+    else
+        git tag --sign "$tag" --message "$tag" "$sha"
+    fi
+    git verify-tag "$tag" >/dev/null 2>&1 || { echo "tag $tag is not signed with a key git trusts" >&2; exit 1; }
+    # ls-remote exits 2 when the tag is missing, 0 when it exists, anything else on an error.
+    found=0
+    remote="$(git ls-remote --exit-code --tags origin "refs/tags/$tag^{}")" || found=$?
+    if [[ "$found" == 2 ]]; then
+        git push origin "refs/tags/$tag"
+    elif [[ "$found" == 0 ]]; then
+        [[ "${remote%%[[:space:]]*}" == "$sha" ]] || { echo "tag $tag exists on origin on another commit" >&2; exit 1; }
+    else
+        echo "could not list origin's tags" >&2; exit 1
+    fi
+    gh release create "$tag" --draft --verify-tag --title "$tag" --notes "$notes"
     echo "Review the draft, add any upgrade notes, then publish it: that starts release.yml."
 
 # Check a published tag's build provenance from the dev host, before a host pulls it

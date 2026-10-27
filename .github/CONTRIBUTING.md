@@ -353,8 +353,9 @@ Fixed and Security.
    prints the commits since the last tag.
 1. Write or finish that section for readers, commit, and open a PR. Its description is yours: put
    one-time upgrade steps there and in the release notes.
-1. After the merge, `just release-publish 0.4.0` drafts the GitHub release from the section.
-1. Publish the draft. That creates the `v0.4.0` tag and starts `release.yml`, which publishes the
+1. After the merge, `just release-publish 0.4.0` signs the `v0.4.0` tag with your git signing key,
+   pushes it, and drafts the GitHub release from the section.
+1. Publish the draft. That starts `release.yml`, which publishes the
    images to GHCR and deploys the sites. Every job in the `staging` and `prod` GitHub Environments
    waits for a required reviewer: approve staging, check it, then approve prod.
 
