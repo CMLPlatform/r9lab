@@ -1,8 +1,8 @@
 # yaml-language-server: $schema=https://json.schemastore.org/github-workflow.json
 name: Release
 
-# Publishing a GitHub release (drafted by `just release-publish <version>`) creates its tag
-# and starts this: the release's images go to GHCR. The same event starts deploy-sites.yml,
+# `just release-publish <version>` pushes a signed tag and drafts the GitHub release on it.
+# Publishing that release starts this: the release's images go to GHCR. The same event starts deploy-sites.yml,
 # which puts its sites on Cloudflare Workers.
 on:
   release:
