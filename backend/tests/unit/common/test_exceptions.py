@@ -242,7 +242,7 @@ async def test_out_of_range_database_argument_is_a_bad_request() -> None:
 
 
 async def test_other_database_error_stays_a_server_error() -> None:
-    """Only the NUL-text SQLSTATE is the client's fault."""
+    """A SQLSTATE outside the client-value list stays a server error."""
     handler = create_exception_handler(status.HTTP_500_INTERNAL_SERVER_ERROR)
     mock_request = MagicMock()
     mock_request.state.request_id = "req-db"
