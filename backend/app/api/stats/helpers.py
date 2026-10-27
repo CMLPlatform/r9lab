@@ -26,7 +26,9 @@ def resolve_date_range(
 ) -> tuple[date, date]:
     """Return the effective (start, end) date range for a series query."""
     effective_end = end or datetime.now(UTC).date()
-    effective_start = start if start is not None else effective_end - _DEFAULT_DELTAS[granularity]
+    delta = _DEFAULT_DELTAS[granularity]
+    # Clamp at date.min: an `end` in the first years of the calendar would underflow.
+    effective_start = start if start is not None else max(effective_end, date.min + delta) - delta
     return effective_start, effective_end
 
 

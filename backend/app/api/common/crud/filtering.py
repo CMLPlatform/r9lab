@@ -1,7 +1,7 @@
 """Filtering integration boundary for CRUD queries."""
 
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any, ClassVar, Self, cast
+from typing import TYPE_CHECKING, Annotated, Any, ClassVar, Self, cast
 
 from fastapi import Depends, Query
 from fastapi_filters import FilterField, FilterOperator, FilterSet, SortingValues, create_sorting
@@ -207,7 +207,7 @@ def create_filter_dependency(
 
         async def dependency_without_sorting(
             filters: BaseFilterSet = Depends(filter_cls),
-            search: BoundedQueryText = Query(default=None),
+            search: Annotated[BoundedQueryText, Query()] = None,
         ) -> BaseFilterSet:
             return filters.with_search(search).with_sorting([])
 
@@ -217,7 +217,7 @@ def create_filter_dependency(
 
     async def dependency(
         filters: BaseFilterSet = Depends(filter_cls),
-        search: BoundedQueryText = Query(default=None),
+        search: Annotated[BoundedQueryText, Query()] = None,
         sorting: SortingValues = Depends(sorting_dependency),
     ) -> BaseFilterSet:
         return filters.with_search(search).with_sorting(sorting)

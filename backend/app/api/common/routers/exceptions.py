@@ -5,10 +5,11 @@ from typing import TYPE_CHECKING
 
 from fastapi import FastAPI, Request, status
 from pydantic import ValidationError
+from sqlalchemy.exc import DBAPIError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.api.common.audit import AuditAction, AuditContext, audit_event
-from app.api.common.exceptions import APIError, ServiceUnavailableError
+from app.api.common.exceptions import APIError, BadRequestError, ServiceUnavailableError
 from app.api.common.rate_limiting import RateLimitExceededError, rate_limit_exceeded_handler
 from app.core.responses import build_problem_response
 from app.core.runtime import RequiredServiceUnavailableError
@@ -22,6 +23,14 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 _INTERNAL_SERVER_ERROR_DETAIL = "Internal server error"
+# Values any request can carry that Postgres refuses to store or compare, so they are
+# the client's error, not a 500. Keyed by SQLSTATE.
+_CLIENT_VALUE_SQLSTATES = {
+    # asyncpg refuses to encode an argument, such as an id past the int32 column range.
+    "22000": "A value in the request is out of range",
+    # character_not_in_repertoire: text holding a NUL byte.
+    "22021": "Text values must not contain NUL characters",
+}
 
 
 def create_exception_handler(
@@ -83,6 +92,14 @@ def _response_parts(
         )
     if isinstance(exc, APIError):
         return _api_error_parts(exc)
+    if isinstance(exc, DBAPIError) and (detail := _CLIENT_VALUE_SQLSTATES.get(getattr(exc.orig, "sqlstate", None))):
+        return (
+            BadRequestError.http_status_code,
+            detail,
+            str(exc),
+            BadRequestError.__name__,
+            {},
+        )
     if isinstance(exc, StarletteHTTPException):
         return (
             exc.status_code,
@@ -119,6 +136,8 @@ def register_exception_handlers(app: FastAPI) -> None:
     app.add_exception_handler(APIError, create_exception_handler())
     app.add_exception_handler(StarletteHTTPException, create_exception_handler())
     app.add_exception_handler(RequiredServiceUnavailableError, create_exception_handler())
+    # Its own entry, so the 400s above are not re-raised by the catch-all.
+    app.add_exception_handler(DBAPIError, create_exception_handler(status.HTTP_500_INTERNAL_SERVER_ERROR))
     app.add_exception_handler(RateLimitExceededError, rate_limit_exceeded_handler)
     # NOTE: pydantic ValidationError here is internal logic, not user input, hence 500.
     app.add_exception_handler(ValidationError, create_exception_handler(status.HTTP_500_INTERNAL_SERVER_ERROR))

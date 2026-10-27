@@ -128,6 +128,9 @@
 
     # CPU benchmarks (tests/benchmarks), measured by CodSpeed in CI
     "pytest-codspeed>=5.0.3",
+
+    # API fuzzing from the public OpenAPI schema
+    "schemathesis>=4.32.4",
   ]
 mutation = [
     "mutmut>=3.8.0",

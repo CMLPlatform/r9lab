@@ -61,6 +61,10 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- The API answers a bad query with a client error instead of a server error: 422 for a `search`
+  longer than 100 characters, 400 for text holding a NUL character and for an id above
+  2,147,483,647. `/v1/stats/series` with an `end` in the first years of the calendar and no
+  `start` now starts the range at 0001-01-01 instead of failing.
 - Restoring a backup whose database roles no longer exist (a dump taken before a role rename)
   now works: the restore skips the dump's owners and grants, then hands ownership to the
   migration role and restores every grant.

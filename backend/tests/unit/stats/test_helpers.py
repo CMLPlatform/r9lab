@@ -45,6 +45,12 @@ def test_explicit_end_used_when_start_omitted() -> None:
     assert start == end - timedelta(days=731)
 
 
+def test_default_start_clamps_at_first_date() -> None:
+    """An end too early for the default window starts the range at date.min, not an OverflowError."""
+    end = date(1, 1, 5)
+    assert resolve_date_range("year", None, end) == (date.min, end)
+
+
 _DT = datetime(2025, 7, 14, 10, 30, 0, tzinfo=UTC)
 
 
