@@ -69,6 +69,10 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   now works: the restore skips the dump's owners and grants, then hands ownership to the
   migration role and restores every grant.
 - `just stack <env> compose ...` keeps quoted arguments that contain spaces whole.
+- `just app/test`, `just app/test-unit` and `just app/test-integration` pass their arguments on
+  to jest. `just app/test-unit src/services` runs only that folder, and flags such as
+  `--listTests` work. Before, jest read the flags as path patterns and the suite recipes dropped
+  the path.
 - The rename guard also refuses while the old `relab_<env>` project still runs or its uploads
   volume has not been copied.
 - Signing in with Google, or linking Google again, no longer disconnects YouTube streaming.
