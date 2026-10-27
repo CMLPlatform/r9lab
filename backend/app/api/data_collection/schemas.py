@@ -50,7 +50,7 @@ MAX_COMPONENT_AMOUNT = 1_000
 
 
 def validate_material_or_components(bill_of_materials: Collection, components: Collection) -> None:
-    """Validation logic to ensure either materials or components are provided."""
+    """Log a warning when a product has neither materials nor components; it does not reject it yet."""
     if len(bill_of_materials) == 0 and len(components) == 0:
         err_msg = "Product must have at least one material or component"
         # TODO: raise error again once we implement Bill of materials UI
@@ -165,7 +165,7 @@ class ComponentCreateWithComponents(ComponentCreate):
 
     @model_validator(mode="after")
     def has_material_or_components(self) -> Self:
-        """Validation to ensure product has either materials or components."""
+        """Warn when the component has neither materials nor components (see validate_material_or_components)."""
         validate_material_or_components(self.bill_of_materials, self.components)
         return self
 
@@ -195,7 +195,7 @@ class ProductCreateWithComponents(ProductCreateBaseProduct):
 
     @model_validator(mode="after")
     def has_material_or_components(self) -> Self:
-        """Validation to ensure product has either materials or components."""
+        """Warn when the product has neither materials nor components (see validate_material_or_components)."""
         validate_material_or_components(self.bill_of_materials, self.components)
         return self
 
