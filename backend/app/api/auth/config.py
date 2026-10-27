@@ -145,7 +145,8 @@ class AuthSettings(RelabBaseSettings):
         return self.refresh_token_expire_days * DAY
 
     # Auth settings - Rate limiting
-    # Failed password logins per account; also the MFA code budget per challenge and per IP.
+    # Failed password logins per account; also the MFA code budget per challenge and per
+    # account. The per-IP MFA budget is the login IP limit below.
     rate_limit_login_attempts_per_minute: int = 3
     # All password logins per client IP. Sized so a workshop room (~50 people behind one
     # IP, often on one shared demo account) can sign in within a minute; guessing stays
