@@ -76,6 +76,14 @@ cat reports/mutation/ops/*/survivors.txt | sort > reports/mutation/survivors.txt
 just mutation-baseline
 ```
 
+`just mutation-release` runs mutmut over `scripts/build_dataset_release.py` alone, from a copy of
+the backend with its own mutmut config, in a few minutes and with no database. It writes every
+survivor to `reports/mutation/release-survivors.txt` and fails while `select_records`,
+`pseudonymise_owners`, `check_salt_fingerprint`, `verify` or `forbidden_values` has more survivors
+than the baseline allows: those decide what a release publishes, which cannot be undone. The
+baseline's `scripts.` lines are its equivalent mutants, each with the reason after a `#`;
+`just mutation-baseline` keeps them.
+
 mutmut skips decorated functions, so route handlers are never mutated: guards that live in a
 handler body (such as the empty-upload check in the camera preview upload) need the `if False:`
 check above instead.

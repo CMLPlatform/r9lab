@@ -117,10 +117,54 @@ mutation *mutants:
     echo "$(wc -l < reports/mutation/survivors.txt) survivors; functions above baseline:"
     cat reports/mutation/new-survivors.txt
 
+# Mutation testing of the dataset release script, run from a copy whose own [tool.mutmut]
+# leaves the app config alone. Fails while a function that gates what a release publishes
+# has more survivors than tests/mutation-baseline.txt allows; other functions only report.
+[doc('Mutation testing over the dataset release script, failing on release-gate survivors')]
+mutation-release:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    work=$(mktemp -d)
+    trap 'rm -rf "$work"' EXIT
+    rsync -a --exclude .venv --exclude mutants --exclude reports --exclude '.*_cache' ./ "$work/backend/"
+    # The copy keeps the app table under another name; mutmut reads only [tool.mutmut].
+    sed -i.orig 's/^\[tool\.mutmut\]$/[tool.mutmut-app]/' "$work/backend/pyproject.toml"
+    cat >> "$work/backend/pyproject.toml" <<'EOF'
+
+    [tool.mutmut]
+      also_copy                          = [".env.test", "app", "scripts"]
+      pytest_add_cli_args_test_selection = ["tests/unit/scripts/test_build_dataset_release.py"]
+      do_not_mutate_patterns             = ['^\s*(logger|logging)\.\w+\(']
+      source_paths                       = ["scripts/build_dataset_release.py"]
+    EOF
+    backend=$PWD
+    mkdir -p reports/mutation
+    (
+        cd "$work/backend"
+        UV_PROJECT_ENVIRONMENT="$backend/.venv" nice -n 10 uv run --frozen --group mutation \
+            mutmut run --max-children "${MUTMUT_JOBS:-$(( ($(nproc) + 1) / 2 ))}"
+        UV_PROJECT_ENVIRONMENT="$backend/.venv" uv run --frozen --group mutation mutmut results \
+            | sed -n 's/^ *\(.*\): survived$/\1/p' | sort > "$backend/reports/mutation/release-survivors.txt"
+    )
+    gates='x_(select_records|pseudonymise_owners|check_salt_fingerprint|verify|forbidden_values)$'
+    sed 's/__mutmut_[0-9]*$//' reports/mutation/release-survivors.txt | { grep -E "\.$gates" || true; } | sort | uniq -c \
+        | awk 'FILENAME == ARGV[1] { base[$2] = $1; next } $1 > base[$2] { print $2, base[$2] + 0, "->", $1 }' \
+            tests/mutation-baseline.txt - > reports/mutation/release-gate-survivors.txt
+    echo "$(wc -l < reports/mutation/release-survivors.txt) survivors; release gates above baseline:"
+    cat reports/mutation/release-gate-survivors.txt
+    test ! -s reports/mutation/release-gate-survivors.txt
+
 # Rebaseline after triaging survivors. Only from a full run (or the Ops artifact):
 # it replaces the whole file, so a narrowed run would drop every other function.
+# The release script's lines come from `just mutation-release` and are kept, reasons and all.
 mutation-baseline:
-    sed 's/__mutmut_[0-9]*$//' reports/mutation/survivors.txt | sort | uniq -c | awk '{ print $1, $2 }' > tests/mutation-baseline.txt
+    #!/usr/bin/env bash
+    set -euo pipefail
+    {
+        grep '^[0-9]* scripts\.' tests/mutation-baseline.txt || true
+        sed 's/__mutmut_[0-9]*$//' reports/mutation/survivors.txt | sort | uniq -c | awk '{ print $1, $2 }'
+    } | sort -k2,2 > reports/mutation/baseline.new
+    mv reports/mutation/baseline.new tests/mutation-baseline.txt
 
 # ============================================================================
 # Database & Migrations

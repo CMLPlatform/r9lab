@@ -668,6 +668,92 @@ def test_verify_rejects_a_leaked_email(tmp_path) -> None:
     assert verify(root) == ["README.md: leaked value 'someone@example.org'"]
 
 
+@pytest.mark.parametrize("suffix", [".csv", ".json", ".md", ".txt", ".cff"])
+def test_verify_scans_every_text_format_for_leaks(tmp_path, suffix) -> None:
+    """Each text format a release ships is scanned, not only the README."""
+    root = _minimal_release(tmp_path)
+    (root / f"notes{suffix}").write_text("contact someone@example.org", encoding="utf-8")
+    write_checksums(root)
+    assert verify(root) == [f"notes{suffix}: leaked value 'someone@example.org'"]
+
+
+def _rewrite_table(root: Path, name: str, schema: pa.Schema, rows: list[dict[str, Any]]) -> Path:
+    """Replace one table of a minimal release, then rebuild its digests so only the edit shows."""
+    write_parquet(root / name, schema, rows)
+    write_artefacts(root, ReleaseMetadata(), BuildStats(records=2, images=1, owners=1), {"owner-abc123": 2})
+    write_checksums(root)
+    return root
+
+
+@pytest.mark.parametrize(
+    ("name", "schema", "rows", "expected"),
+    [
+        (
+            "records.parquet",
+            RECORDS_SCHEMA,
+            [_record(), _record(id=2, name="Motor", parent_id=99, amount_in_parent=2)],
+            "records: parent_id='99' does not resolve",
+        ),
+        (
+            "records.parquet",
+            RECORDS_SCHEMA,
+            [_record(), _record(id=2, name="Motor", parent_id=1, amount_in_parent=2, product_type_id=99)],
+            "records: product_type_id='99' does not resolve",
+        ),
+        (
+            "record_materials.parquet",
+            RECORD_MATERIALS_SCHEMA,
+            [{"product_id": 99, "material_id": 3, "quantity": 0.5, "unit": "kg"}],
+            "record_materials: product_id='99' does not resolve",
+        ),
+        (
+            "record_materials.parquet",
+            RECORD_MATERIALS_SCHEMA,
+            [{"product_id": 1, "material_id": 99, "quantity": 0.5, "unit": "kg"}],
+            "record_materials: material_id='99' does not resolve",
+        ),
+        (
+            "reference/categories.parquet",
+            CATEGORIES_SCHEMA,
+            [{"id": 4, "name": "C", "taxonomy_id": 99}],
+            "categories: taxonomy_id='99' does not resolve",
+        ),
+        (
+            "reference/categories.parquet",
+            CATEGORIES_SCHEMA,
+            [{"id": 4, "name": "C", "taxonomy_id": 2, "supercategory_id": 99}],
+            "categories: supercategory_id='99' does not resolve",
+        ),
+    ],
+)
+def test_verify_rejects_each_dangling_foreign_key(tmp_path, name, schema, rows, expected) -> None:
+    """Every foreign key a release publishes must resolve, and the message names which one."""
+    assert verify(_rewrite_table(_minimal_release(tmp_path), name, schema, rows)) == [expected]
+
+
+def test_verify_accepts_a_category_under_a_supercategory(tmp_path) -> None:
+    """A supercategory that is in the table resolves."""
+    rows = [{"id": 4, "name": "C", "taxonomy_id": 2}, {"id": 6, "name": "D", "taxonomy_id": 2, "supercategory_id": 4}]
+    root = _rewrite_table(_minimal_release(tmp_path), "reference/categories.parquet", CATEGORIES_SCHEMA, rows)
+    assert verify(root) == []
+
+
+def test_verify_rejects_an_image_with_exif_outside_the_allowlist(tmp_path) -> None:
+    """The EXIF backstop runs over the release images, not only in its own unit test."""
+    root = _minimal_release(tmp_path)
+    _write_jpeg(root / "images" / "abc.jpg", {0x010F: "Canon", 0x013B: "A Person"})
+    write_checksums(root)
+    assert verify(root) == ["abc.jpg: EXIF tag 0x013B outside the allowlist"]
+
+
+def test_verify_rejects_a_manifest_row_whose_image_is_missing(tmp_path) -> None:
+    """A manifest row must point at an image the release actually ships."""
+    root = _minimal_release(tmp_path)
+    (root / "images" / "abc.jpg").unlink()
+    write_checksums(root)
+    assert verify(root) == ["manifest: images/abc.jpg is not in images/"]
+
+
 ### Parquet ###
 def test_parquet_preserves_null_and_integer_types(tmp_path) -> None:
     """A null mass must not read back as an empty string, and counts stay integers."""
@@ -771,6 +857,21 @@ def test_the_abort_message_names_both_fingerprints_and_offers_no_way_on() -> Non
     assert pinned in message
     assert salt_fingerprint("a-freshly-generated-salt") in message
     assert "the original was lost" in message
+
+
+def test_the_abort_message_is_verbatim() -> None:
+    """The message is the whole instruction a release manager gets, so its text is pinned."""
+    pinned = salt_fingerprint("the-original-salt")
+    fresh = salt_fingerprint("a-freshly-generated-salt")
+    with pytest.raises(SystemExit) as caught:
+        check_salt_fingerprint("a-freshly-generated-salt", pinned)
+    assert str(caught.value) == (
+        f"Pseudonymisation salt mismatch: this salt fingerprints as {fresh}, but "
+        f"previous releases used {pinned}. Pseudonyms built with it will not line up "
+        "with the ones already published, so contributor-level splits would silently "
+        "leak across releases. Either the wrong salt was supplied, or the original was "
+        "lost. Recover the original salt; do not build a release with this one."
+    )
 
 
 LONG_SALT = "x" * release.MIN_PSEUDONYM_SALT_LENGTH
@@ -1231,6 +1332,53 @@ def test_excluding_a_component_keeps_its_ancestors() -> None:
     kept, excluded = select_records(records, {"u1": _owner("lab")}, SelectionRules(excluded_product_ids=frozenset({2})))
     assert [row["id"] for row in kept] == [1]
     assert {entry["id"] for entry in excluded} == {2, 3}
+
+
+def test_an_excluded_sibling_does_not_shield_the_next_one() -> None:
+    """A child excluded on its own merits must not stop the walk over its siblings."""
+    records = [_rec(1), _rec(2, parent_id=1), _rec(3, parent_id=1)]
+    rules = SelectionRules(excluded_product_ids=frozenset({1, 2}))
+    kept, excluded = select_records(records, {"u1": _owner("lab")}, rules)
+    assert kept == []
+    assert {entry["id"]: entry["rule"] for entry in excluded} == {
+        1: "excluded-product",
+        2: "excluded-product",
+        3: "ancestor-excluded",
+    }
+
+
+def test_exclusion_entries_name_the_owner_and_the_reason() -> None:
+    """The exclusion extract is what a person reviews, so every field of every entry counts.
+
+    Covers an owner missing from the account map and one with no username: both show as
+    an empty owner, never as a crash or a placeholder.
+    """
+    owners = {
+        "u1": _owner("lab"),
+        "u2": _owner("other", None),
+        "u3": {"username": None, "terms_version": MINIMUM_RELEASE_TERMS_VERSION},
+    }
+    records = [_rec(1, "u2"), _rec(2, "u1", parent_id=1), _rec(3, "ghost"), _rec(4, "u3", parent_id=3)]
+    kept, excluded = select_records(records, owners, SelectionRules())
+    assert kept == []
+    assert excluded == [
+        {
+            "id": 1,
+            "name": "Cordless drill",
+            "owner": "other",
+            "rule": "no-terms-acceptance",
+            "detail": "owner other has not accepted the terms",
+        },
+        {"id": 2, "name": "Cordless drill", "owner": "lab", "rule": "ancestor-excluded", "detail": "parent 1"},
+        {
+            "id": 3,
+            "name": "Cordless drill",
+            "owner": "",
+            "rule": "no-terms-acceptance",
+            "detail": "owner ghost has not accepted the terms",
+        },
+        {"id": 4, "name": "Cordless drill", "owner": "", "rule": "ancestor-excluded", "detail": "parent 3"},
+    ]
 
 
 ### Name filtering ###
