@@ -165,7 +165,7 @@ class ComponentCreateWithComponents(ComponentCreate):
 
     @model_validator(mode="after")
     def has_material_or_components(self) -> Self:
-        """Warn when the product has neither materials nor components (see validate_material_or_components)."""
+        """Warn when the component has neither materials nor components (see validate_material_or_components)."""
         validate_material_or_components(self.bill_of_materials, self.components)
         return self
 
