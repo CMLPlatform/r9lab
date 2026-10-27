@@ -17,6 +17,8 @@ documentation changes. To run or deploy the stack, see
 ## Code of Conduct
 
 By participating, you agree to follow the [Code of Conduct](CODE_OF_CONDUCT.md).
+[GOVERNANCE.md](../GOVERNANCE.md) says who maintains R9lab and how decisions are made, and the
+[roadmap](https://docs.r9lab.io/project/roadmap/) says what is planned.
 
 ## Devcontainer Setup
 
@@ -116,7 +118,25 @@ in the root `justfile`.
 Keep new settings in the smallest surface that needs them. If a change adds or renames env vars,
 update the examples, validation rules, and affected docs in the same PR.
 
+## Choosing Dependencies
+
+Add a dependency only when the standard library, the platform, or an existing dependency cannot do
+the job. A new one must be:
+
+- maintained, with recent releases and a response to security reports
+- under a licence compatible with AGPL-3.0, such as MIT, BSD, Apache-2.0, or LGPL
+- added with `uv add` or `pnpm add`, so it lands in the manifest and is pinned in `uv.lock` or
+  `pnpm-lock.yaml`
+
+uv (`exclude-newer`) and pnpm (`minimumReleaseAge`) refuse to lock a release younger than three
+days. Renovate opens the update pull requests. [Supply chain](https://docs.r9lab.io/operations/security/#supply-chain)
+on the security page says how dependencies are audited and how fast fixes land.
+
 ## Quality Controls
+
+New behaviour comes with tests in the same pull request, and a bug fix adds a test that fails
+without it. Fix lint and type warnings rather than leaving them; suppress one only with the reason
+next to the suppression.
 
 Run the relevant subrepo checks before opening a pull request:
 
@@ -313,6 +333,15 @@ Use [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/):
 <type>(<scope>): <short summary>
 ```
 
+### Sign Off Your Commits
+
+Every commit in a pull request carries a `Signed-off-by:` line. It says you wrote the change or
+have the right to submit it under the project's licences: the
+[Developer Certificate of Origin 1.1](https://developercertificate.org/). `git commit -s` adds it;
+`git rebase --signoff origin/main` adds it to commits you already made. The `DCO Sign-off` job in CI
+fails any pull request with a commit that lacks it, maintainers' and Renovate's included. Renovate
+adds the line itself.
+
 ### Releases
 
 `CHANGELOG.md` follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/): user-visible
@@ -324,8 +353,9 @@ Fixed and Security.
    prints the commits since the last tag.
 1. Write or finish that section for readers, commit, and open a PR. Its description is yours: put
    one-time upgrade steps there and in the release notes.
-1. After the merge, `just release-publish 0.4.0` drafts the GitHub release from the section.
-1. Publish the draft. That creates the `v0.4.0` tag and starts `release.yml`, which publishes the
+1. After the merge, `just release-publish 0.4.0` signs the `v0.4.0` tag with your git signing key,
+   pushes it, and drafts the GitHub release from the section.
+1. Publish the draft. That starts `release.yml`, which publishes the
    images to GHCR and deploys the sites. Every job in the `staging` and `prod` GitHub Environments
    waits for a required reviewer: approve staging, check it, then approve prod.
 

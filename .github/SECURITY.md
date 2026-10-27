@@ -4,17 +4,29 @@
 
 Do not open a public GitHub issue for security vulnerabilities.
 
-Instead, email [info@r9lab.io](mailto:info@r9lab.io) with:
+Instead, report it privately through GitHub's
+[private vulnerability reporting](https://github.com/CMLPlatform/r9lab/security/advisories/new), or
+email [info@r9lab.io](mailto:info@r9lab.io), with:
 
 - a clear description of the issue and its potential impact
 - steps to reproduce it, or a proof of concept
 - any mitigations or patches you have already identified
+
+Both reach only the maintainers.
 
 ## What to Expect
 
 - We aim to acknowledge reports within 5 business days.
 - For confirmed vulnerabilities, we coordinate a fix and a disclosure timeline with the reporter
   where practical.
+- The fix ships in a release. We then publish a GitHub security advisory, with a CVE where one
+  applies, and name it under "Security" in the [changelog](../CHANGELOG.md).
+- We credit the reporter in the advisory unless they ask not to be named.
+
+## Supported Versions
+
+Only the latest release and `main` get security fixes. Self-hosters upgrade to the latest release
+to get a fix.
 
 ## Security Baseline
 

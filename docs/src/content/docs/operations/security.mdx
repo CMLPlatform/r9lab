@@ -133,3 +133,82 @@ Dangerous functionality is isolated in small modules and reviewed as a security-
 - backup jobs read database and upload volumes but run in dedicated containers with separate secrets
 
 Encapsulate new dangerous functionality near its trust boundary, cover it with focused tests, and document it here when it changes the security model.
+
+## Assurance case
+
+This section argues why R9lab meets its security requirements, and points at the code and checks
+that back each claim. Paths are relative to the
+[repository root](https://github.com/CMLPlatform/r9lab). The requirements are: only an account with
+the right attributes can read or change a record, account secrets and provider tokens never leave
+the backend in clear, and hostile input cannot reach data, other users' browsers, or internal
+services.
+
+### Threat model
+
+R9lab is a public web platform with open sign-up. We defend against:
+
+- an anonymous or signed-in user who tries to read or change another user's records, account, or
+  uploads, or to gain a role they do not have
+- a hostile upload: oversized, malformed, or malicious files and images
+- a hostile web page that tries a cross-site write through a signed-in user's browser, and injected
+  content that tries to run script in another user's browser
+- credential stuffing, password guessing, and floods of expensive requests
+- a compromised or misbehaving RPi camera, and an outside provider (OAuth, email, YouTube) that
+  returns unexpected data
+- a malicious dependency, action, or contributor change that reaches a release
+
+We do not defend against root on a deploy host, a compromised Cloudflare account, or an operator
+who exposes the data services against the [deployment guide](/operations/deployment/).
+
+### Trust boundaries
+
+| Boundary                    | Controls                                                                                                                                                                                                                                                                                          |
+| --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Internet to the edge        | HTTPS only with TLS 1.2 or later, edge rate limits on auth and admin calls, and unknown hostnames refused (`infra/cloudflare/`, `infra/cloudflare-zone/`); see [Inbound edge](#inbound-edge)                                                                                                      |
+| Client to API               | Authorization in route dependencies (`backend/app/api/auth/dependencies.py`, `backend/app/api/common/ownership.py`); pydantic schemas with bounds on every body and parameter; request size limits (`backend/app/core/middleware/request_size.py`); cross-site cookie writes refused (`backend/app/core/middleware/cross_site.py`); per-client and per-user rate limits (`backend/app/api/common/rate_limiting.py`) |
+| Uploads to storage          | Type, size, and pixel checks and malware scanning before storage (`backend/app/api/file_storage/upload_security.py`, `backend/app/core/images/`)                                                                                                                                                  |
+| API to the browser          | Strict Content-Security-Policy, HSTS, `nosniff`, and `no-store` on viewer-dependent responses (`backend/app/core/middleware/response_policy.py`); `script-src 'self'` on the app and sites; see [Browser runtime policy](#browser-runtime-policy)                                                  |
+| API to data services        | PostgreSQL and Redis on the internal `data` network only, least-privilege database roles, no host ports in prod or staging (`compose.deploy.yaml`); see [Network boundaries](#network-boundaries)                                                                                                |
+| API to outside providers    | One shared client with an egress allowlist, verified TLS, no redirects, and bounded timeouts (`backend/app/core/clients/http.py`); provider tokens stored with AES-256-GCM (`backend/app/core/crypto/storage.py`)                                                                                  |
+| RPi cameras to API          | Short-lived ES256 device assertions checked on every call (`backend/app/api/plugins/r9cam/device_assertion.py`), rate limits, and the relay's method and path allowlist from `r9cam_models`                                                                                                     |
+| Contributors to release     | Pull requests with required CI and a DCO sign-off, digest-pinned actions and base images, Trivy before push, and signed provenance and SBOM attestations on every image (`.github/workflows/`); see [Supply chain](#supply-chain)                                                                |
+
+### Secure design principles
+
+- **Fail-safe defaults.** `ENVIRONMENT` has no default; production and staging refuse to start
+  with a placeholder secret (`backend/app/core/secrets.py`), and local-development relaxations are
+  explicit (`backend/app/core/config/`).
+- **Least privilege.** `is_verified`, `is_superuser`, and `role` are separate attributes (see
+  [Account privileges](#account-privileges)); containers run as non-root users, read-only, with
+  capabilities dropped and `no-new-privileges` (`compose.deploy.yaml`); workflows start from no
+  permissions or `contents: read`.
+- **Complete mediation.** Every route that reads private data or writes declares its auth
+  dependency; hiding a control in a client is never the check.
+- **Economy of mechanism.** Dangerous functionality lives in small modules near its boundary (see
+  [Dangerous functionality](#dangerous-functionality)), and outbound HTTP has one client.
+- **Open design.** Security rests on keys and secrets, not on hidden code: the source, the OpenAPI
+  schemas, and this page are public.
+
+### Countering common weaknesses
+
+The [OWASP ASVS](https://github.com/OWASP/ASVS) level-1 areas, and where each is handled:
+
+- **Broken access control.** Route dependencies and ownership checks, with tests for each role
+  (`backend/tests/`).
+- **Injection.** SQLAlchemy with bound parameters; no raw SQL built from input.
+- **Cross-site scripting.** Framework escaping only; raw HTML sinks are blocked by
+  `scripts/browser_js_policy.py`, and the CSP forbids inline and remote scripts in the app and
+  website.
+- **Cross-site request forgery.** `SameSite` cookies plus the cross-site write check.
+- **Authentication.** Argon2id password hashes, a common-password list, TOTP two-step verification,
+  and audit-logged sign-in events (`backend/app/api/auth/services/`; see
+  [Authentication](/architecture/auth/)).
+- **Server-side request forgery.** The egress allowlist in the shared client.
+- **Unsafe uploads.** Validation and malware scanning before storage, and served files with
+  `nosniff`.
+- **Sensitive data in logs.** Log fields are sanitized (`backend/app/core/logging.py`); clients get
+  a generic error with a request ID.
+- **Vulnerable dependencies and leaked secrets.** Dependency review, audits, Trivy, CodeQL, and
+  gitleaks run in CI, with the fix windows in [Supply chain](#supply-chain).
+- **Untested edge cases.** Schemathesis fuzzes the public API from its schema, Hypothesis and
+  fast-check property tests run with the unit tests, and mutation testing covers the backend.

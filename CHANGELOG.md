@@ -96,6 +96,10 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Security
 
+- Pillow is updated to 13.0.0, which fixes a heap buffer overflow in its JPEG decoder
+  ([GHSA-8g5g-8vmr-9782](https://github.com/advisories/GHSA-8g5g-8vmr-9782), critical).
+- Only the latest release gets security fixes; SECURITY.md now says so, and how a report is
+  credited and disclosed.
 - Turning off two-step verification now needs your password as well as a code. API clients
   send it as `password` to `POST /v1/auth/mfa/totp/disable`; a request with only `code` gets a
   400. Accounts without a password (Google or GitHub sign-in only) still send only the code.

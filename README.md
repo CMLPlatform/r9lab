@@ -88,6 +88,7 @@ CI runs axe scans and per-PR a11y lint across `www/`, `docs/`, and `app/`. See
 ## Community and Policy
 
 - [Security](.github/SECURITY.md)
+- [Governance](GOVERNANCE.md)
 - [Code of Conduct](.github/CODE_OF_CONDUCT.md)
 - [Changelog](CHANGELOG.md)
 - [Citation](CITATION.cff)

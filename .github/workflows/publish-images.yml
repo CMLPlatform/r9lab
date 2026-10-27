@@ -106,6 +106,7 @@ jobs:
           labels: |
             org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
             org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.licenses=AGPL-3.0-or-later
           # Unused args on the other services are ignored.
           build-args: |
             ENVIRONMENT=${{ matrix.env }}
