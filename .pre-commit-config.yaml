@@ -64,11 +64,10 @@ repos:
       - id: commitizen
         stages: [ commit-msg ]
 
-  - repo: https://github.com/simonvanlierde/check-json5
-    rev: c70883b5be6d9fb87deac8d75395031372d54e83  # v1.2.0
+  - repo: https://github.com/simonvanlierde/jsonvet
+    rev: 022d320d5b971eccb28cfa6ce205152cbb382e53  # frozen: v3.2.0
     hooks:
-      - id: check-json5
-        exclude: '^(?:frontend[^/]*(?:/.*)?/data/.*\.json|(?:.*/)?package-lock\.json)$'
+      - id: jsonvet
 
   - repo: https://github.com/astral-sh/uv-pre-commit
     rev: eeca16c54e09b4d9a848259e46bae14737944348  # frozen: 0.13.5
