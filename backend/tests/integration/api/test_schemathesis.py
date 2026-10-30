@@ -45,14 +45,9 @@ def public_schema(test_app: FastAPI) -> BaseSchema:
     return schemathesis.openapi.from_dict(build_public_openapi(test_app))
 
 
-# TODO: the OAuth callbacks trade any `code` with the real provider before checking
-# `state`, and httpx-oauth answers 500 when the provider refuses it. Fuzz them once they
-# check `state` first; until then they would also call github.com and google.com.
-schema = (
-    schemathesis.pytest.from_fixture("public_schema")
-    .include(method="GET")
-    .exclude(path_regex=r"^/v1/oauth/[^/]+/(token|session|associate)/callback$")
-)
+# The OAuth callbacks are fuzzed too: a fuzzed `state` never verifies, so they answer 400
+# before any `code` reaches github.com or google.com.
+schema = schemathesis.pytest.from_fixture("public_schema").include(method="GET")
 
 
 # as_transport_kwargs serializes for requests; these are the keys httpx's request() shares.

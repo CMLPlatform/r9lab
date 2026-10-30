@@ -6,11 +6,15 @@ from typing import TYPE_CHECKING, Any, Literal
 from urllib.parse import parse_qsl, urlencode, urlparse, urlunparse
 
 import jwt
-from fastapi import Request, Response
+from fastapi import Request, Response, status
 from fastapi.responses import RedirectResponse
 from fastapi_users.jwt import decode_jwt
-from httpx_oauth.integrations.fastapi import OAuth2AuthorizeCallback
-from httpx_oauth.oauth2 import BaseOAuth2  # noqa: TC002 # Used at runtime for FastAPI validation
+from httpx_oauth.integrations.fastapi import OAuth2AuthorizeCallbackError
+from httpx_oauth.oauth2 import (  # Used at runtime for FastAPI validation
+    BaseOAuth2,
+    GetAccessTokenError,
+    OAuth2Token,
+)
 
 from app.api.auth.config import normalize_oauth_redirect_uri, settings
 from app.api.auth.exceptions import (
@@ -37,11 +41,15 @@ from .utils import (
 )
 
 if TYPE_CHECKING:
+    from collections.abc import Awaitable, Callable
+
     from fastapi_users.jwt import SecretType
 
 OAuthRedirectStatus = Literal["success", "error", "mfa_required"]
 OAUTH_STATUS_ERROR = "error"
 OAUTH_STATUS_MFA_REQUIRED = "mfa_required"
+OAUTH_CODE_REJECTED = "OAUTH_CODE_REJECTED"
+OAUTH_PROVIDER_UNAVAILABLE = "OAUTH_PROVIDER_UNAVAILABLE"
 
 
 @dataclass(frozen=True, slots=True)
@@ -55,11 +63,46 @@ class OAuthFlowConfig:
     cookie_settings: OAuthCookieSettings = field(default_factory=OAuthCookieSettings)
 
 
-def authorize_callback_dependency(config: OAuthFlowConfig, callback_route_name: str) -> OAuth2AuthorizeCallback:
-    """Build the httpx-oauth callback dependency for this route."""
-    if config.redirect_url is not None:
-        return OAuth2AuthorizeCallback(config.oauth_client, redirect_url=config.redirect_url)
-    return OAuth2AuthorizeCallback(config.oauth_client, route_name=callback_route_name)
+def authorize_callback_dependency(
+    config: OAuthFlowConfig, callback_route_name: str
+) -> Callable[..., Awaitable[tuple[OAuth2Token, str]]]:
+    """Build the callback dependency: verify `state`, then trade `code` with the provider.
+
+    httpx-oauth's own dependency trades the code first, so a made-up code reached the
+    provider, and the provider's refusal came back as a 500.
+    """
+
+    async def authorize_callback(
+        request: Request,
+        code: str | None = None,
+        code_verifier: str | None = None,
+        state: str | None = None,
+        error: str | None = None,
+    ) -> tuple[OAuth2Token, str]:
+        if code is None or error is not None:
+            raise OAuth2AuthorizeCallbackError(status_code=status.HTTP_400_BAD_REQUEST, detail=error)
+        if state is None:
+            raise OAuthInvalidStateError
+        verify_oauth_state(config, request, state)
+
+        redirect_url = config.redirect_url or str(request.url_for(callback_route_name))
+        try:
+            token = await config.oauth_client.get_access_token(code, redirect_url, code_verifier)
+        except GetAccessTokenError as err:
+            # Only a 4xx from the provider means a bad code; a timeout or provider 5xx is not the caller's fault.
+            if err.response is None or not err.response.is_client_error:
+                raise OAuth2AuthorizeCallbackError(
+                    status_code=status.HTTP_502_BAD_GATEWAY, detail=OAUTH_PROVIDER_UNAVAILABLE
+                ) from err
+            raise OAuth2AuthorizeCallbackError(
+                status_code=status.HTTP_400_BAD_REQUEST, detail=OAUTH_CODE_REJECTED, response=err.response
+            ) from err
+        # GitHub refuses a code with a 200 and an `error` body.
+        if ACCESS_TOKEN_KEY not in token:
+            raise OAuth2AuthorizeCallbackError(status_code=status.HTTP_400_BAD_REQUEST, detail=OAUTH_CODE_REJECTED)
+        return token, state
+
+    return authorize_callback
 
 
 def build_state_data(
