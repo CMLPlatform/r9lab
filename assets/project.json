@@ -5,8 +5,9 @@
     "institution live here instead. Everything CFF DOES model (authors, ORCIDs, DOI, code",
     "licence, repository) is read from CITATION.cff and must not be duplicated here.",
     "Contributors are credited but are not citation authors. CFF has no contributor role, so",
-    "they live here, in CFF's person fields, and reach codemeta.json, .zenodo.json and the",
-    "docs colophon. zenodoType is a Zenodo deposit contributor type.",
+    "they live here, in CFF's person fields, and reach the docs colophon. codemeta.json and",
+    ".zenodo.json list them by hand, and tests/test_project_identity.py checks that they match.",
+    "zenodoType is a Zenodo deposit contributor type.",
     "Consumed by scripts/sync_brand_assets.py; run `just assets-sync` after editing."
   ],
   "institution": "Institute of Environmental Sciences (CML), Leiden University",

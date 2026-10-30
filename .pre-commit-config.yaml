@@ -69,6 +69,12 @@ repos:
     hooks:
       - id: jsonvet
 
+  # The citation files and package manifests must agree (CITATION.cff is the source).
+  - repo: https://github.com/simonvanlierde/citesync
+    rev: a3c5a9794449e78a33583e456af41bb24ebd240e  # frozen: v0.1.0
+    hooks:
+      - id: citesync
+
   - repo: https://github.com/astral-sh/uv-pre-commit
     rev: eeca16c54e09b4d9a848259e46bae14737944348  # frozen: 0.13.5
     hooks:
