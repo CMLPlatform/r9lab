@@ -67,6 +67,9 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   longer than 100 characters, 400 for text holding a NUL character and for an id above
   2,147,483,647. `/v1/stats/series` with an `end` in the first years of the calendar and no
   `start` now starts the range at 0001-01-01 instead of failing.
+- The OAuth sign-in and account-link callbacks check `state` before they send the code to
+  GitHub or Google. A refused or reused code now answers 400 instead of 500, and an unreachable
+  provider answers 502.
 - Restoring a backup whose database roles no longer exist (a dump taken before a role rename)
   now works: the restore skips the dump's owners and grants, then hands ownership to the
   migration role and restores every grant.
