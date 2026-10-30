@@ -131,6 +131,9 @@ def _ensure_testcontainers_postgres() -> None:
         username="postgres",
         password="postgres",  # Test-password only
         dbname="postgres",
+        # docker-py gives up on an API call after 60 s, and a loaded Docker daemon can take
+        # longer than that to create a container with a published port.
+        docker_client_kw={"timeout": 300},
     )
     _postgres_container.start()
 
