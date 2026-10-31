@@ -1103,20 +1103,23 @@ def _fake_database(monkeypatch: pytest.MonkeyPatch, products: list[dict[str, Any
     monkeypatch.setattr(release, "export_reference_data", reference)
 
 
-def _built_ids(tmp_path: Path, name: str, monkeypatch: pytest.MonkeyPatch, products: list[dict[str, Any]]) -> dict:
-    """Build a release from *products* and map each record name to its published id."""
+def _built_ids(
+    tmp_path: Path, name: str, monkeypatch: pytest.MonkeyPatch, products: list[dict[str, Any]]
+) -> dict[str, tuple[int, int | None]]:
+    """Build a release from *products* and map each record name to its published id and parent id."""
     _fake_database(monkeypatch, products)
     out = tmp_path / name
     asyncio.run(build(out, SelectionRules(), "s" * 32, ReleaseMetadata()))
-    return {row["name"]: row["id"] for row in read_parquet(out / "records.parquet")}
+    return {row["name"]: (row["id"], row["parent_id"]) for row in read_parquet(out / "records.parquet")}
 
 
 def test_stable_id_survives_a_later_release_with_an_added_product(tmp_path, monkeypatch) -> None:
     """A record keeps its id when a later release adds a product.
 
     Downstream splits hash on these ids, so a renumbered record would move between splits.
-    The primary keys have gaps, and the added product sorts first by name, so a builder that
-    numbered records by position or by name would publish different ids.
+    The added product sorts first by name, so numbering by name changes ids between the two
+    builds. Numbering by load order would not, because the new product loads last; the gaps
+    in the primary keys catch that instead, through the check against the database ids.
     """
     database = [
         _db_product(4, "Drill"),
@@ -1129,8 +1132,9 @@ def test_stable_id_survives_a_later_release_with_an_added_product(tmp_path, monk
     second = _built_ids(tmp_path, "release-2", monkeypatch, database)
 
     assert {name: second[name] for name in first} == first
-    assert first == {"Drill": 4, "Sander": 9, "Sander motor": 15}
-    assert second["Angle grinder"] == 22
+    # This line catches numbering by load order, which the comparison above cannot see.
+    assert first == {"Drill": (4, None), "Sander": (9, None), "Sander motor": (15, 9)}
+    assert second["Angle grinder"] == (22, None)
 
 
 ### Inventory ###

@@ -116,7 +116,7 @@ RECORDS_SCHEMA = pa.schema(
             "id",
             pa.int64(),
             "Record identifier, unique within the release. It is the platform's database primary key, "
-            "so it is stable across releases: the same record keeps the same id in every release.",
+            "so it is stable across releases: a record has the same id in every release that includes it.",
             nullable=False,
         ),
         _column("parent_id", pa.int64(), "Record this one was taken out of; null for a whole product."),
@@ -1030,8 +1030,10 @@ that points at a material or product type which is no longer in the live databas
 otherwise lose its meaning.
 
 Record ids are stable across releases. Each `id` in `records.parquet` is the record's
-primary key in the R9lab database, so a record keeps its id in every release and can be
-matched between releases by id alone. A new release adds ids; it does not renumber old ones.
+primary key in the R9lab database, so a record has the same id in every release that
+includes it, and records can be matched between releases by id. Ids are never renumbered
+or reused. A later release can add records, and it can leave out records that were deleted
+or excluded since.
 
 Owner identity is replaced by a stable pseudonym (`owner-<16 hex>`). The same person keeps
 the same pseudonym across releases and cannot be re-identified from the release alone. The
