@@ -6,7 +6,7 @@ One row per documented product or component.
 
 | Column | Type | Required | Description |
 | ------ | ---- | -------- | ----------- |
-| `id` | integer | yes | Record identifier, unique within the release. |
+| `id` | integer | yes | Record identifier, unique within the release. It is the platform's database primary key, so it is stable across releases: a record has the same id in every release that includes it. |
 | `parent_id` | integer | no | Record this one was taken out of; null for a whole product. |
 | `amount_in_parent` | integer | no | How many of this component the parent holds; null if not counted. |
 | `owner_pseudonym` | text | yes | Stable pseudonymous code for the contributing account. Salted hash, not reversible. Equal codes mean the same contributor across releases that share a salt fingerprint. |
