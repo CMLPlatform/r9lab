@@ -7,6 +7,7 @@ import logging
 import re
 import tempfile
 from collections import Counter
+from contextlib import asynccontextmanager
 from datetime import UTC, date, datetime
 from pathlib import Path
 from types import SimpleNamespace
@@ -91,6 +92,7 @@ from scripts.build_dataset_release import (
 )
 
 if TYPE_CHECKING:
+    from collections.abc import AsyncGenerator
     from typing import Any
 
 # The first Parquet write in a process pays a one-off setup cost; one worker pays it once.
@@ -1031,6 +1033,104 @@ def test_build_refuses_a_shared_owner_before_touching_the_filesystem(tmp_path) -
     with pytest.raises(SystemExit, match="shared account"):
         asyncio.run(build(out, SelectionRules(owner_usernames=frozenset({"demo"})), "a-salt", ReleaseMetadata()))
     assert not out.exists()
+
+
+def _db_product(product_id: int, name: str, parent_id: int | None = None) -> dict[str, Any]:
+    """Return one product row as the database holds it, owner id included."""
+    moment = datetime(2026, 1, 2, 3, 4, 5, tzinfo=UTC)
+    return {
+        "id": product_id,
+        "parent_id": parent_id,
+        "amount_in_parent": None if parent_id is None else 1,
+        "owner_id": USER_ID,
+        "name": name,
+        "description": None,
+        "brand": None,
+        "model": None,
+        "product_type_id": 5,
+        "weight_g": 900.0,
+        "height_cm": None,
+        "width_cm": None,
+        "depth_cm": None,
+        "circularity_properties": None,
+        "created_at": moment,
+        "updated_at": moment,
+    }
+
+
+def _fake_database(monkeypatch: pytest.MonkeyPatch, products: list[dict[str, Any]]) -> None:
+    """Point the build at an in-memory database holding *products*.
+
+    The product read itself stays real, so the ids come from ``load_records`` exactly as the
+    build takes them. Everything else is stubbed down to what ``verify`` needs.
+    """
+    rows = [SimpleNamespace(_mapping=row) for row in sorted(products, key=lambda row: row["id"])]
+    result = MagicMock()
+    result.all.return_value = rows
+    session = MagicMock()
+    session.execute = AsyncMock(return_value=result)
+
+    @asynccontextmanager
+    async def session_context() -> AsyncGenerator[MagicMock]:
+        yield session
+
+    async def owners(_session: object) -> dict[Any, dict[str, Any]]:
+        return {USER_ID: {"username": "alice", "terms_version": MINIMUM_RELEASE_TERMS_VERSION}}
+
+    async def no_rows(_session: object, *_args: object) -> list[dict[str, Any]]:
+        return []
+
+    async def no_images(_session: object, _record_ids: set[int], images_dir: Path) -> list[dict[str, Any]]:
+        images_dir.mkdir(parents=True, exist_ok=True)  # noqa: ASYNC240  # tmp_path, no event loop work to block
+        return []
+
+    async def reference(_session: object, reference_dir: Path) -> dict[str, set[int]]:
+        reference_dir.mkdir(parents=True, exist_ok=True)  # noqa: ASYNC240  # tmp_path, no event loop work to block
+        write_parquet(reference_dir / "taxonomies.parquet", TAXONOMIES_SCHEMA, [])
+        write_parquet(reference_dir / "categories.parquet", CATEGORIES_SCHEMA, [])
+        write_parquet(reference_dir / "materials.parquet", MATERIALS_SCHEMA, [])
+        write_parquet(reference_dir / "product_types.parquet", PRODUCT_TYPES_SCHEMA, [{"id": 5, "name": "Drill"}])
+        write_parquet(reference_dir / "units.parquet", UNITS_SCHEMA, [{"name": "kilogram", "symbol": "kg"}])
+        write_parquet(reference_dir / "category_material_links.parquet", CATEGORY_MATERIAL_LINKS_SCHEMA, [])
+        write_parquet(reference_dir / "category_product_type_links.parquet", CATEGORY_PRODUCT_TYPE_LINKS_SCHEMA, [])
+        return {"taxonomy": set(), "category": set(), "material": set(), "product_type": {5}}
+
+    monkeypatch.setattr(release, "async_session_context", session_context)
+    monkeypatch.setattr(release, "close_async_engine", AsyncMock())
+    monkeypatch.setattr(release, "load_owners", owners)
+    monkeypatch.setattr(release, "export_record_materials", no_rows)
+    monkeypatch.setattr(release, "export_images", no_images)
+    monkeypatch.setattr(release, "export_reference_data", reference)
+
+
+def _built_ids(tmp_path: Path, name: str, monkeypatch: pytest.MonkeyPatch, products: list[dict[str, Any]]) -> dict:
+    """Build a release from *products* and map each record name to its published id."""
+    _fake_database(monkeypatch, products)
+    out = tmp_path / name
+    asyncio.run(build(out, SelectionRules(), "s" * 32, ReleaseMetadata()))
+    return {row["name"]: row["id"] for row in read_parquet(out / "records.parquet")}
+
+
+def test_stable_id_survives_a_later_release_with_an_added_product(tmp_path, monkeypatch) -> None:
+    """A record keeps its id when a later release adds a product.
+
+    Downstream splits hash on these ids, so a renumbered record would move between splits.
+    The primary keys have gaps, and the added product sorts first by name, so a builder that
+    numbered records by position or by name would publish different ids.
+    """
+    database = [
+        _db_product(4, "Drill"),
+        _db_product(9, "Sander"),
+        _db_product(15, "Sander motor", parent_id=9),
+    ]
+    first = _built_ids(tmp_path, "release-1", monkeypatch, database)
+
+    database.append(_db_product(22, "Angle grinder"))
+    second = _built_ids(tmp_path, "release-2", monkeypatch, database)
+
+    assert {name: second[name] for name in first} == first
+    assert first == {"Drill": 4, "Sander": 9, "Sander motor": 15}
+    assert second["Angle grinder"] == 22
 
 
 ### Inventory ###

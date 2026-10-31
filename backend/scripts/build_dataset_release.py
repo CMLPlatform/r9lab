@@ -112,7 +112,13 @@ def _column(name: str, type_: pa.DataType, description: str, *, nullable: bool =
 # Nullable numerics stay nullable so an absent mass reads as null, not zero.
 RECORDS_SCHEMA = pa.schema(
     [
-        _column("id", pa.int64(), "Record identifier, unique within the release.", nullable=False),
+        _column(
+            "id",
+            pa.int64(),
+            "Record identifier, unique within the release. It is the platform's database primary key, "
+            "so it is stable across releases: the same record keeps the same id in every release.",
+            nullable=False,
+        ),
         _column("parent_id", pa.int64(), "Record this one was taken out of; null for a whole product."),
         _column("amount_in_parent", pa.int64(), "How many of this component the parent holds; null if not counted."),
         _column(
@@ -1022,6 +1028,10 @@ looking up a path or a checksum by hand, not dataset tables.
 The reference tables are frozen into the release rather than referenced remotely: a record
 that points at a material or product type which is no longer in the live database would
 otherwise lose its meaning.
+
+Record ids are stable across releases. Each `id` in `records.parquet` is the record's
+primary key in the R9lab database, so a record keeps its id in every release and can be
+matched between releases by id alone. A new release adds ids; it does not renumber old ones.
 
 Owner identity is replaced by a stable pseudonym (`owner-<16 hex>`). The same person keeps
 the same pseudonym across releases and cannot be re-identified from the release alone. The
