@@ -41,7 +41,7 @@ runs:
 
     - name: Install uv
       if: inputs.setup-python == 'true'
-      uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
+      uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
       with:
         version-file: .tool-versions
         enable-cache: ${{ inputs.restore-cache }}
@@ -58,7 +58,7 @@ runs:
     # this action fails unpacking it (https://github.com/pnpm/setup/issues/29).
     - name: Set up pnpm and Node.js
       if: inputs.setup-node == 'true'
-      uses: pnpm/setup@a0881977cd8ea73b1ed212236c99ca10dcc80cf4 # v3.1.1
+      uses: pnpm/setup@fa36a5ef7dcdefc3a7cb25655c122e00cf6e636e # v3.1.2
       with:
         runtime: node@${{ steps.versions.outputs.node }}
         cache: ${{ inputs.restore-cache == 'true' }}
