@@ -88,6 +88,36 @@ fits, leave the field empty rather than picking the closest match.
 
 ## Media capture
 
+### Photos someone else can check
+
+- Photograph the product as it arrived, before you clean or open it. Keep wear, dirt and damage
+  visible. Note where it came from: repair, reuse, collection or recycling.
+- Add a readable close-up of the model label, if there is one, next to an overview of the product.
+- Photograph components and their connections before you detach them, where this is safe.
+  Attach each photo to the product or component it shows.
+- Keep measurements apart from estimates, and say how you checked a name, material or value. A
+  software suggestion or a visual guess is not a measurement.
+
+If a study asks for repeat photos, follow its protocol and keep the first capture. Note which
+photos show the same item and what changed between them.
+
+### Permission and privacy
+
+Uploaded records and photos are public. Upload only photos you took yourself and may share. The
+[privacy policy](https://r9lab.io/privacy/) and [contributor terms](https://r9lab.io/terms/) say
+what that means, and the [dataset guide](../../project/dataset/) says which records a curated
+release can include.
+
+Keep faces, address labels, receipts and personal screens out of the frame, including in
+reflections and the background. Keep make and model markings. Leave out owner details and serial
+numbers, unless a study protocol asks for them and says how to share them.
+
+R9lab removes identifying metadata from each photo (see [Upload limits](#upload-limits)), but not
+what the photo itself shows. Crop or blur that before you upload. If you are not sure you may
+share a photo, leave it out and ask <info@r9lab.io>.
+
+### Attach your files
+
 Attach media in two ways:
 
 - manual upload of files and images
