@@ -88,6 +88,38 @@ fits, leave the field empty rather than picking the closest match.
 
 ## Media capture
 
+### Photographs that someone else can check
+
+- Photograph the intact product as received, before cleaning or opening it. Keep wear, dirt and
+  damage visible, and note whether it arrived at repair, reuse, collection or recycling.
+- Add a readable close-up of the model label, if present. Keep it with an overview of the product
+  so another reader can tell which item it identifies.
+- Photograph components and their connections before detaching them, where safe. Attach each
+  view to the product or component it shows.
+- Record measurements separately from estimates. Say how you checked a name, material or value;
+  a software suggestion or visual guess is not a measured result.
+
+If a study requests repeat photographs, keep the first capture and follow that study's protocol.
+Record which views show the same item and what changed between captures. Routine teardown records
+can support research, but are not automatically a paired field benchmark.
+
+### Permission and privacy
+
+Upload only photographs you took yourself and have permission to share. Uploaded product records
+and photographs are public. Read the [privacy policy](https://r9lab.io/privacy/) and
+[contributor terms](https://r9lab.io/terms/) before submitting. The
+[dataset guide](../../project/dataset/) explains which records a curated release may include.
+
+Keep faces, address labels, receipts and personal screens out of the frame. Check reflections and
+backgrounds too. Keep useful make and model markings; omit owner details and unique serial numbers
+unless an agreed study protocol requires them and provides an appropriate sharing route.
+
+R9lab removes identifying image metadata, as described under [Upload limits](#upload-limits).
+That does not remove personal information visible in the photograph. Reframe or redact it before
+uploading. If permission is unclear, leave the image out and contact <info@r9lab.io>.
+
+### Attach your files
+
 Attach media in two ways:
 
 - manual upload of files and images
