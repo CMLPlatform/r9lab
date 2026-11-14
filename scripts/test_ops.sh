@@ -28,6 +28,63 @@ assert_eq() {
     printf 'FAIL: %s\n  expected: %s\n  actual:   %s\n' "$label" "$expected" "$actual"
 }
 
+# The migration entrypoint must reject production dummy seeding before touching
+# the database, including DEBUG's Alembic status check. Both executables are stubs.
+migration_seed_guard() {
+    local environment="$1" dummy="$2" debug="$3" expected_status="$4" dir status expected_calls expected_error=""
+    local bulk="${5-0}" bulk_enabled="${6:-false}"
+    dir="$(mktemp -d "${TMPDIR:-/tmp}/migration-seed.XXXXXX")"
+    mkdir -p "$dir/.venv/bin"
+    cat >"$dir/.venv/bin/alembic" <<'EOF'
+#!/bin/sh
+printf '%s %s\n' "${0##*/}" "$*" >> calls
+EOF
+    cp "$dir/.venv/bin/alembic" "$dir/.venv/bin/python"
+    chmod +x "$dir/.venv/bin/alembic" "$dir/.venv/bin/python"
+    : >"$dir/calls"
+    (
+        cd "$dir" || exit 1
+        env -i PATH="$PATH" ENVIRONMENT="$environment" SEED_DUMMY_DATA="$dummy" DEBUG="$debug" BULK_SEED_PRODUCTS="$bulk" \
+            sh "$OLDPWD/backend/scripts/seed/migrations_entrypoint.sh"
+    ) >"$dir/stdout" 2>"$dir/stderr"
+    status=$?
+    expected_calls=""
+    if [[ "$expected_status" == 0 ]]; then
+        [[ "$debug" != true ]] || expected_calls=$'alembic current\n'
+        expected_calls+=$'alembic upgrade head\npython -m scripts.maintenance.backfill_image_dimensions'
+        if [[ "$dummy" != false ]]; then
+            expected_calls+=$'\npython -m scripts.db.is_empty --quiet\npython -m scripts.seed.dummy_data'
+        fi
+        if [[ "$bulk_enabled" == true ]]; then
+            expected_calls+=$'\npython -m scripts.seed.bulk_seed --products '"$bulk"
+        fi
+        expected_calls+=$'\npython -m scripts.users.create_superuser'
+    else
+        expected_error="error: SEED_DUMMY_DATA=true is not allowed when ENVIRONMENT=prod."
+        if [[ "$dummy" == false ]]; then
+            expected_error="error: BULK_SEED_PRODUCTS > 0 is not allowed when ENVIRONMENT=prod."
+        fi
+    fi
+    assert_eq "migration seed ($environment/$dummy/$debug/bulk=$bulk): exit status" "$expected_status" "$status"
+    assert_eq "migration seed ($environment/$dummy/$debug/bulk=$bulk): executable calls" "$expected_calls" "$(cat "$dir/calls")"
+    assert_eq "migration seed ($environment/$dummy/$debug/bulk=$bulk): stderr" "$expected_error" "$(cat "$dir/stderr")"
+    rm -rf "$dir"
+}
+
+migration_seed_guard prod true false 1
+migration_seed_guard prod TrUe true 1
+migration_seed_guard prod false true 0
+for seed_environment in dev staging testing ""; do
+    migration_seed_guard "$seed_environment" TrUe false 0
+done
+for bulk_products in 1 0002 +3 " 4 "; do
+    migration_seed_guard prod false true 1 "$bulk_products" true
+    migration_seed_guard testing false true 0 "$bulk_products" true
+done
+for bulk_products in "" 0 000 +0 -1 false 1.5; do
+    migration_seed_guard prod false true 0 "$bulk_products"
+done
+
 # ---------------------------------------------------------------------------
 # `stack ENV up`: the scanning profile follows MALWARE_SCAN_ENABLED in .env, read
 # the way Compose reads it, and the recipe's environment must match the host's.

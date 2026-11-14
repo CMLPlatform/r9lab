@@ -68,6 +68,9 @@ describes the topology these steps produce.
    - `MALWARE_SCAN_ENABLED`: `true` starts ClamAV with the stack, see step 2 of
      [Deploy](/operations/deploy/).
 
+   With `ENVIRONMENT=prod`, migrations reject `SEED_DUMMY_DATA=true` or enabled bulk fixture seeding
+   (`BULK_SEED_PRODUCTS` greater than zero) before running Alembic or Python.
+
    Upload quotas: `MAX_UPLOAD_FILES_PER_USER` and `MAX_UPLOAD_BYTES_PER_USER_MB` cap `contributor`
    accounts. The `*_LAB_USER*` pair caps `lab` accounts and must not be lower. The quota counts
    existing rows, so on a host with existing data, raise the limits before the first start: an
