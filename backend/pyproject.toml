@@ -39,9 +39,7 @@
     "httpx[http2]>=0.28.1",
     "r9cam-models>=0.7.0,<0.8",
     # Configuration, validation, and utility types
-    # 2.14.0 and 2.14.1 cannot pickle parametrized generics such as the cached Page
-    # responses (pydantic#13991); drop the exclusion once 2.14.2 ships the fix.
-    "pydantic>=2.12,!=2.14.0,!=2.14.1",
+    "pydantic>=2.12",
     "pydantic-settings>=2.10.1",
     "python-json-logger>=4.1.0",
     # Media and image processing

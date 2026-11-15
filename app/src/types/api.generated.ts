@@ -3124,9 +3124,9 @@ export interface components {
       /** Description */
       description?: string | null;
       /** Created At */
-      created_at?: string;
+      created_at?: null | string;
       /** Updated At */
-      updated_at?: string;
+      updated_at?: null | string;
       /**
        * Id
        * Format: uuid4
@@ -3161,9 +3161,9 @@ export interface components {
       /** Description */
       description?: string | null;
       /** Created At */
-      created_at?: string;
+      created_at?: null | string;
       /** Updated At */
-      updated_at?: string;
+      updated_at?: null | string;
       /**
        * Id
        * Format: uuid4
@@ -3672,9 +3672,9 @@ export interface components {
       /** Model */
       model?: string | null;
       /** Created At */
-      created_at?: string;
+      created_at?: null | string;
       /** Updated At */
-      updated_at?: string;
+      updated_at?: null | string;
       /** Id */
       id: number;
       /** Product Type Id */
@@ -3752,9 +3752,9 @@ export interface components {
       /** Model */
       model?: string | null;
       /** Created At */
-      created_at?: string;
+      created_at?: null | string;
       /** Updated At */
-      updated_at?: string;
+      updated_at?: null | string;
       /** Id */
       id: number;
       /** Product Type Id */
@@ -3811,9 +3811,9 @@ export interface components {
       /** Model */
       model?: string | null;
       /** Created At */
-      created_at?: string;
+      created_at?: null | string;
       /** Updated At */
-      updated_at?: string;
+      updated_at?: null | string;
       /** Id */
       id: number;
       /** Product Type Id */
@@ -3875,9 +3875,9 @@ export interface components {
       /** Model */
       model?: string | null;
       /** Created At */
-      created_at?: string;
+      created_at?: null | string;
       /** Updated At */
-      updated_at?: string;
+      updated_at?: null | string;
       /** Id */
       id: number;
       /** Product Type Id */
@@ -4006,9 +4006,9 @@ export interface components {
       /** Description */
       description?: string | null;
       /** Created At */
-      created_at?: string;
+      created_at?: null | string;
       /** Updated At */
-      updated_at?: string;
+      updated_at?: null | string;
       /**
        * Id
        * Format: uuid4
@@ -4040,9 +4040,9 @@ export interface components {
       /** Description */
       description?: string | null;
       /** Created At */
-      created_at?: string;
+      created_at?: null | string;
       /** Updated At */
-      updated_at?: string;
+      updated_at?: null | string;
       /**
        * Id
        * Format: uuid4
@@ -4083,9 +4083,9 @@ export interface components {
         [key: string]: unknown;
       } | null;
       /** Created At */
-      created_at?: string;
+      created_at?: null | string;
       /** Updated At */
-      updated_at?: string;
+      updated_at?: null | string;
       /**
        * Id
        * Format: uuid4
@@ -4142,9 +4142,9 @@ export interface components {
         [key: string]: unknown;
       } | null;
       /** Created At */
-      created_at?: string;
+      created_at?: null | string;
       /** Updated At */
-      updated_at?: string;
+      updated_at?: null | string;
       /**
        * Id
        * Format: uuid4
@@ -4288,9 +4288,9 @@ export interface components {
        */
       unit: components['schemas']['Unit'];
       /** Created At */
-      created_at?: string;
+      created_at?: null | string;
       /** Updated At */
-      updated_at?: string;
+      updated_at?: null | string;
       /** Product Id */
       product_id: number;
       product: components['schemas']['ProductSummary'];
@@ -4311,9 +4311,9 @@ export interface components {
        */
       unit: components['schemas']['Unit'];
       /** Created At */
-      created_at?: string;
+      created_at?: null | string;
       /** Updated At */
-      updated_at?: string;
+      updated_at?: null | string;
       /** Material Id */
       material_id: number;
       material: components['schemas']['MaterialRead'];
@@ -4948,9 +4948,9 @@ export interface components {
       /** Model */
       model?: string | null;
       /** Created At */
-      created_at?: string;
+      created_at?: null | string;
       /** Updated At */
-      updated_at?: string;
+      updated_at?: null | string;
       /** Id */
       id: number;
       /** Product Type Id */
@@ -5036,9 +5036,9 @@ export interface components {
       /** Model */
       model?: string | null;
       /** Created At */
-      created_at?: string;
+      created_at?: null | string;
       /** Updated At */
-      updated_at?: string;
+      updated_at?: null | string;
       /** Id */
       id: number;
       /** Product Type Id */
@@ -5088,9 +5088,9 @@ export interface components {
       /** Model */
       model?: string | null;
       /** Created At */
-      created_at?: string;
+      created_at?: null | string;
       /** Updated At */
-      updated_at?: string;
+      updated_at?: null | string;
       /** Id */
       id: number;
       /** Product Type Id */
@@ -5151,9 +5151,9 @@ export interface components {
         [key: string]: string;
       };
       /** Created At */
-      created_at?: string;
+      created_at?: null | string;
       /** Updated At */
-      updated_at?: string;
+      updated_at?: null | string;
       /** Id */
       id: number;
       /** Name */
@@ -5547,9 +5547,9 @@ export interface components {
        */
       source?: string | null;
       /** Created At */
-      created_at?: string;
+      created_at?: null | string;
       /** Updated At */
-      updated_at?: string;
+      updated_at?: null | string;
       /** Id */
       id: number;
     };
@@ -5957,9 +5957,9 @@ export interface components {
         [key: string]: unknown;
       } | null;
       /** Created At */
-      created_at?: string;
+      created_at?: null | string;
       /** Updated At */
-      updated_at?: string;
+      updated_at?: null | string;
       /** Id */
       id: number;
       /** Product Id */
@@ -5991,9 +5991,9 @@ export interface components {
         [key: string]: unknown;
       } | null;
       /** Created At */
-      created_at?: string;
+      created_at?: null | string;
       /** Updated At */
-      updated_at?: string;
+      updated_at?: null | string;
       /** Id */
       id: number;
     };

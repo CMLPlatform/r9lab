@@ -49,7 +49,7 @@ test.describe('API reference pages', () => {
     await expect(page.getByRole('heading', { name: 'R9lab – Data Collection API' })).toBeVisible();
     await expect(page.getByRole('link', { name: 'Download OpenAPI Document' })).toHaveAttribute(
       'href',
-      '/api/schemas/openapi.public.json',
+      /\/api\/schemas\/openapi\.public\.json$/,
     );
     await expect(page.getByText('/v1/auth/bearer/login').first()).toBeVisible();
     await expect(page.getByText(/Bearer/i).first()).toBeVisible();
@@ -83,7 +83,7 @@ test.describe('API reference pages', () => {
     await expect(page).toHaveTitle('R9lab device API · R9lab docs');
     await expect(page.getByRole('link', { name: 'Download OpenAPI Document' })).toHaveAttribute(
       'href',
-      '/api/schemas/openapi.device.json',
+      /\/api\/schemas\/openapi\.device\.json$/,
     );
     await expect(page.getByText('/v1/plugins/r9cam/pairing/register').first()).toBeVisible();
     await expect(page.getByText(/Add API/i)).toHaveCount(0);
