@@ -270,7 +270,7 @@
         "type": "string"
       },
       "CameraProperties": {
-        "description": "Static camera properties from libcamera.\n\nFor more info, see https://libcamera.org/api-html/namespacelibcamera_1_1properties.html.",
+        "description": "Static camera properties from libcamera.\n\nFor more info, see https://github.com/raspberrypi/libcamera/blob/main/src/libcamera/property_ids_core.yaml.",
         "properties": {
           "Model": {
             "anyOf": [
@@ -373,7 +373,7 @@
         "type": "object"
       },
       "CaptureMetadata": {
-        "description": "Dynamic capture metadata from libcamera.\n\nFor more info, see https://libcamera.org/api-html/namespacelibcamera_1_1controls.html.",
+        "description": "Dynamic capture metadata from libcamera.\n\nFor more info, see https://github.com/raspberrypi/libcamera/blob/main/src/libcamera/control_ids_core.yaml.",
         "properties": {
           "analogue_gain": {
             "anyOf": [
@@ -385,6 +385,28 @@
               }
             ],
             "title": "Analogue Gain"
+          },
+          "color_gains": {
+            "anyOf": [
+              {
+                "maxItems": 2,
+                "minItems": 2,
+                "prefixItems": [
+                  {
+                    "type": "number"
+                  },
+                  {
+                    "type": "number"
+                  }
+                ],
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Red and blue white-balance gains",
+            "title": "Color Gains"
           },
           "color_temperature": {
             "anyOf": [
@@ -436,6 +458,18 @@
             "description": "Frame duration in microseconds",
             "title": "Frame Duration"
           },
+          "lens_position": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Lens focus position in dioptres",
+            "title": "Lens Position"
+          },
           "lux": {
             "anyOf": [
               {
@@ -448,6 +482,34 @@
             ],
             "description": "Illuminance in lux",
             "title": "Lux"
+          },
+          "scaler_crop": {
+            "anyOf": [
+              {
+                "maxItems": 4,
+                "minItems": 4,
+                "prefixItems": [
+                  {
+                    "type": "integer"
+                  },
+                  {
+                    "type": "integer"
+                  },
+                  {
+                    "type": "integer"
+                  },
+                  {
+                    "type": "integer"
+                  }
+                ],
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Sensor area read for the image as x, y, width, height in sensor pixels",
+            "title": "Scaler Crop"
           },
           "sensor_temperature": {
             "anyOf": [
@@ -463,6 +525,49 @@
           }
         },
         "title": "CaptureMetadata",
+        "type": "object"
+      },
+      "CaptureProvenance": {
+        "description": "Which software and tuning produced a capture. A field is None when the plugin cannot tell.",
+        "properties": {
+          "plugin_git_sha": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Git commit the plugin image was built from",
+            "title": "Plugin Git Sha"
+          },
+          "plugin_version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "r9cam plugin version",
+            "title": "Plugin Version"
+          },
+          "tuning_file_sha256": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "SHA-256 of the libcamera tuning file the camera loaded",
+            "title": "Tuning File Sha256"
+          }
+        },
+        "title": "CaptureProvenance",
         "type": "object"
       },
       "CaptureUploadMetadata": {
@@ -558,7 +663,7 @@
         "description": "Liveness payload returned to unauthenticated local-network probes.",
         "properties": {
           "service": {
-            "default": "relab-rpi-cam",
+            "default": "r9cam",
             "title": "Service",
             "type": "string"
           },
@@ -584,7 +689,7 @@
                 "type": "null"
               }
             ],
-            "description": "Expiration time for queue entries; None for successfully uploaded images.",
+            "description": "When the stored image expires, if the storage backend reports an expiry. None for queued captures, and None today for uploads too, since no sink sets it.",
             "title": "Expires At"
           },
           "image_id": {
@@ -604,7 +709,7 @@
                 "type": "null"
               }
             ],
-            "description": "Backend-hosted URL for the stored image. None when the capture is queued.",
+            "description": "Backend-hosted URL for the stored image. None when the capture is queued, or the backend returned a URL the camera could not use.",
             "title": "Image Url"
           },
           "metadata": {
@@ -625,7 +730,7 @@
         "type": "object"
       },
       "ImageCaptureStatus": {
-        "description": "Delivery state of a captured image.\n\n- UPLOADED: the Pi synchronously pushed the bytes to the backend and the\n  backend has stored them. ``image_url`` points at the backend.\n- QUEUED: the synchronous push failed and the bytes are in the Pi's local\n  upload queue awaiting retry. ``image_url`` is None because nothing is\n  retrievable yet.",
+        "description": "Delivery state of a captured image.\n\n- UPLOADED: the Pi synchronously pushed the bytes to the backend and the\n  backend has stored them. ``image_url`` points at the backend, or is None\n  when the backend returned a URL the camera could not use.\n- QUEUED: the synchronous push failed and the bytes are in the Pi's local\n  upload queue awaiting retry. ``image_url`` is None because nothing is\n  retrievable yet.",
         "enum": [
           "uploaded",
           "queued"
@@ -644,6 +749,9 @@
           },
           "image_properties": {
             "$ref": "#/components/schemas/ImageProperties"
+          },
+          "provenance": {
+            "$ref": "#/components/schemas/CaptureProvenance"
           }
         },
         "required": [
@@ -979,13 +1087,13 @@
     }
   },
   "info": {
-    "description": "This API allows you to remotely capture images and stream video from a Raspberry Pi camera. It is used as a plugin for the Relab platform.<br>For more info, visit the <a href=\"https://github.com/CMLplatform/relab\" target=\"_blank\">Relab GitHub</a>.<br><br><b>Licensing.</b> This API specification is licensed Apache-2.0 so that anyone may write clients or integrations against it without inheriting the plugin's copyleft. The plugin software itself remains AGPL-3.0-or-later.",
+    "description": "This API allows you to remotely capture images and stream video from a Raspberry Pi camera. It is used as a plugin for the R9lab platform.<br>For more info, visit the <a href=\"https://github.com/CMLPlatform/r9lab\" target=\"_blank\">R9lab GitHub</a>.<br><br><b>Licensing.</b> This API specification is licensed Apache-2.0 so that anyone may write clients or integrations against it without inheriting the plugin's copyleft. The plugin software itself remains AGPL-3.0-or-later.",
     "license": {
       "identifier": "Apache-2.0",
       "name": "Apache-2.0"
     },
     "title": "Raspberry Pi Camera API",
-    "version": "0.6.2"
+    "version": "0.7.2"
   },
   "openapi": "3.1.0",
   "paths": {
@@ -1217,7 +1325,7 @@
     },
     "/pairing": {
       "delete": {
-        "description": "Clear relay credentials and restart the pairing flow.\n\nReturns 204 immediately so the response can propagate back through the\nrelay WebSocket before the relay task is cancelled. The actual reset runs\n100 ms later in a background task.\n\nCalled two ways:\n- By the Relab backend through the relay when a camera is deleted.\n- By the local browser UI \"Unpair\" button on the setup page.",
+        "description": "Clear relay credentials and restart the pairing flow.\n\nReturns 204 immediately so the response can propagate back through the\nrelay WebSocket before the relay task is cancelled. The actual reset runs\n100 ms later in a background task.\n\nCalled two ways:\n- By the R9lab backend through the relay when a camera is deleted.\n- By the local browser UI \"Unpair\" button on the setup page.",
         "operationId": "unpair_pairing_delete",
         "responses": {
           "204": {
