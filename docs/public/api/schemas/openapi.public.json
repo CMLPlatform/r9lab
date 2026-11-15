@@ -843,6 +843,28 @@
             ],
             "title": "Analogue Gain"
           },
+          "color_gains": {
+            "anyOf": [
+              {
+                "maxItems": 2,
+                "minItems": 2,
+                "prefixItems": [
+                  {
+                    "type": "number"
+                  },
+                  {
+                    "type": "number"
+                  }
+                ],
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Red and blue white-balance gains",
+            "title": "Color Gains"
+          },
           "color_temperature": {
             "anyOf": [
               {
@@ -893,6 +915,18 @@
             "description": "Frame duration in microseconds",
             "title": "Frame Duration"
           },
+          "lens_position": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Lens focus position in dioptres",
+            "title": "Lens Position"
+          },
           "lux": {
             "anyOf": [
               {
@@ -905,6 +939,34 @@
             ],
             "description": "Illuminance in lux",
             "title": "Lux"
+          },
+          "scaler_crop": {
+            "anyOf": [
+              {
+                "maxItems": 4,
+                "minItems": 4,
+                "prefixItems": [
+                  {
+                    "type": "integer"
+                  },
+                  {
+                    "type": "integer"
+                  },
+                  {
+                    "type": "integer"
+                  },
+                  {
+                    "type": "integer"
+                  }
+                ],
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Sensor area read for the image as x, y, width, height in sensor pixels",
+            "title": "Scaler Crop"
           },
           "sensor_temperature": {
             "anyOf": [
@@ -5548,8 +5610,23 @@
         "additionalProperties": false,
         "description": "Public JWK registered by an RPi camera: P-256 for ES256 or Ed25519 for EdDSA.",
         "properties": {
+          "alg": {
+            "anyOf": [
+              {
+                "enum": [
+                  "ES256",
+                  "EdDSA"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Alg"
+          },
           "crv": {
-            "pattern": "^P-256$",
+            "pattern": "^(P-256|Ed25519)$",
             "title": "Crv",
             "type": "string"
           },
@@ -5566,7 +5643,7 @@
             "title": "Kid"
           },
           "kty": {
-            "pattern": "^EC$",
+            "pattern": "^(EC|OKP)$",
             "title": "Kty",
             "type": "string"
           },
@@ -5590,18 +5667,24 @@
             "type": "string"
           },
           "y": {
-            "maxLength": 64,
-            "minLength": 42,
-            "pattern": "^[A-Za-z0-9_-]+$",
-            "title": "Y",
-            "type": "string"
+            "anyOf": [
+              {
+                "maxLength": 64,
+                "minLength": 42,
+                "pattern": "^[A-Za-z0-9_-]+$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Y"
           }
         },
         "required": [
           "kty",
           "crv",
-          "x",
-          "y"
+          "x"
         ],
         "title": "RelayPublicKeyJWK",
         "type": "object"

@@ -33,6 +33,13 @@ PUBLIC_JWK = {
     "y": "BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB",
     "kid": "key-12345",
 }
+ED25519_JWK = {
+    "kty": "OKP",
+    "crv": "Ed25519",
+    "x": "11qYAYKxCrfVS_7TyWQHOg7hcvPapiMlrwIaaPcHURo",
+    "alg": "EdDSA",
+    "kid": "key-12345",
+}
 KEY_ID = "key-12345"
 PAIRING_CODE = "ABCD23"
 PAIRING_LOG_ID = rate_limit_bucket_key("r9cam:pairing", PAIRING_CODE)
@@ -385,3 +392,18 @@ async def test_poll_pairing_status_reads_body_and_logs_digest(redis_client: Redi
     mock_logger.info.assert_called_once_with("Pairing credentials retrieved for code %s.", PAIRING_LOG_ID)
     assert PAIRING_CODE not in mock_logger.info.call_args.args[1]
     assert await redis_client.get(f"r9cam:pairing:{PAIRING_CODE}") is None
+
+
+async def test_register_pairing_code_accepts_an_ed25519_key(redis_client: Redis) -> None:
+    """A Pi that pairs with an Ed25519 key (r9cam 0.8 default) registers like a P-256 one."""
+    body = PairingRegisterRequest(
+        code=PAIRING_CODE,
+        rpi_fingerprint="fingerprint",
+        public_key_jwk=ED25519_JWK,
+        key_id=KEY_ID,
+    )
+
+    await register_pairing_code(body=body, redis=redis_client)
+
+    stored = json.loads(await redis_client.get(f"r9cam:pairing:{PAIRING_CODE}"))
+    assert stored["public_key_jwk"] == ED25519_JWK
