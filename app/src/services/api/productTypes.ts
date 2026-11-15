@@ -58,6 +58,16 @@ export async function fetchProductTypesByName(names: string[]): Promise<ProductT
   return (data.items ?? []) as ProductTypeOption[];
 }
 
+/** One product type by database id. */
+export async function fetchProductType(id: number): Promise<ProductTypeOption> {
+  const url = `${API_URL}/product-types/${id}`;
+  const response = await apiFetch(url, { method: 'GET' });
+  if (!response.ok) {
+    await throwFromResponse(response, `Failed to fetch ${new URL(url).pathname}`);
+  }
+  return (await response.json()) as ProductTypeOption;
+}
+
 /** Name -> display label, for every option that resolves to one. */
 export function productTypeLabelMap(options: ProductTypeOption[]): Record<string, string> {
   const labels: Record<string, string> = {};

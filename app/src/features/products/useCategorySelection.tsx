@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useDebounce } from 'use-debounce';
 import { topCategoriesQueryOptions } from '@/features/products/queries';
 import { useRequireAuth } from '@/hooks/useRequireAuth';
+import { fetchProductTypesByName } from '@/services/api/productTypes';
 import { loadCPV } from '@/services/cpv';
 import type { CPVCategory } from '@/types/CPVCategory';
 import { setPendingTypeSelection } from './pendingTypeSelection';
@@ -20,6 +21,7 @@ export function useCategorySelection() {
   const [cpvClass, setCpvClass] = useState<CPVCategory | null>(null);
   const [history, setHistory] = useState<CPVCategory[]>([]);
   const [loadFailed, setLoadFailed] = useState(false);
+  const [selectFailed, setSelectFailed] = useState(false);
   const [loadAttempt, setLoadAttempt] = useState(0);
   const { recents, recordRecent } = useRecentCategories();
   // Public aggregate; a failure just hides the shortcut section.
@@ -62,12 +64,23 @@ export function useCategorySelection() {
   };
 
   const selectType = useCallback(
-    (typeId: number) => {
+    async (typeId: number) => {
       const category = cpv?.[String(typeId)];
-      if (category) recordRecent(category);
-      // Hand the pick back through the module slot; the detail screen reads it on focus.
-      setPendingTypeSelection(typeId);
-      router.back();
+      if (!category) return;
+      setSelectFailed(false);
+      try {
+        // The snapshot's id is not the database's: resolve the row by its stored name.
+        const row = (await fetchProductTypesByName([category.name])).find(
+          (option) => option.name === category.name,
+        );
+        if (!row) throw new Error(`No product type named ${category.name}`);
+        recordRecent(category);
+        // Hand the pick back through the module slot; the detail screen reads it on focus.
+        setPendingTypeSelection(row.id);
+        router.back();
+      } catch {
+        setSelectFailed(true);
+      }
     },
     [cpv, recordRecent, router],
   );
@@ -89,6 +102,7 @@ export function useCategorySelection() {
     user,
     cpvClass,
     loadFailed,
+    selectFailed,
     retryLoad,
     history,
     filtered,

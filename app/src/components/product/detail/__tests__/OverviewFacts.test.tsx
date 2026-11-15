@@ -1,15 +1,14 @@
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { act, screen } from '@testing-library/react-native';
 import { useRouter } from 'expo-router';
+import { delay, HttpResponse, http } from 'msw';
 import { OverviewFacts } from '@/components/product/detail/OverviewFacts';
-import { loadCPV } from '@/services/cpv';
+import { API_URL } from '@/config';
 import { baseProduct as _base, renderWithProviders, setupUser } from '@/test-utils/index';
+import { server } from '@/test-utils/server';
 import type { Product } from '@/types/Product';
 
-jest.mock('@/services/cpv');
-
 const mockPush = jest.fn();
-const mockedLoadCPV = jest.mocked(loadCPV);
 const VIEW_ALL_LABEL_PATTERN = /View all products of type/;
 
 const baseProduct: Product = {
@@ -24,17 +23,11 @@ describe('OverviewFacts', () => {
 
   beforeEach(() => {
     mockPush.mockReset();
-    mockedLoadCPV.mockResolvedValue({
-      '1': {
-        id: 1,
-        name: '03000000-1',
-        description: 'Agricultural products',
-        allChildren: [],
-        directChildren: [],
-        updatedAt: '',
-        createdAt: '',
-      },
-    } as never);
+    server.use(
+      http.get(`${API_URL}/product-types/1`, () =>
+        HttpResponse.json({ id: 1, name: '03000000-1', description: 'Agricultural products' }),
+      ),
+    );
     (useRouter as jest.Mock).mockReturnValue({ push: mockPush, replace: jest.fn() });
   });
 
@@ -73,7 +66,12 @@ describe('OverviewFacts', () => {
   });
 
   it('holds the type slot with placeholders while it resolves, so nothing pops in', async () => {
-    mockedLoadCPV.mockReturnValue(new Promise(() => {}));
+    server.use(
+      http.get(`${API_URL}/product-types/1`, async () => {
+        await delay('infinite');
+        return HttpResponse.json({});
+      }),
+    );
     const product = { ...baseProduct, productTypeID: 1 };
     await renderWithProviders(<OverviewFacts product={product} />);
     expect(screen.getByText('Product type')).toBeOnTheScreen();
@@ -81,7 +79,7 @@ describe('OverviewFacts', () => {
     expect(screen.getByTestId('type-description-skeleton')).toBeOnTheScreen();
   });
 
-  // The bundled snapshot is keyed by its own ids; the recorded type wins.
+  // The recorded type wins over a fetch.
   it('shows the type the API recorded, not the snapshot entry sharing its id', async () => {
     const product = {
       ...baseProduct,
