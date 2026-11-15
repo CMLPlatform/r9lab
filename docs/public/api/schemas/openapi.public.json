@@ -5546,7 +5546,7 @@
       },
       "RelayPublicKeyJWK": {
         "additionalProperties": false,
-        "description": "Public P-256 JWK registered by an RPi camera.",
+        "description": "Public JWK registered by an RPi camera: P-256 for ES256 or Ed25519 for EdDSA.",
         "properties": {
           "crv": {
             "pattern": "^P-256$",

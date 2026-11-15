@@ -6,12 +6,21 @@ import time
 from typing import TYPE_CHECKING
 
 import jwt
-from cryptography.hazmat.primitives.asymmetric import ec
+from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.primitives.asymmetric import ec, ed25519
 
 from app.api.plugins.r9cam.device_assertion import ASSERTION_AUDIENCE
 
 if TYPE_CHECKING:
     from uuid import UUID
+
+
+def make_eddsa_keypair() -> tuple[ed25519.Ed25519PrivateKey, dict]:
+    """Generate an Ed25519 key pair and return (private_key, public_jwk), as r9cam's EdDSA pairing sends it."""
+    private_key = ed25519.Ed25519PrivateKey.generate()
+    raw = private_key.public_key().public_bytes(serialization.Encoding.Raw, serialization.PublicFormat.Raw)
+    x = base64.urlsafe_b64encode(raw).rstrip(b"=").decode()
+    return private_key, {"kty": "OKP", "crv": "Ed25519", "x": x, "alg": "EdDSA"}
 
 
 def make_keypair() -> tuple[ec.EllipticCurvePrivateKey, dict]:
@@ -26,7 +35,7 @@ def make_keypair() -> tuple[ec.EllipticCurvePrivateKey, dict]:
 
 
 def sign_assertion(
-    private_key: ec.EllipticCurvePrivateKey,
+    private_key: ec.EllipticCurvePrivateKey | ed25519.Ed25519PrivateKey,
     camera_id: UUID | str,
     key_id: str,
     *,
@@ -38,7 +47,10 @@ def sign_assertion(
     omit_claims: set[str] | None = None,
     headers: dict[str, object] | None = None,
 ) -> str:
-    """Sign a device assertion for ``camera_id``; ``jti=""`` is kept as given."""
+    """Sign a device assertion for ``camera_id``; ``jti=""`` is kept as given.
+
+    The algorithm follows the key type: ES256 for P-256, EdDSA for Ed25519.
+    """
     now = int(time.time())
     payload = {
         "iss": iss or f"camera:{camera_id}",
@@ -51,4 +63,5 @@ def sign_assertion(
     }
     for claim in omit_claims or set():
         payload.pop(claim, None)
-    return jwt.encode(payload, private_key, algorithm="ES256", headers=headers or {"kid": key_id})
+    algorithm = "EdDSA" if isinstance(private_key, ed25519.Ed25519PrivateKey) else "ES256"
+    return jwt.encode(payload, private_key, algorithm=algorithm, headers=headers or {"kid": key_id})

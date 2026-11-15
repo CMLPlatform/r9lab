@@ -397,7 +397,7 @@
   "paths": {
     "/v1/plugins/r9cam/device/cameras/{camera_id}/image-upload": {
       "post": {
-        "description": "Called by the Pi after a successful capture. Authenticated with a short-lived ES256 device assertion (same credential used by the WebSocket relay). The Pi provides the JPEG body plus two JSON blobs: `capture_metadata` (libcamera metadata) and `upload_metadata` (opaque dict forwarded by whichever caller triggered the capture, typically `{product_id, description}`). The backend stores the image via the normal image storage service and returns a tiny ack envelope the Pi consumes.",
+        "description": "Called by the Pi after a successful capture. Authenticated with a short-lived device assertion (same credential used by the WebSocket relay). The Pi provides the JPEG body plus two JSON blobs: `capture_metadata` (libcamera metadata) and `upload_metadata` (opaque dict forwarded by whichever caller triggered the capture, typically `{product_id, description}`). The backend stores the image via the normal image storage service and returns a tiny ack envelope the Pi consumes.",
         "operationId": "receive_camera_upload_v1_plugins_r9cam_device_cameras__camera_id__image_upload_post",
         "parameters": [
           {
@@ -454,7 +454,7 @@
     },
     "/v1/plugins/r9cam/device/cameras/{camera_id}/preview-thumbnail-upload": {
       "post": {
-        "description": "Called by the Pi's background thumbnail worker. Authenticated with the same short-lived ES256 device assertion used by the WebSocket relay. Stores a deterministic per-camera JPEG cache file for camera-card previews without creating an Image database row.",
+        "description": "Called by the Pi's background thumbnail worker. Authenticated with the same short-lived device assertion used by the WebSocket relay. Stores a deterministic per-camera JPEG cache file for camera-card previews without creating an Image database row.",
         "operationId": "receive_preview_thumbnail_upload_v1_plugins_r9cam_device_cameras__camera_id__preview_thumbnail_upload_post",
         "parameters": [
           {
@@ -511,7 +511,7 @@
     },
     "/v1/plugins/r9cam/device/cameras/{camera_id}/self": {
       "delete": {
-        "description": "Called by the Pi when the user triggers unpair from the local /setup page. Authenticates via the device's ES256 assertion. Deletes the camera from the database so the backend no longer shows it as offline.",
+        "description": "Called by the Pi when the user triggers unpair from the local /setup page. Authenticates via the device's assertion. Deletes the camera from the database so the backend no longer shows it as offline.",
         "operationId": "self_unpair_camera_v1_plugins_r9cam_device_cameras__camera_id__self_delete",
         "parameters": [
           {

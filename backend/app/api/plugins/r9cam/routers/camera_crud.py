@@ -212,7 +212,7 @@ async def delete_user_camera(
     status_code=204,
     description=(
         "Called by the Pi when the user triggers unpair from the local /setup page. "
-        "Authenticates via the device's ES256 assertion. Deletes the camera from the "
+        "Authenticates via the device's assertion. Deletes the camera from the "
         "database so the backend no longer shows it as offline."
     ),
 )

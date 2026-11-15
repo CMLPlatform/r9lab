@@ -18,7 +18,7 @@ from fastapi import HTTPException, status
 from app.api.common.routers.exceptions import _response_parts
 from app.api.plugins.r9cam import device_assertion as da
 from app.core.runtime import RequiredServiceUnavailableError
-from tests.fixtures.device_assertion import make_keypair, sign_assertion
+from tests.fixtures.device_assertion import make_eddsa_keypair, make_keypair, sign_assertion
 
 if TYPE_CHECKING:
     from cryptography.hazmat.primitives.asymmetric import ec
@@ -249,3 +249,51 @@ async def test_inactive_owner_camera_is_rejected(*, is_active: bool, is_verified
     ):
         await da._authenticated_camera(request, camera.id, session)
     assert exc_info.value.status_code == status.HTTP_401_UNAUTHORIZED
+
+
+# ── verify_device_assertion: algorithm per key type ──────────────────────────
+
+
+def _camera_with_jwk(jwk: dict) -> MagicMock:
+    camera = MagicMock()
+    camera.id = uuid4()
+    camera.relay_key_id = "kid-1"
+    camera.relay_public_key_jwk = jwk
+    return camera
+
+
+async def test_eddsa_assertion_from_an_ed25519_camera_is_accepted() -> None:
+    """A camera paired with an Ed25519 key authenticates with EdDSA tokens."""
+    private_key, jwk = make_eddsa_keypair()
+    camera = _camera_with_jwk(jwk)
+    redis = AsyncMock()
+    redis.set.return_value = True
+
+    payload = await da.verify_device_assertion(sign_assertion(private_key, camera.id, "kid-1"), camera, redis)
+
+    assert payload["sub"] == f"camera:{camera.id}"
+
+
+async def test_token_algorithm_must_match_the_registered_key_type() -> None:
+    """An Ed25519 camera's key cannot be used for an ES256 token, and the reverse."""
+    eddsa_key, eddsa_jwk = make_eddsa_keypair()
+    ec_key, ec_jwk = make_keypair()
+    redis = AsyncMock()
+    redis.set.return_value = True
+
+    for key, jwk in ((ec_key, eddsa_jwk), (eddsa_key, ec_jwk)):
+        camera = _camera_with_jwk(jwk)
+        token = sign_assertion(key, camera.id, "kid-1")
+        with pytest.raises(jwt.InvalidTokenError, match="Unsupported assertion algorithm"):
+            await da.verify_device_assertion(token, camera, redis)
+
+
+async def test_unknown_key_type_is_rejected() -> None:
+    """A stored JWK of a key type with no allowed algorithm never authenticates."""
+    private_key, jwk = make_keypair()
+    camera = _camera_with_jwk({**jwk, "kty": "RSA"})
+    redis = AsyncMock()
+    redis.set.return_value = True
+
+    with pytest.raises(jwt.InvalidTokenError, match="Unsupported assertion algorithm"):
+        await da.verify_device_assertion(sign_assertion(private_key, camera.id, "kid-1"), camera, redis)
