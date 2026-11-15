@@ -5,37 +5,14 @@
 # `purls` (scripts/check_todo_dates.py): the file is shared by every image scan, and an
 # unscoped id would also hide the finding in the backup and postgres images.
 vulnerabilities:
-  # caddy:2-alpine is still built with Go 1.26.8 (checked 2026-11-01: the pinned digest is
-  # the latest). This flaw is in x509 chain verification, which runs only when caddy acts
-  # as a TLS client or server: the app image serves plain HTTP on :8081 behind the
-  # tunnel, with no TLS, no reverse_proxy, no ACME and the admin API off.
-  - id: CVE-2026-111943
+  # TODO(drop-by 2027-01-14): re-check the caddy digest for golang.org/x/net 0.62.0, then drop this waiver or extend it
+  # caddy:2-alpine (v2.11.9, re-scanned 2026-11-15) is built with Go 1.26.9 and carries the
+  # go-jose fix; the five earlier Go, net/http, crypto/tls and go-jose waivers are gone. It
+  # still links golang.org/x/net v0.60.0, fixed in 0.62.0. Re-check when the digest is bumped.
+  - id: CVE-2026-78661
     paths: ["usr/bin/caddy"]
-    expired_at: 2026-12-01
-    statement: Go crypto/x509 intermediate-certificate MITM; caddy here never verifies a certificate chain.
-
-  # TODO(drop-by 2026-11-30): re-check the caddy digest for Go 1.26.9 / x/net 0.60.0 / go-jose 4.1.6, then drop these waivers or extend them
-  # The caddy:2-alpine binary re-scanned on 2026-11-01: Go 1.26.8, golang.org/x/net
-  # v0.59.0 and go-jose v4.1.5, and the pinned digest matches the latest. caddy v2.11.7
-  # (the latest release) carries none of the fixes. Caddy receives plain HTTP/1.1 from
-  # the tunnel inside the Compose network: no TLS and no HTTP/2 reach it. Re-check when
-  # the digest is bumped.
-  - id: CVE-2026-78667
-    paths: ["usr/bin/caddy"]
-    expired_at: 2026-12-01
-    statement: net/http Range header DoS, reachable; file_server answers Range requests and the edge forwards them for the uncached paths (index.html, no-store files). The worst case is CPU load in the app container, which serves only static files; the API runs in its own container. Fixed in Go 1.26.9 (2026-10-08), no caddy release built with it yet.
-  - id: CVE-2026-78669
-    paths: ["usr/bin/caddy"]
-    expired_at: 2026-12-01
-    statement: HTTP/2 SETTINGS flood DoS in net/http and x/net; caddy is reached over HTTP/1.1 only.
-  - id: CVE-2026-97031
-    paths: ["usr/bin/caddy"]
-    expired_at: 2026-12-01
-    statement: crypto/tls ECH extension DoS; caddy terminates no TLS, the edge does.
-  - id: CVE-2026-116587
-    paths: ["usr/bin/caddy"]
-    expired_at: 2026-12-01
-    statement: go-jose JWK RSA-parameter DoS; caddy parses no JWKs here, with the admin API off, a bare :8081 site (no ACME) and no JWT auth.
+    expired_at: 2027-01-15
+    statement: x/net/html quadratic-allocation DoS on crafted HTML; caddy here serves static files and never parses request-supplied HTML.
 
 misconfigurations: []
 secrets: []
