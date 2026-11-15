@@ -82,6 +82,11 @@
           "suspicious": { "noConditionalExpect": "off", "useExpect": "off" }
         }
       }
+    },
+    {
+      // Playwright's API is `test`, not `it`.
+      "includes": ["**/e2e/**/*.ts"],
+      "linter": { "rules": { "style": { "useConsistentTestIt": "off" } } }
     }
   ],
   "vcs": {
