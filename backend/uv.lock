@@ -2472,14 +2472,14 @@ wheels = [
 
 [[package]]
 name = "r9cam-models"
-version = "0.6.0"
+version = "0.7.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "pydantic" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/ff/07/5d65f56679dfec3f0f844b7cec4320ea47148457fd20f55e7010428741de/r9cam_models-0.6.0.tar.gz", hash = "sha256:331d7cdeacd0cbaec36ff50b5041c8e14c915ca455d5d1d9c19df23b2a02a422", size = 13701, upload-time = "2026-10-13T14:14:15.083Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/3e/1c/a838df3f7cb04ad61c99046476cad5ac3bf7d770952a853c2832c4efa9af/r9cam_models-0.7.0.tar.gz", hash = "sha256:d5e33a82ac766c63e656cbff857bf71ddbff7d6748d6c88c586a7b6b625ebba8", size = 14729, upload-time = "2026-11-15T18:03:08.906Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/97/1a/1c820155b000703f5243ef85a9ea82163c6a7f766fea4cf83c767c712d26/r9cam_models-0.6.0-py3-none-any.whl", hash = "sha256:3866c8a5f233eb3e60a90f621eb1db9e424edfee1ac994ab7dda346909ca1b3d", size = 15886, upload-time = "2026-10-13T14:14:13.809Z" },
+    { url = "https://files.pythonhosted.org/packages/68/29/c419eb264ffddecde1b42812167354c53b35c7bf28cbcd7bc1072485e565/r9cam_models-0.7.0-py3-none-any.whl", hash = "sha256:4d0136eb394b7ddd8c9d390a74b184bda9ca63a58f1ea04ad97f6cea5bf9126e", size = 16932, upload-time = "2026-11-15T18:03:07.597Z" },
 ]
 
 [[package]]
@@ -2594,7 +2594,7 @@ requires-dist = [
     { name = "pyjwt", extras = ["crypto"], specifier = ">=2.12.1" },
     { name = "pyotp", specifier = ">=2.9.0" },
     { name = "python-json-logger", specifier = ">=4.1.0" },
-    { name = "r9cam-models", specifier = ">=0.6.0,<0.7" },
+    { name = "r9cam-models", specifier = ">=0.7.0,<0.8" },
     { name = "redis", specifier = ">=5.2.1" },
     { name = "sqlalchemy", specifier = ">=2.0.41" },
     { name = "uvicorn", extras = ["standard"], specifier = ">=0.42.0" },

@@ -44,7 +44,7 @@ async def test_create_camera(db_session: AsyncSession, db_superuser: User) -> No
     camera_in = CameraCreate(
         name=TEST_CAMERA_NAME,
         description=TEST_CAMERA_DESC,
-        relay_public_key_jwk=RelayPublicKeyJWK(**PUBLIC_JWK),
+        relay_public_key_jwk=RelayPublicKeyJWK.model_validate(PUBLIC_JWK),
         relay_key_id=KEY_ID,
     )
 

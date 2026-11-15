@@ -37,7 +37,7 @@
     "sqlalchemy>=2.0.41",
     # Shared application models and outbound integrations
     "httpx[http2]>=0.28.1",
-    "r9cam-models>=0.6.0,<0.7",
+    "r9cam-models>=0.7.0,<0.8",
     # Configuration, validation, and utility types
     # 2.14.0 and 2.14.1 cannot pickle parametrized generics such as the cached Page
     # responses (pydantic#13991); drop the exclusion once 2.14.2 ships the fix.

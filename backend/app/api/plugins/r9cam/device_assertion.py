@@ -1,6 +1,6 @@
 """Shared device-assertion verification used by the WebSocket relay and HTTP endpoints.
 
-Both transports accept the same ES256 JWT minted by the Pi (``build_device_assertion``
+Both transports accept the same ES256 or EdDSA JWT minted by the Pi (``build_device_assertion``
 in ``r9cam/app/relay/device_jwt.py``): the audience is shared, the
 replay-protection namespace in Redis is shared, and the verification logic is
 therefore identical. Keeping it in one place prevents drift between the two
@@ -34,7 +34,10 @@ ASSERTION_AUDIENCE = "r9cam-relay"
 # backend and the Pis can be upgraded in either order.
 # TODO(drop-by 2027-01-31): drop together with the /v1/plugins/rpi-cam/ prefix
 LEGACY_ASSERTION_AUDIENCE = "relab-rpi-cam-relay"
-ASSERTION_ALGORITHMS = ("ES256",)
+ASSERTION_ALGORITHMS = ("ES256", "EdDSA")
+# The key type registered at pairing fixes the one algorithm a camera may sign with, so a
+# token cannot pick a different algorithm than its key was made for.
+_ALGORITHM_BY_KEY_TYPE = {"EC": "ES256", "OKP": "EdDSA"}
 REPLAY_KEY_PREFIX = "r9cam:relay_assertion_jti:"
 MAX_ASSERTION_TTL_SECONDS = 5 * 60
 
@@ -60,7 +63,8 @@ async def verify_device_assertion(assertion: str, camera: Camera, redis: Redis) 
     enforced via a one-shot Redis ``SET NX`` keyed by ``{camera.id}:{jti}``.
     """
     header = jwt.get_unverified_header(assertion)
-    if header.get("alg") not in ASSERTION_ALGORITHMS:
+    algorithm = _ALGORITHM_BY_KEY_TYPE.get(camera.relay_public_key_jwk.get("kty"))
+    if algorithm is None or header.get("alg") != algorithm:
         msg = "Unsupported assertion algorithm"
         raise InvalidTokenError(msg)
     if header.get("kid") != camera.relay_key_id:
@@ -71,7 +75,7 @@ async def verify_device_assertion(assertion: str, camera: Camera, redis: Redis) 
     payload = jwt.decode(
         assertion,
         key=public_key,
-        algorithms=list(ASSERTION_ALGORITHMS),
+        algorithms=[algorithm],
         audience=[ASSERTION_AUDIENCE, LEGACY_ASSERTION_AUDIENCE],
         options={"require": ["exp", "iat", "iss", "nbf", "jti", "sub"]},
     )

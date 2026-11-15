@@ -125,7 +125,7 @@ async def capture_image(
     response_model=DeviceImageUploadAck,
     summary="Internal: receive an image pushed directly from a paired Raspberry Pi",
     description=(
-        "Called by the Pi after a successful capture. Authenticated with a short-lived ES256 "
+        "Called by the Pi after a successful capture. Authenticated with a short-lived "
         "device assertion (same credential used by the WebSocket relay). The Pi provides the "
         "JPEG body plus two JSON blobs: `capture_metadata` (libcamera metadata) and "
         "`upload_metadata` (opaque dict forwarded by whichever caller triggered the capture, "
@@ -211,7 +211,7 @@ async def receive_camera_upload(
     summary="Internal: receive a cached preview thumbnail pushed directly from a paired Raspberry Pi",
     description=(
         "Called by the Pi's background thumbnail worker. Authenticated with the same short-lived "
-        "ES256 device assertion used by the WebSocket relay. Stores a deterministic per-camera JPEG "
+        "device assertion used by the WebSocket relay. Stores a deterministic per-camera JPEG "
         "cache file for camera-card previews without creating an Image database row."
     ),
     status_code=201,

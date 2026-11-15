@@ -53,7 +53,7 @@ class CameraFilterWithOwner(CameraFilter):
 
 
 class RelayPublicKeyJWK(DevicePublicKeyJWK):
-    """Public P-256 JWK registered by an RPi camera."""
+    """Public JWK registered by an RPi camera: P-256 for ES256 or Ed25519 for EdDSA."""
 
 
 class CameraCreate(BaseCreateSchema, CameraBase):

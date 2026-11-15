@@ -33,6 +33,9 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- r9cam cameras can sign their device tokens with EdDSA (Ed25519) as well as ES256. Each camera
+  may use only the algorithm of the key it paired with. The backend now uses r9cam-models
+  0.7.0, which accepts Ed25519 public keys at pairing. ([#501](https://github.com/CMLPlatform/r9lab/issues/501))
 - An accessibility statement at `/accessibility` on the website, backed by a WCAG 2.2
   self-assessment of the website, the documentation site and the web app at
   `/accessibility-assessment`.
