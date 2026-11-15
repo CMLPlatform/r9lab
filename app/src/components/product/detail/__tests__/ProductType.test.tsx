@@ -1,13 +1,14 @@
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { act, screen, waitFor } from '@testing-library/react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
+import { HttpResponse, http } from 'msw';
 import ProductType from '@/components/product/detail/ProductType';
+import { API_URL } from '@/config';
 import { takePendingTypeSelection } from '@/features/products/pendingTypeSelection';
-import { loadCPV } from '@/services/cpv';
 import { baseProduct as _base, renderWithProviders, setupUser } from '@/test-utils/index';
+import { server } from '@/test-utils/server';
 import type { Product } from '@/types/Product';
 
-jest.mock('@/services/cpv');
 jest.mock('@/features/products/pendingTypeSelection', () => ({
   takePendingTypeSelection: jest.fn(),
   setPendingTypeSelection: jest.fn(),
@@ -15,7 +16,6 @@ jest.mock('@/features/products/pendingTypeSelection', () => ({
 
 const mockPush = jest.fn();
 const mockSetParams = jest.fn();
-const mockedLoadCPV = jest.mocked(loadCPV);
 const mockedTakePending = jest.mocked(takePendingTypeSelection);
 
 const baseProduct: Product = { ..._base, productTypeID: undefined };
@@ -26,28 +26,11 @@ describe('ProductType', () => {
   beforeEach(() => {
     mockPush.mockReset();
     mockSetParams.mockReset();
-    mockedLoadCPV.mockResolvedValue({
-      // Mirror the real cpv.json root placeholder; CPVCard renders a category
-      // whose name === 'undefined' as a red "Category undefined" error card.
-      root: {
-        id: 0,
-        name: 'undefined',
-        description: 'Category undefined',
-        allChildren: [],
-        directChildren: [],
-        updatedAt: '',
-        createdAt: '',
-      },
-      '1': {
-        id: 1,
-        name: '03000000-1',
-        description: 'Agricultural products',
-        allChildren: [],
-        directChildren: [],
-        updatedAt: '',
-        createdAt: '',
-      },
-    });
+    server.use(
+      http.get(`${API_URL}/product-types/1`, () =>
+        HttpResponse.json({ id: 1, name: '03000000-1', description: 'Agricultural products' }),
+      ),
+    );
     mockedTakePending.mockReturnValue(null);
     (useFocusEffect as jest.Mock).mockReset();
     (useRouter as jest.Mock).mockReturnValue({
@@ -74,9 +57,7 @@ describe('ProductType', () => {
     expect(screen.queryByText('Select a fitting category for the product.')).toBeNull();
   });
 
-  // The root CPV entry is a placeholder ({name: "undefined"})
-  // that CPVCard renders as a red error card; a typeless product must never
-  // show that as its default first impression.
+  // A typeless product must never show a placeholder error card as its first impression.
   it('shows an inviting empty state instead of the undefined category card when no type is picked', async () => {
     await renderWithProviders(<ProductType product={baseProduct} editMode={true} />);
     expect(await screen.findByText('Choose a product type')).toBeOnTheScreen();
@@ -87,18 +68,14 @@ describe('ProductType', () => {
     const { queryByText } = await renderWithProviders(
       <ProductType product={baseProduct} editMode={false} />,
     );
-    // Flush the loadCPV() effect (its result is unused for a typeless
-    // product in view mode, but the effect still runs) before asserting.
     await act(async () => {});
     expect(queryByText('Product type')).toBeNull();
     expect(queryByText('Choose a product type')).toBeNull();
     expect(queryByText('Category undefined')).toBeNull();
   });
 
-  // The bundled CPV snapshot is keyed by its own ids, not the database's.
-  // Looked up by database id, a seeded "Display module" stored as id 3 renders
-  // as snapshot entry 3, "CPV: 03 Agricultural, farming...".
-  it('shows a type picked since load from the snapshot, not the stale recorded one', async () => {
+  // A type picked since load is fetched by its database id; the stale recorded one is ignored.
+  it('shows a type picked since load from the API, not the stale recorded one', async () => {
     const product = {
       ...baseProduct,
       productTypeID: 1,

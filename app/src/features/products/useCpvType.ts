@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { loadCPV } from '@/services/cpv';
+import { fetchProductType } from '@/services/api/productTypes';
 import type { CPVCategory } from '@/types/CPVCategory';
 import type { Product } from '@/types/Product';
 
@@ -10,21 +10,19 @@ export type CpvTypeState =
   | { status: 'error'; retry?: () => void };
 
 /**
- * Resolves a CPV type id to its name and description. A `recorded` type whose id
- * matches is shown as the API returned it: the snapshot is keyed by its own ids, which
- * match the database's only by construction order. So the 2MB dataset only loads for a
- * type picked since load. A failed load is an `error` state with `retry`; an id absent
- * from the dataset is an `error` without one, since retrying cannot help.
+ * Resolves a product type database id to its name and description. A `recorded` type whose
+ * id matches is shown as the API returned it; otherwise the type is fetched by id. The
+ * bundled CPV snapshot is not consulted: its ids match the database's only by seeding order.
+ * A failed fetch is an `error` state with `retry`.
  */
 export function useCpvType(
   typeID: number | undefined,
   recorded?: Product['productType'],
 ): CpvTypeState {
   const recordedMatches = typeID !== undefined && recorded?.id === typeID;
-  // NOTE: 'cpv' stays out of the persisted-cache allowlist: the dataset is 2MB.
   const { data, isError, isFetching, refetch } = useQuery({
-    queryKey: ['cpv'] as const,
-    queryFn: loadCPV,
+    queryKey: ['product-type', typeID] as const,
+    queryFn: () => fetchProductType(typeID as number),
     staleTime: Infinity,
     retry: false,
     enabled: typeID !== undefined && !recordedMatches,
@@ -37,11 +35,8 @@ export function useCpvType(
       type: { name: recorded.name, description: recorded.description ?? '' },
     };
   }
-  if (data) {
-    // Never fall back to cpv.root: its {name: "undefined"} placeholder is not a real type.
-    const type = data[String(typeID)];
-    return type ? { status: 'ready', type } : { status: 'error' };
-  }
+  if (data)
+    return { status: 'ready', type: { name: data.name, description: data.description ?? '' } };
   if (isError && !isFetching) return { status: 'error', retry: refetch };
   return { status: 'loading' };
 }

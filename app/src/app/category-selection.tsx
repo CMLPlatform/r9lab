@@ -22,6 +22,7 @@ export default function CategorySelection() {
     user,
     cpvClass,
     loadFailed,
+    selectFailed,
     retryLoad,
     history,
     filtered,
@@ -102,6 +103,11 @@ export default function CategorySelection() {
             </AppText>
             <InfoTooltip title="Product types come from CPV, a standard list of product categories. Pick the most specific category you're sure of. A broader one is fine. R9lab uses it for filtering and for the research statistics." />
           </View>
+          {selectFailed ? (
+            <AppText variant="label" className="text-destructive" accessibilityRole="alert">
+              Couldn't select that type. Try again.
+            </AppText>
+          ) : null}
           {history.length > 1 && <CPVHistory history={history} onPress={moveUp} />}
         </View>
         <FlatList
@@ -132,7 +138,7 @@ function CategoryListItem({
   onSelectBranch,
 }: {
   item: CPVCategory;
-  onSelectType: (id: CPVCategory['id']) => void;
+  onSelectType: (id: CPVCategory['id']) => void | Promise<void>;
   onSelectBranch: (item: CPVCategory) => void;
 }) {
   const handleSelect = useCallback(() => onSelectType(item.id), [onSelectType, item.id]);
@@ -153,7 +159,7 @@ function RecentCategoryCard({
   onSelectType,
 }: {
   item: CPVCategory;
-  onSelectType: (id: CPVCategory['id']) => void;
+  onSelectType: (id: CPVCategory['id']) => void | Promise<void>;
 }) {
   const handleSelect = useCallback(() => onSelectType(item.id), [onSelectType, item.id]);
   return <CPVCard CPV={item} onPress={handleSelect} />;

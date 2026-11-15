@@ -115,6 +115,16 @@ describe('CategorySelection', () => {
       dismissTo: jest.fn(),
     });
     mockUseAuth.mockReturnValue({ user: { id: '1', username: 'testuser' } as Partial<User> });
+    // DB ids deliberately differ from the bundled snapshot ids (2 and 3).
+    server.use(
+      http.get(`${API_URL}/product-types`, ({ request }) => {
+        const names = new URL(request.url).searchParams.getAll('name[in]');
+        const dbIds: Record<string, number> = { '09000000-3': 77, '03100000-2': 88 };
+        return HttpResponse.json({
+          items: names.flatMap((name) => (name in dbIds ? [{ id: dbIds[name], name }] : [])),
+        });
+      }),
+    );
   });
 
   it('redirects guests to login', async () => {
@@ -169,9 +179,28 @@ describe('CategorySelection', () => {
     await screen.findByText('Petroleum products');
     await fireEvent.press(screen.getByText('Petroleum products'));
     await waitFor(() => {
-      expect(mockedSetPending).toHaveBeenCalledWith(2);
+      expect(mockedSetPending).toHaveBeenCalledWith(77);
       expect(mockBack).toHaveBeenCalled();
     });
+  });
+
+  it('stays on the picker with an error when the database has no row for the pick', async () => {
+    server.use(http.get(`${API_URL}/product-types`, () => HttpResponse.json({ items: [] })));
+    await renderWithProviders(<CategorySelection />);
+    await fireEvent.press(await screen.findByText('Petroleum products'));
+
+    expect(await screen.findByText("Couldn't select that type. Try again.")).toBeOnTheScreen();
+    expect(mockedSetPending).not.toHaveBeenCalled();
+    expect(mockBack).not.toHaveBeenCalled();
+  });
+
+  it('stays on the picker with an error when the lookup request fails', async () => {
+    server.use(http.get(`${API_URL}/product-types`, () => HttpResponse.error()));
+    await renderWithProviders(<CategorySelection />);
+    await fireEvent.press(await screen.findByText('Petroleum products'));
+
+    expect(await screen.findByText("Couldn't select that type. Try again.")).toBeOnTheScreen();
+    expect(mockedSetPending).not.toHaveBeenCalled();
   });
 
   it('navigates into subcategory when subcategories button is pressed', async () => {
@@ -259,7 +288,7 @@ describe('CategorySelection', () => {
     await fireEvent.press(screen.getAllByText('Petroleum products')[0]);
 
     await waitFor(() => {
-      expect(mockedSetPending).toHaveBeenCalledWith(2);
+      expect(mockedSetPending).toHaveBeenCalledWith(77);
       expect(mockBack).toHaveBeenCalled();
     });
   });
@@ -344,7 +373,7 @@ describe('CategorySelection', () => {
 
     await fireEvent.press(screen.getByText('Agricultural and horticultural products'));
     await waitFor(() => {
-      expect(mockedSetPending).toHaveBeenCalledWith(3);
+      expect(mockedSetPending).toHaveBeenCalledWith(88);
     });
   });
 
