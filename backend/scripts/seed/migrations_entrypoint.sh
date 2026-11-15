@@ -16,6 +16,16 @@ SEED_DUMMY_DATA="${SEED_DUMMY_DATA:-false}"
 BULK_SEED_PRODUCTS="${BULK_SEED_PRODUCTS:-0}"
 DEBUG="${DEBUG:-false}"
 
+if [ "${ENVIRONMENT:-}" = "prod" ] && [ "$(lc "$SEED_DUMMY_DATA")" = "true" ]; then
+    echo "error: SEED_DUMMY_DATA=true is not allowed when ENVIRONMENT=prod." >&2
+    exit 1
+fi
+
+if [ "${ENVIRONMENT:-}" = "prod" ] && [ "$BULK_SEED_PRODUCTS" -gt 0 ] 2>/dev/null; then
+    echo "error: BULK_SEED_PRODUCTS > 0 is not allowed when ENVIRONMENT=prod." >&2
+    exit 1
+fi
+
 require_taxonomy_seed_deps() {
     if ! .venv/bin/python -c "import pandas, requests" >/dev/null 2>&1; then
         echo "Taxonomy seeding requires the optional seed-taxonomies dependency group." >&2
