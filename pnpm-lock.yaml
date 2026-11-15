@@ -173,6 +173,9 @@ catalogs:
     '@biomejs/biome':
       specifier: ^2.5.8
       version: 2.6.2
+    '@emnapi/runtime':
+      specifier: 1.11.3
+      version: 1.11.3
     '@playwright/test':
       specifier: ^1.62.1
       version: 1.64.1
@@ -487,6 +490,9 @@ importers:
       '@biomejs/biome':
         specifier: 'catalog:'
         version: 2.6.2
+      '@emnapi/runtime':
+        specifier: 'catalog:'
+        version: 1.11.3
       '@playwright/test':
         specifier: 'catalog:'
         version: 1.64.1
@@ -524,6 +530,9 @@ importers:
       '@biomejs/biome':
         specifier: 'catalog:'
         version: 2.6.2
+      '@emnapi/runtime':
+        specifier: 'catalog:'
+        version: 1.11.3
       '@playwright/test':
         specifier: 'catalog:'
         version: 1.64.1

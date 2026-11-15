@@ -57,6 +57,9 @@ overrides:
 
 catalog:
   "@astrojs/check": ^0.9.10
+  # Pinned to 1.x: the peer of @astrojs/check's wasm runtime otherwise auto-resolves to a
+  # 2.0 beta that crashes on import, which fails `astro check` (astro 7.4.7).
+  "@emnapi/runtime": 1.11.3
   "@axe-core/playwright": ^4.12.1
   "@biomejs/biome": ^2.5.8
   astro: 7.4.7

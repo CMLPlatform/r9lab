@@ -25,6 +25,7 @@
   },
   "devDependencies": {
     "@astrojs/check": "catalog:",
+    "@emnapi/runtime": "catalog:",
     "@axe-core/playwright": "catalog:",
     "@biomejs/biome": "catalog:",
     "@playwright/test": "catalog:",
