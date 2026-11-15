@@ -554,8 +554,15 @@
         ],
         "properties": {
           "created_at": {
-            "title": "Created At",
-            "type": "string"
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "title": "Created At"
           },
           "description": {
             "anyOf": [
@@ -590,8 +597,15 @@
             "type": "string"
           },
           "updated_at": {
-            "title": "Updated At",
-            "type": "string"
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "title": "Updated At"
           }
         },
         "required": [
@@ -620,8 +634,15 @@
         ],
         "properties": {
           "created_at": {
-            "title": "Created At",
-            "type": "string"
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "title": "Created At"
           },
           "description": {
             "anyOf": [
@@ -680,8 +701,15 @@
             ]
           },
           "updated_at": {
-            "title": "Updated At",
-            "type": "string"
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "title": "Updated At"
           }
         },
         "required": [
@@ -1732,8 +1760,15 @@
             "type": "array"
           },
           "created_at": {
-            "title": "Created At",
-            "type": "string"
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "title": "Created At"
           },
           "depth_cm": {
             "anyOf": [
@@ -1881,8 +1916,15 @@
             "type": "object"
           },
           "updated_at": {
-            "title": "Updated At",
-            "type": "string"
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "title": "Updated At"
           },
           "version": {
             "default": 1,
@@ -1965,8 +2007,15 @@
             ]
           },
           "created_at": {
-            "title": "Created At",
-            "type": "string"
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "title": "Created At"
           },
           "depth_cm": {
             "anyOf": [
@@ -2088,8 +2137,15 @@
             "type": "object"
           },
           "updated_at": {
-            "title": "Updated At",
-            "type": "string"
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "title": "Updated At"
           },
           "version": {
             "default": 1,
@@ -2180,8 +2236,15 @@
             "type": "array"
           },
           "created_at": {
-            "title": "Created At",
-            "type": "string"
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "title": "Created At"
           },
           "depth_cm": {
             "anyOf": [
@@ -2303,8 +2366,15 @@
             "type": "object"
           },
           "updated_at": {
-            "title": "Updated At",
-            "type": "string"
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "title": "Updated At"
           },
           "version": {
             "default": 1,
@@ -2403,8 +2473,15 @@
             "type": "array"
           },
           "created_at": {
-            "title": "Created At",
-            "type": "string"
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "title": "Created At"
           },
           "depth_cm": {
             "anyOf": [
@@ -2552,8 +2629,15 @@
             "type": "object"
           },
           "updated_at": {
-            "title": "Updated At",
-            "type": "string"
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "title": "Updated At"
           },
           "version": {
             "default": 1,
@@ -2655,8 +2739,15 @@
         ],
         "properties": {
           "created_at": {
-            "title": "Created At",
-            "type": "string"
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "title": "Created At"
           },
           "description": {
             "anyOf": [
@@ -2701,8 +2792,15 @@
             "description": "Type of the parent object, e.g. product, product_type, material"
           },
           "updated_at": {
-            "title": "Updated At",
-            "type": "string"
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "title": "Updated At"
           }
         },
         "required": [
@@ -2726,8 +2824,15 @@
         ],
         "properties": {
           "created_at": {
-            "title": "Created At",
-            "type": "string"
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "title": "Created At"
           },
           "description": {
             "anyOf": [
@@ -2762,8 +2867,15 @@
             "type": "string"
           },
           "updated_at": {
-            "title": "Updated At",
-            "type": "string"
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "title": "Updated At"
           }
         },
         "required": [
@@ -2809,8 +2921,15 @@
         ],
         "properties": {
           "created_at": {
-            "title": "Created At",
-            "type": "string"
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "title": "Created At"
           },
           "description": {
             "anyOf": [
@@ -2900,8 +3019,15 @@
             "type": "object"
           },
           "updated_at": {
-            "title": "Updated At",
-            "type": "string"
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "title": "Updated At"
           },
           "width_px": {
             "anyOf": [
@@ -2942,8 +3068,15 @@
         ],
         "properties": {
           "created_at": {
-            "title": "Created At",
-            "type": "string"
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "title": "Created At"
           },
           "description": {
             "anyOf": [
@@ -3024,8 +3157,15 @@
             "type": "object"
           },
           "updated_at": {
-            "title": "Updated At",
-            "type": "string"
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "title": "Updated At"
           },
           "width_px": {
             "anyOf": [
@@ -3223,8 +3363,15 @@
         "description": "Schema for reading material-product links from the material side.",
         "properties": {
           "created_at": {
-            "title": "Created At",
-            "type": "string"
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "title": "Created At"
           },
           "product": {
             "$ref": "#/components/schemas/ProductSummary"
@@ -3247,8 +3394,15 @@
             "description": "Unit of the quantity, e.g. kg, g, m"
           },
           "updated_at": {
-            "title": "Updated At",
-            "type": "string"
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "title": "Updated At"
           }
         },
         "required": [
@@ -3263,8 +3417,15 @@
         "description": "Schema for reading material-product links from the product side.",
         "properties": {
           "created_at": {
-            "title": "Created At",
-            "type": "string"
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "title": "Created At"
           },
           "material": {
             "$ref": "#/components/schemas/MaterialRead"
@@ -3287,8 +3448,15 @@
             "description": "Unit of the quantity, e.g. kg, g, m"
           },
           "updated_at": {
-            "title": "Updated At",
-            "type": "string"
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "title": "Updated At"
           }
         },
         "required": [
@@ -4516,8 +4684,15 @@
             "type": "array"
           },
           "created_at": {
-            "title": "Created At",
-            "type": "string"
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "title": "Created At"
           },
           "depth_cm": {
             "anyOf": [
@@ -4660,8 +4835,15 @@
             "type": "object"
           },
           "updated_at": {
-            "title": "Updated At",
-            "type": "string"
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "title": "Updated At"
           },
           "version": {
             "default": 1,
@@ -4764,8 +4946,15 @@
             ]
           },
           "created_at": {
-            "title": "Created At",
-            "type": "string"
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "title": "Created At"
           },
           "depth_cm": {
             "anyOf": [
@@ -4882,8 +5071,15 @@
             "type": "object"
           },
           "updated_at": {
-            "title": "Updated At",
-            "type": "string"
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "title": "Updated At"
           },
           "version": {
             "default": 1,
@@ -4975,8 +5171,15 @@
             "type": "array"
           },
           "created_at": {
-            "title": "Created At",
-            "type": "string"
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "title": "Created At"
           },
           "depth_cm": {
             "anyOf": [
@@ -5119,8 +5322,15 @@
             "type": "object"
           },
           "updated_at": {
-            "title": "Updated At",
-            "type": "string"
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "title": "Updated At"
           },
           "version": {
             "default": 1,
@@ -5182,8 +5392,15 @@
         "description": "Minimal product summary for embedding in unrelated contexts (e.g. material links).\n\nDeliberately narrower than ``ProductRead``: no owner, physical/circularity\nproperties, or other detail-view fields since no consumer needs them here.\nExtend with more fields only when an actual caller needs them.",
         "properties": {
           "created_at": {
-            "title": "Created At",
-            "type": "string"
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "title": "Created At"
           },
           "id": {
             "exclusiveMinimum": 0.0,
@@ -5217,8 +5434,15 @@
             "type": "object"
           },
           "updated_at": {
-            "title": "Updated At",
-            "type": "string"
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "title": "Updated At"
           }
         },
         "required": [
@@ -5909,8 +6133,15 @@
         ],
         "properties": {
           "created_at": {
-            "title": "Created At",
-            "type": "string"
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "title": "Created At"
           },
           "description": {
             "anyOf": [
@@ -5958,8 +6189,15 @@
             "title": "Source"
           },
           "updated_at": {
-            "title": "Updated At",
-            "type": "string"
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "title": "Updated At"
           },
           "version": {
             "anyOf": [
@@ -6665,8 +6903,15 @@
         "description": "Schema for reading video information.",
         "properties": {
           "created_at": {
-            "title": "Created At",
-            "type": "string"
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "title": "Created At"
           },
           "description": {
             "anyOf": [
@@ -6703,8 +6948,15 @@
             "title": "Title"
           },
           "updated_at": {
-            "title": "Updated At",
-            "type": "string"
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "title": "Updated At"
           },
           "url": {
             "title": "Url",
@@ -6747,8 +6999,15 @@
         ],
         "properties": {
           "created_at": {
-            "title": "Created At",
-            "type": "string"
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "title": "Created At"
           },
           "description": {
             "anyOf": [
@@ -6780,8 +7039,15 @@
             "title": "Title"
           },
           "updated_at": {
-            "title": "Updated At",
-            "type": "string"
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "title": "Updated At"
           },
           "url": {
             "title": "Url",
