@@ -108,7 +108,7 @@ RUN --mount=type=cache,target=/tmp/metro-cache,id=metro-${EXPO_PUBLIC_API_URL}-$
 FROM caddy:2-alpine@sha256:003a97808e781aa9f7e75cc2f43d34d461099031faf5e20faefb9f61126836f0 AS caddybin
 RUN setcap -r /usr/bin/caddy
 
-FROM alpine:3.24@sha256:be2656061b536c1883c4034790e21d0a09c5aaaf51968b89368a3c0371ea2c9a AS runtime
+FROM alpine:3.24@sha256:f59abe656b692d901e184be3445e084786602108599d2a51d229c0f5a48c71bf AS runtime
 
 ARG WORKDIR
 

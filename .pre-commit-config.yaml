@@ -38,7 +38,7 @@ repos:
         files: ^\.github/workflows/.*\.ya?ml$
 
   - repo: https://github.com/zizmorcore/zizmor-pre-commit
-    rev: c92afdf2c6ca336aaa8f39e2bd8d48f62dbd8e1f  # frozen: v1.31.1
+    rev: 06a39750ec31860bb44f2acf67182c40016cd1e7  # frozen: v1.32.0
     hooks:
       - id: zizmor
         args: [ "--min-confidence=high" ]
@@ -59,24 +59,24 @@ repos:
         exclude: (^|/)(node_modules|\.venv)/
 
   - repo: https://github.com/commitizen-tools/commitizen
-    rev: 57217c394fff5064bedd48421fe4b6f5f73aad47  # frozen: v4.19.2
+    rev: f690817de25831a37094ca35af5ada05c909ff1c  # frozen: v4.19.3
     hooks:
       - id: commitizen
         stages: [ commit-msg ]
 
   - repo: https://github.com/simonvanlierde/jsonvet
-    rev: 022d320d5b971eccb28cfa6ce205152cbb382e53  # frozen: v3.2.0
+    rev: 2886ba95eeb6daafcbb1cd23285cd744b9814a0f  # frozen: v3.4.0
     hooks:
       - id: jsonvet
 
   # The citation files and package manifests must agree (CITATION.cff is the source).
   - repo: https://github.com/simonvanlierde/citesync
-    rev: a3c5a9794449e78a33583e456af41bb24ebd240e  # frozen: v0.1.0
+    rev: a043e5c57f5dcbf36112fff1f9de4946683e5860  # frozen: v0.5.0
     hooks:
       - id: citesync
 
   - repo: https://github.com/astral-sh/uv-pre-commit
-    rev: eeca16c54e09b4d9a848259e46bae14737944348  # frozen: 0.13.5
+    rev: d1df990f871e616da38bb602a2671d5e840b9989  # frozen: 0.13.7
     hooks:
       - id: uv-lock
         name: uv-lock-root

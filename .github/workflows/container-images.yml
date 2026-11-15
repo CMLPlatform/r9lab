@@ -83,7 +83,7 @@ jobs:
       - name: Scan image with Trivy
         # A non-blocking scan still marks this step failed in the run view.
         continue-on-error: ${{ !inputs.blocking }}
-        uses: docker://aquasec/trivy:0.76.1@sha256:790fd66d1697395d8693d1acaa1ea702406a20f109b6fc7bac8db623eca6c06c
+        uses: docker://aquasec/trivy:0.76.2@sha256:8f6bb947dbc528902e11f2f5be52f7b519f6a39d5d148f41166f2040499768fb
         with:
           args: >-
             image --exit-code 1 --ignore-unfixed --severity HIGH,CRITICAL
@@ -91,7 +91,7 @@ jobs:
             ${{ matrix.image }}:${{ github.sha }}
 
       - name: Generate SPDX SBOM
-        uses: docker://aquasec/trivy:0.76.1@sha256:790fd66d1697395d8693d1acaa1ea702406a20f109b6fc7bac8db623eca6c06c
+        uses: docker://aquasec/trivy:0.76.2@sha256:8f6bb947dbc528902e11f2f5be52f7b519f6a39d5d148f41166f2040499768fb
         with:
           args: >-
             image --format spdx-json --output sbom-${{ matrix.service }}.spdx.json
