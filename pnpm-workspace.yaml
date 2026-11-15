@@ -62,10 +62,10 @@ catalog:
   "@emnapi/runtime": 1.11.3
   "@axe-core/playwright": ^4.12.1
   "@biomejs/biome": ^2.6.7
-  astro: 7.4.7
+  astro: 7.4.11
   "@playwright/test": ^1.62.1
   "@types/node": ^26.2.0
-  tailwindcss: 4.3.3
+  tailwindcss: 4.3.5
   # 7.0 is the native compiler and drops the programmatic API `astro check`
   # loads, breaking typecheck in docs/ and www/. Renovate blocks 7.0.x only, so
   # 7.1 arrives as a PR whose docs/www typecheck says whether the API is back.
