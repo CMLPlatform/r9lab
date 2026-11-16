@@ -105,6 +105,7 @@ RUN --mount=type=cache,target=/tmp/metro-cache,id=metro-${EXPO_PUBLIC_API_URL}-$
 # copy-up leaves a second copy in the layer, so strip in a throwaway stage and
 # copy onto plain Alpine. BuildKit preserves caps across COPY --from, so the
 # strip must precede the copy.
+# caddy:2-alpine, v2.11.9 (checked with `caddy version` on this digest, 2026-11-15)
 FROM caddy:2-alpine@sha256:003a97808e781aa9f7e75cc2f43d34d461099031faf5e20faefb9f61126836f0 AS caddybin
 RUN setcap -r /usr/bin/caddy
 
