@@ -84,6 +84,8 @@ CI runs axe scans and per-PR a11y lint across `www/`, `docs/`, and `app/`. See
 - [Documentation](https://docs.r9lab.io)
 - [API Docs](https://docs.r9lab.io/api/public/)
 - [Roadmap](https://docs.r9lab.io/project/roadmap)
+- Related: [CMLPlatform/monitoring](https://github.com/CMLPlatform/monitoring) for the shared
+  OpenTelemetry observability stack (Grafana, Loki, Tempo, Prometheus)
 
 ## Community and Policy
 

@@ -3,7 +3,14 @@ title: Roadmap
 description: Research and platform priorities for the next R9lab phases.
 ---
 
-Reviewed: 2026-10
+Reviewed: 2026-11
+
+## Goals
+
+- collect product disassembly records on an open platform
+- publish curated dataset releases under CC BY 4.0
+- release only data whose contributors have consented
+- keep automation human-verified: software suggests, people confirm
 
 ## Research direction
 
@@ -55,7 +62,7 @@ Work planned within the year, after the near-term items.
     ISO 59040 Product Circularity Data Sheet; map products and components onto its product and
     material modules for the JSON-LD export
 
-## Not planned
+## Non-goals
 
 - automation that writes records without a person confirming them
 - third-party analytics, tracking, or advertising scripts in the app or sites
