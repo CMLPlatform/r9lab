@@ -5,7 +5,7 @@
 # Source of truth for the RPi camera plugin's OpenAPI schema (sister repo). Pinned to a
 # release so the drift check only fails when the pin moves; Renovate bumps it.
 r9cam_plugin_repo := "CMLPlatform/r9cam"
-r9cam_plugin_version := "v0.7.2"
+r9cam_plugin_version := "v0.8.1"
 r9cam_schema_file := "openapi.r9cam.json"
 r9cam_schema_url := "https://raw.githubusercontent.com/" + r9cam_plugin_repo + "/" + r9cam_plugin_version + "/" + r9cam_schema_file
 r9cam_schema_path := "public/api/schemas/openapi.r9cam.json"

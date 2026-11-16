@@ -570,6 +570,15 @@
         "title": "CaptureProvenance",
         "type": "object"
       },
+      "CaptureRole": {
+        "description": "What a capture is for within its session.",
+        "enum": [
+          "standard",
+          "colour_reference"
+        ],
+        "title": "CaptureRole",
+        "type": "string"
+      },
       "CaptureUploadMetadata": {
         "additionalProperties": {
           "anyOf": [
@@ -747,11 +756,42 @@
           "capture_metadata": {
             "$ref": "#/components/schemas/CaptureMetadata"
           },
+          "capture_role": {
+            "$ref": "#/components/schemas/CaptureRole",
+            "default": "standard",
+            "description": "colour_reference marks the operator's colour-reference shot (for example a colour checker)"
+          },
           "image_properties": {
             "$ref": "#/components/schemas/ImageProperties"
           },
           "provenance": {
             "$ref": "#/components/schemas/CaptureProvenance"
+          },
+          "raw_sha256": {
+            "anyOf": [
+              {
+                "pattern": "^[0-9a-f]{64}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "SHA-256 of the DNG saved on the Pi from the same request. None when no raw file exists",
+            "title": "Raw Sha256"
+          },
+          "session_id": {
+            "anyOf": [
+              {
+                "pattern": "^[A-Za-z0-9_.-]{1,64}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Groups the captures of one session, so a dataset can pair them with the session's reference shot",
+            "title": "Session Id"
           }
         },
         "required": [
@@ -1093,7 +1133,7 @@
       "name": "Apache-2.0"
     },
     "title": "Raspberry Pi Camera API",
-    "version": "0.7.2"
+    "version": "0.8.1"
   },
   "openapi": "3.1.0",
   "paths": {
@@ -1247,6 +1287,38 @@
       "post": {
         "description": "Capture a full-resolution image, push it to the backend, and return the result.",
         "operationId": "capture_image_captures_post",
+        "parameters": [
+          {
+            "description": "`colour_reference` marks the session's colour-reference shot.",
+            "in": "query",
+            "name": "role",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/CaptureRole",
+              "default": "standard",
+              "description": "`colour_reference` marks the session's colour-reference shot."
+            }
+          },
+          {
+            "description": "Sets the current session for this and later captures. Unset keeps the current session.",
+            "in": "query",
+            "name": "session_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "pattern": "^[A-Za-z0-9_.-]{1,64}$",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Sets the current session for this and later captures. Unset keeps the current session.",
+              "title": "Session Id"
+            }
+          }
+        ],
         "requestBody": {
           "content": {
             "application/json": {
