@@ -5,7 +5,7 @@ description: How the R9lab API is organized and how the main domain surfaces fit
 
 Routes are organized by domain. One API serves the research app, the public web frontend, and external tooling. The live OpenAPI docs are the source of truth: see the [API reference overview](/api-reference/) for schemas and the [API interaction guide](../../user-guides/api/) for usage.
 
-Three surfaces: the public app API is the contract for the frontend and external clients, the device API handles Pi-originated HTTP callbacks, and a small private DTO seam covers backend device integration plus the RPi camera plugin.
+Three surfaces: the public app API serves the frontend and external clients, the device API handles Pi-originated HTTP callbacks, and a small private set of data transfer objects (DTOs) covers backend device integration and the RPi camera plugin.
 
 ## Route organization
 

@@ -181,7 +181,7 @@ img="$(sed -n 's/^ALPINE_IMAGE="${ALPINE_IMAGE:-\(.*\)}"$/\1/p' scripts/backup_r
    `HC_JOBS=watchdog ./bootstrap.sh r9lab <env>`. Keep the `PING_WATCHDOG` URL it prints for step
    9, and delete the old `relab-<env>-*` checks on healthchecks.io.
 
-1. From the sudo account. If the host also moves off the relab paths (`deploy/DEPLOY-PROD.md` 1.7),
+1. Use the sudo account for this step. If the host also moves off the relab paths (`deploy/DEPLOY-PROD.md` 1.7),
    do that move first, so the scheduled jobs are installed once, from the moved checkout. Then
    install them (`just timers-install "$env"`, with the same `R9LAB_UNIT_USER` as before if you use
    one; see [Scheduling backups](#scheduling-backups)), set `PING_WATCHDOG` in

@@ -6,8 +6,8 @@ description: Use the R9lab API safely for scripts, notebooks, and external tooli
 For schemas, request models, and endpoint lists, see the [API reference overview](/api-reference/).
 For the internal design, see [API structure](../../architecture/api/).
 
-The public API is versioned under `/v1`. Keep the API origin separate from the versioned path in
-your client configuration and build requests such as `https://api.r9lab.io/v1/products`.
+The API lets scripts and notebooks read and write R9lab records. The public API is versioned under
+`/v1`. Keep the API origin separate from the versioned path in your client configuration and build requests such as `https://api.r9lab.io/v1/products`.
 
 ## When to use the API directly
 
@@ -87,7 +87,8 @@ reads.
 :::note[Limits]
 One export holds at most 100 base products, with at most 5,000 components between them and
 components nested at most 10 levels deep. Past any of these limits the request fails with a `400`
-response that asks you to narrow the filters. An invalid filter parameter returns a `422` instead. For the whole dataset, use the [dataset release](../../project/dataset/).
+response that asks you to narrow the filters. An invalid filter parameter returns a `422` instead. For the whole dataset, use the
+[dataset release](../../project/dataset/).
 :::
 
 ## Integration advice

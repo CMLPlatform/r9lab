@@ -102,7 +102,7 @@ describes the topology these steps produce.
    just deploy-secrets-check   # every secret file exists, has mode 0644 in a 0700 dir, and is not a placeholder
    ```
 
-With the configuration valid, [deploy the stack](/operations/deploy/).
+Next, [deploy the stack](/operations/deploy/).
 
 ## Optional: central telemetry
 

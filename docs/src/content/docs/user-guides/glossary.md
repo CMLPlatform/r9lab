@@ -64,7 +64,7 @@ more useful than a confident guess. If you have neither, leave the note empty.
 
 What the parts are made of, and whether those materials can be separated and recovered.
 
-Example: "Housing likely polypropylene, unconfirmed — no resin code moulded in."
+Example: "Housing likely polypropylene, unconfirmed, no resin code moulded in."
 
 ### Disassemblability
 
@@ -81,8 +81,8 @@ Example: "Motor and gearbox look reusable; control board is potted."
 
 ## Reference data
 
-The shared lists you pick from: materials, categories, taxonomies, and product types. They exist so that two people describing the same thing use the
-same words.
+The shared lists you pick from: materials, categories, taxonomies, and product types. They exist so that two people describing the same thing use the same
+words.
 
 If no entry fits, leave the field empty. Do not pick the closest match.
 
