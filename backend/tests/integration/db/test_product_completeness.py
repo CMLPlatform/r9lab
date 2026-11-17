@@ -1,6 +1,8 @@
 """The completeness score and recommended rank that database triggers keep on each product."""
 
+import json
 from datetime import UTC, datetime
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 import pytest
@@ -8,6 +10,7 @@ from sqlalchemy import delete, select, text, update
 
 from app.api.data_collection.models.product import Product
 from app.api.file_storage.models import Image, MediaParentType
+from app.api.reference_data.models import ProductType
 
 if TYPE_CHECKING:
     from sqlalchemy.ext.asyncio import AsyncSession
@@ -17,6 +20,14 @@ if TYPE_CHECKING:
 pytestmark = pytest.mark.db
 
 THIRTY_DAYS_S = 30 * 24 * 3600
+
+# The app's missingFields test reads the same table, so the two implementations cannot drift.
+_CASES = json.loads(
+    (Path(__file__).parents[4] / "tests/fixtures/product_completeness_cases.json")
+    .read_text()
+    .replace("<BOM>", "\\ufeff")
+)["cases"]
+_POINTS = {"productType": 1, "brand": 1, "weight": 1, "dimensions": 1, "photo": 3, "description": 1}
 
 
 async def _score(session: AsyncSession, product_id: int) -> tuple[float, float, float]:
@@ -39,6 +50,40 @@ def _image(parent_id: int) -> Image:
     return Image(
         filename="i.png", file="i.png", upload_size_bytes=1, parent_type=MediaParentType.PRODUCT, parent_id=parent_id
     )
+
+
+@pytest.mark.parametrize("case", _CASES, ids=[c["name"] for c in _CASES])
+async def test_score_matches_the_shared_case_table(
+    case: dict, db_session: AsyncSession, db_superuser: User, db_product_type: ProductType
+) -> None:
+    """The score is the points of every field the app's checklist does not flag as missing."""
+    spec = case["product"]
+    owner_id = db_superuser.id
+    parent_id = None
+    if case.get("component"):
+        parent = Product(owner_id=owner_id, name="Parent")
+        db_session.add(parent)
+        await db_session.flush()
+        parent_id = parent.id
+    product = Product(
+        owner_id=owner_id,
+        name="Case",
+        parent_id=parent_id,
+        amount_in_parent=1 if parent_id else None,
+        product_type=db_product_type if spec.get("has_type") else None,
+        **{k: v for k, v in spec.items() if k not in {"has_type", "has_photo"}},
+    )
+    db_session.add(product)
+    await db_session.flush()
+    if spec.get("has_photo"):
+        db_session.add(_image(product.id))
+        await db_session.flush()
+
+    fields = ["weight", "photo"] if parent_id else list(_POINTS)
+    total = sum(_POINTS[f] for f in fields)
+    earned = total - sum(_POINTS[f] for f in case["missing"])
+
+    assert (await _score(db_session, product.id))[0] == pytest.approx(earned / total)
 
 
 async def test_base_product_scores_its_filled_fields(db_session: AsyncSession, db_superuser: User) -> None:
