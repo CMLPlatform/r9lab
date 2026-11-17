@@ -76,6 +76,9 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- Public profile statistics are counted when the profile is read, so they always match the
+  owner's products and photos, including after a product type is renamed or products arrive
+  through an import or a restore.
 - The API answers a bad query with a client error instead of a server error: 422 for a `search`
   longer than 100 characters, 400 for text holding a NUL character and for an id above
   2,147,483,647. `/v1/stats/series` with an `end` in the first years of the calendar and no

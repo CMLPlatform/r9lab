@@ -64,7 +64,8 @@ class User(BaseUserDB, TimeStampMixinBare):
 
     preferences: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False, server_default="{}", default=dict)
 
-    # Pre-computed public-profile statistics snapshot.
+    # NOTE: no longer read or written; profile stats are counted on read. Kept mapped so
+    # the previous release still finds its columns; drop them in the following release.
     profile_stats: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False, server_default="{}", default=dict)
     profile_stats_computed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), default=None)
 

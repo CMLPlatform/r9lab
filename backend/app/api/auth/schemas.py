@@ -151,7 +151,7 @@ class PublicProfileView(UserReadProfile):
         created_at: datetime | None,
         stats: ProfileStatsData,
     ) -> PublicProfileView:
-        """Build a public profile view from a typed profile-stats snapshot."""
+        """Build a public profile view from computed profile stats."""
         return cls(
             username=username,
             created_at=created_at,

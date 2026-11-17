@@ -77,7 +77,7 @@ User accounts, linked OAuth accounts, and ownership and access control. Account 
 
 Usernames are unique and indexed. They are nullable only while an OAuth-created account completes onboarding; password registration requires a username up front.
 
-`hashed_password` and `mfa_totp_secret` appear in no read schema; the TOTP secret is also encrypted at rest. `profile_stats` is a cached aggregate stamped by `profile_stats_computed_at`. `upload_file_count` and `upload_total_bytes` hold the per-account upload quota ledger.
+`hashed_password` and `mfa_totp_secret` appear in no read schema; the TOTP secret is also encrypted at rest. `profile_stats` and `profile_stats_computed_at` are unused (profile statistics are counted on read) and will be dropped in a later release. `upload_file_count` and `upload_total_bytes` hold the per-account upload quota ledger.
 
 ## Reference data
 

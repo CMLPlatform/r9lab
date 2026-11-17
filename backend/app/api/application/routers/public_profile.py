@@ -12,7 +12,6 @@ from sqlalchemy import select
 
 from app.api.auth.dependencies import optional_current_active_user
 from app.api.auth.models import User
-from app.api.auth.profile_stats import load_profile_stats
 from app.api.auth.schemas import PublicProfileView, normalize_username
 from app.api.auth.services.privacy import can_view_profile
 from app.api.common.audiences import PublicAPIRouter
@@ -36,7 +35,6 @@ async def get_public_profile(
     """Get public profile statistics for a specified user by username.
 
     Returns 404 if the user is not found or if the profile is marked as private (and you are not the user).
-    Recomputes stats on the fly when no snapshot exists yet, without persisting the result.
     """
     # Viewer-dependent response: visibility changes with auth state.
     response.headers["Cache-Control"] = "private, no-store"
@@ -52,13 +50,7 @@ async def get_public_profile(
     if not can_view_profile(user, current_user):
         raise HTTPException(status_code=404, detail="Profile not found")
 
-    # No snapshot yet: compute without writing (a committing GET breaks read-replica
-    # routing). The product create/delete path persists the snapshot.
-    if user.profile_stats_computed_at is None or not user.profile_stats:
-        stats = await compute_profile_stats(session, user.id)
-    else:
-        stats = load_profile_stats(user.profile_stats)
-    # Resolved on read so stored snapshots holding a CPV code show the label too.
+    stats = await compute_profile_stats(session, user.id)
     stats = stats.model_copy(update={"top_category": await top_category_label(session, stats.top_category)})
 
     return PublicProfileView.from_profile_stats(

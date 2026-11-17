@@ -24,8 +24,6 @@
 3 app.api.auth.lifecycle.x__shutdown_steps
 3 app.api.auth.lifecycle.x__startup
 7 app.api.auth.preferences.x_merge_user_preferences
-6 app.api.auth.profile_stats.x_dump_profile_stats
-2 app.api.auth.profile_stats.x_store_profile_stats
 4 app.api.auth.runtime_dependencies.x_common_password_checker_from
 4 app.api.auth.runtime_dependencies.x_email_checker_from
 3 app.api.auth.schemas.xǁPublicProfileViewǁfrom_profile_stats

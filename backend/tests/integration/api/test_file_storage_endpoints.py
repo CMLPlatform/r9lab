@@ -16,7 +16,7 @@ from app.api.file_storage.models import Image
 from app.core.config.core import settings
 from app.core.images import THUMBNAIL_WIDTHS, thumbnail_path_for
 from scripts.maintenance.backfill_image_dimensions import measure_images_missing_dimensions
-from scripts.seed.factories.models import ProductFactory, ProductTypeFactory, UserFactory
+from scripts.seed.factories.models import ProductFactory, ProductTypeFactory
 
 if TYPE_CHECKING:
     from fastapi import FastAPI
@@ -83,43 +83,6 @@ async def setup_product_for_files(db_session: AsyncSession, db_superuser: User) 
         product_type_id=pt.id,
         name=PRODUCT_FILES_NAME,
     )
-
-
-async def test_moderator_image_delete_recomputes_stats_for_product_owner(
-    api_client: AsyncClient,
-    test_app: FastAPI,
-    db_session: AsyncSession,
-    db_superuser: User,
-) -> None:
-    """A superuser deleting an image on another user's product refreshes the owner's stats, not their own."""
-    owner = await UserFactory.create_async(session=db_session, is_active=True, is_verified=True)
-    product_type = await ProductTypeFactory.create_async(session=db_session)
-    owned_product = await ProductFactory.create_async(
-        session=db_session, owner_id=owner.id, product_type_id=product_type.id
-    )
-    # The moderation bypass on someone else's product needs MFA enrolled.
-    db_superuser.mfa_enabled = True
-    await db_session.flush()
-
-    with override_authenticated_user(test_app, owner):
-        upload_response = await api_client.post(
-            f"/v1/products/{owned_product.id}/images",
-            files={"file": (IMAGE_NAME, GIF_BYTES, IMAGE_MIMETYPE)},
-            data={"description": IMAGE_DESC},
-        )
-    assert upload_response.status_code == status.HTTP_201_CREATED, upload_response.text
-    owner.profile_stats_computed_at = None
-    db_superuser.profile_stats_computed_at = None
-    await db_session.flush()
-
-    with override_authenticated_user(test_app, db_superuser, superuser=True):
-        response = await api_client.delete(f"/v1/products/{owned_product.id}/images/{upload_response.json()['id']}")
-
-    assert response.status_code == status.HTTP_204_NO_CONTENT, response.text
-    await db_session.refresh(owner)
-    await db_session.refresh(db_superuser)
-    assert owner.profile_stats_computed_at is not None
-    assert db_superuser.profile_stats_computed_at is None
 
 
 async def test_upload_image_records_its_pixel_dimensions(
