@@ -148,6 +148,13 @@ export default function Products() {
             total={list.total}
             hasNextPage={list.hasNextPage}
             searchQuery={search.query}
+            isFiltered={
+              screen.activeDatePreset !== null ||
+              screen.activeBrands.length > 0 ||
+              screen.activeProductTypes.length > 0 ||
+              screen.hasComponents ||
+              screen.complete
+            }
             isAuthenticated={screen.isAuthenticated}
             onScroll={list.onScroll}
             onRefresh={handleRetry}

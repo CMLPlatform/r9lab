@@ -1,5 +1,6 @@
 """Filter classes and search helpers for data collection queries."""
 
+from collections.abc import Callable, Mapping
 from datetime import datetime  # Runtime import is required for FastAPI filter field definitions
 from typing import Any, ClassVar, Literal  # Runtime import required by fastapi-filters get_type_hints
 
@@ -121,7 +122,9 @@ class ProductFilter(BaseFilterSet):
     completeness: FilterField[float] = filter_field(_RANGE_OPERATORS)
     has_components: FilterField[bool] = filter_field([FilterOperator.eq])
 
-    condition_fields: ClassVar[dict[str, Any]] = {"has_components": _has_components_clause}
+    condition_fields: ClassVar[Mapping[str, Callable[[Any], ColumnElement[bool]]]] = {
+        "has_components": _has_components_clause
+    }
 
     @classmethod
     def search_vector_column(cls) -> ColumnElement[Any]:
