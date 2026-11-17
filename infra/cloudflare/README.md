@@ -191,8 +191,8 @@ redirected. It was removed once the redirects became permanent, so a repeat need
       ```
 
       Check `tofu state list` first and name only addresses it shows: `state rm` fails on one that
-      is absent. The old zone's CNAMEs and Worker custom domains stay in Cloudflare, unmanaged, on
-      purpose: its redirect rules only fire on proxied hostnames. Do not delete them as orphans.
+      is absent. The old zone's CNAMEs and Worker custom domains stay in Cloudflare, unmanaged,
+      because its redirect rules only fire on proxied hostnames. Do not delete them as orphans.
       Deleting or renaming the old Workers later also removes their custom domains and records on
       the old zone, so keep a proxied record there for the apex and `docs.` or their redirects
       stop.
@@ -417,8 +417,9 @@ that one permission.
 ## Import Workflow
 
 Import anything that already exists in Cloudflare before the first apply, or the plan will try to
-*create* it: duplicate DNS records, a second tunnel whose id does not match the live tunnel
-token in `secrets/<env>/cloudflare_tunnel_token`, and a replacement for the one entrypoint ruleset a phase allows.
+*create* it. That means duplicate DNS records, a second tunnel whose id does not match the live
+tunnel token in `secrets/<env>/cloudflare_tunnel_token`, and a replacement for the one entrypoint
+ruleset a phase allows.
 
 `generate-imports.sh` writes the `import` blocks, looking up every id through the API. Review the
 file, plan, apply, then delete it: import blocks re-run on every plan until removed.
@@ -473,8 +474,8 @@ export TF_VAR_state_passphrase='...'   # >= 16 chars
   adoption-time `imports.tf` from crashing the mocked-provider test run.
 - `just cloudflare-plan`, `just cloudflare-apply`, and `tofu state`/`workspace` commands fail closed
   without a passphrase, reporting `no passphrase provided`.
-- Use the same passphrase every time. A lost passphrase means a lost state file, which costs a
-  re-import (`generate-imports.sh`, a few minutes).
+- Use the same passphrase every time. A lost passphrase means a lost state file (see "Where state
+  lives").
 - Keep the passphrase in the operator's password manager, not in the repo or shell history.
 
 Keep prod and staging state separate. A second operator or CI applying changes needs a remote

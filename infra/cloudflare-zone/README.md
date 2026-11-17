@@ -62,7 +62,7 @@ zones start from an empty workspace.
 
 The old zone's workspace sets `redirect_to_zone_name` to send every route-map hostname to the same
 name on the new zone. `redirect_environments` limits the rules to the environments being cut over,
-so each environment keeps serving from the old zone until its own window:
+so each environment keeps serving from the old zone until its own window.
 
 **Before the first window**, check that the old zone has no redirect ruleset made in the
 dashboard. This call must print `404`:
@@ -154,21 +154,21 @@ cleartext, so the value must be dedicated: it buys nothing but the skip. It is s
 **staging hosts only**, and leaving the key unset drops the branch, so export it whenever you
 plan this root.
 
-Because the phase is capped at five rules, this is a **branch of the public-reads rule**, not a
-rule of its own. It therefore inherits that rule's single phase and skips **Super Bot Fight Mode
-only**: a keyed staging run still meets the same managed WAF prod does. That matters because the
-key is just a header: anyone who reads it from the rulesets API could otherwise turn the WAF off
-for every staging path, `/v1/admin/` included. Prod is unaffected either way.
+The phase is capped at five rules, so this is a **branch of the public-reads rule**, not a rule
+of its own. It skips **Super Bot Fight Mode only**: a keyed staging run still meets the same
+managed WAF as prod. The key is just a header, so a full WAF skip would let anyone who reads it
+from the rulesets API turn the WAF off for every staging path, `/v1/admin/` included. Prod is
+unaffected.
 
-The www build's fetch of `/v1/products/{id}` and its component tree is a non-browser client
-that gets challenged the same way, which makes the landing page ship its fixture. That is
-covered by `relab_public_reads_skip_bot_fight_mode` instead, which is the former stats rule
-widened to GETs under `/v1/products/` as well, public read-only data, the same reasoning. No
-build argument carries a key, which would leak into image history.
+The www build's fetch of `/v1/products/{id}` and its component tree is a non-browser client that
+Cloudflare challenges the same way, so the landing page ships its fixture.
+`relab_public_reads_skip_bot_fight_mode` covers it instead: the former stats rule, widened to GETs
+under `/v1/products/` (public read-only data, the same reasoning). No build argument carries a key,
+because it would leak into image history.
 
 ## What this zone's Cloudflare plan allows
 
-Both limits below fail at *apply* time, partway through, after other resources have already
+These limits fail at *apply* time, partway through, after other resources have already
 changed, so `tests/zone.tftest.hcl` asserts them:
 
 - **The Free tier constrains the `http_ratelimit` phase:** one rule, a 10-second counting period, a

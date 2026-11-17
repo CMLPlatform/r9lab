@@ -1,7 +1,7 @@
 # Operating the staging host
 
-Staging shares `compose.deploy.yaml` with production, so this doubles as the rehearsal for
-[DEPLOY-PROD.md](DEPLOY-PROD.md): a step that has only ever run on prod has never been tested.
+Staging shares `compose.deploy.yaml` with production. Use it to rehearse
+[DEPLOY-PROD.md](DEPLOY-PROD.md) first.
 
 ______________________________________________________________________
 
@@ -28,11 +28,15 @@ staging's own folder; the backup copies to `rclone:surfdrive_staging:`.
 ### Moving the host from the relab paths
 
 Follow [DEPLOY-PROD.md](DEPLOY-PROD.md) 1.7 at the start of the rename window's step 9, with
-three differences: staging has no deploy user, so skip the `usermod`, `groupmod` and `sudo -u`
-parts; stop the stack with `just stack staging down YES`; and move the checkout only if its
-directory is named after relab (`/opt/relab-staging` to `/opt/r9lab-staging`). The moved
-virtualenvs still carry the old absolute paths, so as the checkout owner run `uv sync --frozen` in
-the checkout and `uv sync --all-groups --frozen` in `backend/`. The last step is
+these differences:
+
+- Staging has no deploy user. Skip the `usermod`, `groupmod` and `sudo -u` parts.
+- Stop the stack with `just stack staging down YES`.
+- Move the checkout only if its directory is named after relab (`/opt/relab-staging` to
+  `/opt/r9lab-staging`).
+
+The moved virtualenvs still carry the old absolute paths. As the checkout owner, run
+`uv sync --frozen` in the checkout and `uv sync --all-groups --frozen` in `backend/`. Last, run
 `just stack staging up YES` from the moved checkout, then `just timers-install staging`.
 
 ______________________________________________________________________
@@ -70,8 +74,8 @@ ______________________________________________________________________
 
 ## How staging differs from prod
 
-- **`just stack staging migrate` seeds dummy data.** `just stack prod migrate` does not. Never point a staging
-  recipe at prod.
+- **`just stack staging migrate` seeds dummy data.** `just stack prod migrate` does not. Never point a
+  staging recipe at prod.
 - **No outage discipline.** Staging can be torn down and rebuilt at will.
 - **The data is disposable, the procedure is not.**
 - **Cloudflare is managed by OpenTofu for both.** Edge changes go through `just cloudflare-plan
@@ -80,8 +84,8 @@ ______________________________________________________________________
 
 ## Rebuilding from scratch
 
-The test of whether the deploy path works on a clean machine. It also rehearses the initdb path
-(role creation on an empty volume), which prod's existing volume never runs.
+This destroys staging's data. It tests the deploy path on a clean machine, and it rehearses the
+initdb path (role creation on an empty volume), which prod's existing volume never runs.
 
 ```bash
 just backup staging manual                     # tagged, so retention cannot expire it
