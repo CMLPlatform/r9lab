@@ -2,14 +2,14 @@
 
 **These images show seeded demonstration records, not real teardowns.**
 
-Everything visible here (the seeded laptop, "iPhone 12", their brands, dimensions, owners and photos)
-comes from the test fixture at `backend/data/seed/dummy_data.json`, loaded into a throwaway E2E
+Everything visible here (the seeded laptop, "iPhone 12", their brands, dimensions, owners and
+photos) comes from the test fixture at `backend/data/seed/dummy_data.json`, loaded into a throwaway E2E
 database. The accounts (`relab_demo` / `e2e-admin@example.com`, `alice`, `bob`) are test accounts.
 No record in these screenshots describes a product anyone disassembled, weighed or measured.
 
 Use them only to show what the interface looks like: READMEs, docs, slides about the software,
 issue reports. **Never** use them as evidence of research output, dataset contents, coverage or
-results, and never place them where a reader could take them for real data. If a figure needs real
+results. Never place them where a reader could take them for real data. If a figure needs real
 teardown data, capture it from real records and say so.
 
 Captured: **2026-08-18**.
@@ -26,14 +26,14 @@ Captured: **2026-08-18**.
 | `product-new`         | The capture screen at `/products/new`    |
 | `account`             | The account screen                       |
 
-Widths `390` (mobile, 390x844 viewport) and `1440` (desktop, 1440x900 viewport), each in
-`light` and `dark`. Pages whose content is taller than the viewport were captured with the
-viewport extended to the full content height, so those files are taller than 844/900 px.
+Widths are `390` (mobile, 390x844 viewport) and `1440` (desktop, 1440x900 viewport), each in
+`light` and `dark`. For pages taller than the viewport, the capture extends the viewport to the full
+content height, so those files are taller than 844 or 900 px.
 
 `product-new` is a viewport-height capture: the screen fits without scrolling.
 
-**Only six are committed.** Every PNG is permanent weight in git history, and the set regenerates
-in one command (below):
+**Only six are committed.** Every PNG adds permanent weight to git history, and the set regenerates
+with the steps below:
 
 | File                        | Shows                                                           |
 | --------------------------- | --------------------------------------------------------------- |
@@ -44,18 +44,17 @@ in one command (below):
 | `product-detail-1440-light` | The `lg` detail layout: section outline column instead of chips |
 | `product-new-390-light`     | The capture screen                                              |
 
-Regenerate any other combination (account, edit mode, the 1440 dark variants) with the steps below
-rather than committing them.
+For any other combination (account, edit mode, the 1440 dark variants), regenerate it with the
+steps below. Do not commit it.
 
 **Known limitation of tall captures.** Extending the viewport to content height moves anything
 positioned fixed or sticky (the save FAB, the docked save bar, the offline banner) to the bottom of
 the *expanded* frame. If the position of floating chrome matters, use a viewport-height capture.
 
-**Two caveats about the seeded content.** The committed captures predate the laptop's relabel and
-show it as "Dell XPS 13"; the seed now names it "HP ProBook 430 G2", the model its photographs
-show. In those captures it has no photo, so the detail hero shows a placeholder; "iPhone 12" is
-the seeded record that has one. The signed-in test account owns nothing, so any account view
-reads `0 PRODUCTS / 0 PHOTOS`.
+**Two caveats about the seeded content.** The committed captures show the laptop as "Dell XPS 13".
+The seed now names it "HP ProBook 430 G2", the model its photographs show. In those captures it has
+no photo, so the detail hero shows a placeholder. "iPhone 12" is the seeded record that has one.
+The signed-in test account owns nothing, so any account view reads `0 PRODUCTS / 0 PHOTOS`.
 
 ## Regenerating
 
@@ -67,16 +66,16 @@ just app/build-web                   # static Expo web export into app/dist
 cd app && pnpm exec serve dist -l 18011 --single --no-clipboard
 ```
 
-Read the port from the server's own stdout; `serve` silently falls back to a random port when it
-cannot bind. Use `localhost`, never `127.0.0.1`: the session cookie is `SameSite=Lax` and is dropped
-cross-site (see `app/playwright.config.ts`).
+Read the port from the server's own output, because `serve` silently falls back to a random port
+when it cannot bind. Use `localhost`, never `127.0.0.1`. The session cookie is `SameSite=Lax`, and
+the browser drops it cross-site (see `app/playwright.config.ts`).
 
-Then drive Chromium with Playwright: sign in with the seeded credentials in `app/e2e/helpers.ts`,
+Then drive Chromium with Playwright. Sign in with the seeded credentials in `app/e2e/helpers.ts`,
 dismiss the products welcome card, and screenshot each surface at both viewports with
-`colorScheme` set to `light` and `dark` (the app's theme mode defaults to `auto`, which follows
-`prefers-color-scheme`).
+`colorScheme` set to `light` and `dark`. (The app's theme mode defaults to `auto`, which follows
+`prefers-color-scheme`.)
 
-Tear the stack down when finished:
+When you finish, tear the stack down:
 
 ```bash
 docker compose -p r9lab_e2e -f compose.e2e.yaml down -v --remove-orphans
