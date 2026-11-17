@@ -30,7 +30,6 @@ export const productsScreenStyles = StyleSheet.create({
     // NOTE: 14/21 sits between caption (13/18) and body (16/26); neither fits the welcome card.
     fontSize: 14,
     lineHeight: 21,
-    opacity: 0.92,
   },
   // Animated.View is not a reliable className target.
   listFadeWrapper: {
