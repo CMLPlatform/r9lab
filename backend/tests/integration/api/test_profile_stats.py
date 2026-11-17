@@ -8,8 +8,10 @@ from app.api.auth.models import User
 from app.api.data_collection.crud.profile_stats import compute_profile_stats
 from app.api.data_collection.models.product import Product
 from app.api.reference_data.models import ProductType
+from tests.fixtures.client import override_authenticated_user
 
 if TYPE_CHECKING:
+    from fastapi import FastAPI
     from httpx import AsyncClient
 
 
@@ -143,3 +145,24 @@ async def test_public_profile_follows_a_renamed_top_category(
 
     response = await api_client_superuser.get(f"/v1/profiles/{db_superuser.username}")
     assert response.json()["top_category"] == "Hand Tool"
+
+
+async def test_public_profile_caches_for_others_but_not_for_the_owner(
+    db_session: AsyncSession,
+    api_client: AsyncClient,
+    test_app: FastAPI,
+    db_user: User,
+    db_superuser: User,
+) -> None:
+    """Other viewers may read a cached count; the owner always sees their own edits."""
+    path = f"/v1/profiles/{db_superuser.username}"
+    with override_authenticated_user(test_app, db_user):
+        before = (await api_client.get(path)).json()["product_count"]
+
+    db_session.add(Product(owner_id=db_superuser.id, name="Cached kettle"))
+    await db_session.flush()
+
+    with override_authenticated_user(test_app, db_user):
+        assert (await api_client.get(path)).json()["product_count"] == before
+    with override_authenticated_user(test_app, db_superuser, superuser=True):
+        assert (await api_client.get(path)).json()["product_count"] == before + 1
