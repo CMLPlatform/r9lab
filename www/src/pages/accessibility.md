@@ -22,7 +22,7 @@ You should be able to:
 - Zoom to 400%, or use a screen 320 CSS pixels wide, without scrolling sideways to read the text.
 - Use the pages and app screens we build with a keyboard alone, with a visible focus outline.
 
-Use the main tasks with a screen reader: the developer has listened to ten of them, listed in the [self-assessment](/accessibility-assessment#screen-reader-pass). Other screens have not been listened to yet.
+You should also be able to use the main tasks with a screen reader. The developer has listened to ten of them, listed in the [self-assessment](/accessibility-assessment#screen-reader-pass). Other screens have not been listened to yet.
 
 ## How accessible R9lab is
 
@@ -54,7 +54,7 @@ Automated checks use axe, a testing tool, against the level A and AA rules for W
 
 Other checks: unit tests on the app’s colour pairs, and on the app a test that keyboard focus paints a visible indicator. Linting runs on every pull request.
 
-Automated tools find only part of the problems. So the developer also checked every level A and AA criterion on a sample of all three sites: keyboard-only walks, zoom and narrow screens, text spacing, contrast in both themes, target sizes, reduced motion, the app’s form errors and its accessibility tree. The [WCAG 2.2 self-assessment](/accessibility-assessment) lists the sample, the method and each result. The developer then listened to ten main tasks with a screen reader, on 26 October 2026.
+Automated tools find only some of the problems, so the developer also checked every level A and AA criterion on a sample of all three sites: keyboard-only walks, zoom and narrow screens, text spacing, contrast in both themes, target sizes, reduced motion, the app’s form errors and its accessibility tree. The [WCAG 2.2 self-assessment](/accessibility-assessment) lists the sample, the method and each result. The developer then listened to ten main tasks with a screen reader, on 26 October 2026.
 
 ## Tested with
 
