@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.auth.models import User
 from app.api.data_collection.crud.profile_stats import compute_profile_stats
 from app.api.data_collection.models.product import Product
+from app.api.file_storage.models import Image, MediaParentType
 from app.api.reference_data.models import ProductType
 from tests.fixtures.client import override_authenticated_user
 
@@ -33,6 +34,17 @@ async def create_root_with_component(db_session: AsyncSession, user: User) -> No
         weight_g=37_000,
     )
     db_session.add_all([product_type, root, component])
+    await db_session.flush()
+    # A component photo counts towards the owner's photos.
+    db_session.add(
+        Image(
+            filename="c.png",
+            file="c.png",
+            upload_size_bytes=1,
+            parent_type=MediaParentType.PRODUCT,
+            parent_id=component.id,
+        )
+    )
     await db_session.flush()
 
 
@@ -61,6 +73,7 @@ async def test_public_profile_counts_on_read(
 
     assert response.status_code == 200
     assert response.json()["total_weight_kg"] == 35.0
+    assert response.json()["image_count"] == 1
 
 
 async def test_public_profile_does_not_resolve_uuid_identifiers(
