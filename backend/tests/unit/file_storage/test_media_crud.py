@@ -11,7 +11,7 @@ from fastapi import UploadFile
 from PIL import Image as PILImage
 from PIL.ExifTags import GPS, IFD
 from pydantic import ValidationError
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy.exc import IntegrityError, OperationalError
 from starlette.datastructures import Headers
 
 from app.api.auth.roles import UserRole
@@ -330,6 +330,24 @@ async def test_failed_commit_removes_the_stored_upload(
         await file_storage_service.create(mock_session, _text_upload(), caps_role=UserRole.CONTRIBUTOR)
 
     assert [path async for path in AnyIOPath(tmp_path).iterdir()] == []
+
+
+async def test_a_commit_lost_with_its_connection_keeps_the_stored_upload(
+    mock_session: AsyncMock, mocker: MockerFixture
+) -> None:
+    """The row may have committed before the connection dropped, so its bytes must stay."""
+    storage = MagicMock()
+    storage.write_upload = AsyncMock(return_value="stored.txt")
+    storage.delete = AsyncMock()
+    mocker.patch.object(file_storage_service, "get_storage", return_value=storage)
+    mock_session.commit.side_effect = OperationalError(
+        "COMMIT", {}, Exception("connection reset"), connection_invalidated=True
+    )
+
+    with pytest.raises(OperationalError):
+        await file_storage_service.create(mock_session, _text_upload(), caps_role=UserRole.CONTRIBUTOR)
+
+    storage.delete.assert_not_awaited()
 
 
 async def test_a_failed_cleanup_does_not_hide_the_commit_error(

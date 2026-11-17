@@ -9,6 +9,7 @@ from anyio import to_thread
 from fastapi import UploadFile
 from pydantic import UUID4
 from sqlalchemy import Select, select
+from sqlalchemy.exc import DBAPIError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.auth.roles import UserRole, image_upload_max_mb_for_role, image_upload_max_pixels_for_role
@@ -201,7 +202,11 @@ class StoredMediaService[StorageModelT: StorageModel, CreateSchemaT: StorageCrea
             )
             db.add(db_item)
             await db.commit()
-        except Exception:
+        except Exception as error:
+            # A connection lost during COMMIT may have committed the row, so keep the bytes;
+            # the periodic sweep removes them if the row is missing.
+            if isinstance(error, DBAPIError) and error.connection_invalidated:
+                raise
             # No row will point at the bytes, so remove them. A cleanup failure is logged,
             # never raised over the original error; the periodic sweep catches local leftovers.
             try:
