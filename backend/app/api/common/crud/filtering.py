@@ -1,5 +1,6 @@
 """Filtering integration boundary for CRUD queries."""
 
+from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Annotated, Any, ClassVar, Self, cast
 
@@ -16,7 +17,7 @@ from app.api.common.search_utils import apply_ts_rank_ordering, build_contains_c
 from app.api.common.validation import FILTER_CSV_SEPARATOR, BoundedQueryText, BoundedQueryTextList
 
 if TYPE_CHECKING:
-    from collections.abc import Awaitable, Callable, Sequence
+    from collections.abc import Awaitable, Sequence
 
     from fastapi_filters.types import AbstractFilterOperator
 
@@ -59,6 +60,9 @@ class BaseFilterSet(FilterSet):
     relationship_joins: ClassVar[tuple[RelationshipFilterJoin, ...]] = ()
     sortable_fields: ClassVar[tuple[str, ...]] = ()
     search_columns: ClassVar[SearchColumns] = ()
+    # Filter fields with no column behind them: field name -> WHERE clause for the parsed
+    # value. Only for fields whose sole operator is ``eq``; the operator is not passed on.
+    condition_fields: ClassVar[Mapping[str, Callable[[Any], ColumnElement[bool]]]] = {}
 
     _search: str | None = None
     _sorting: SortingValues | None = None
@@ -167,11 +171,22 @@ def apply_filter[MT: Base](
     if model_filter is None:
         return statement
 
+    def condition_field_clause(
+        _stmt: object, _ns: object, field: str, _op: object, value: object
+    ) -> ColumnElement[bool]:
+        build = model_filter.condition_fields.get(field)
+        if build is None:
+            raise NotImplementedError  # fastapi-filters falls back to the column lookup
+        return build(value)
+
     statement = _apply_relationship_joins(statement, model_filter)
+
     statement = apply_fastapi_filters(
         statement,
         model_filter,
         additional=_relationship_columns(model_filter),
+        # NOTE: the hook returns a WHERE clause; fastapi-filters types it as returning the statement.
+        apply_filter=cast("Any", condition_field_clause),
     )
 
     search_clause = model_filter.build_search_clause()

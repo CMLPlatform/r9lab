@@ -99,6 +99,8 @@ export default function Products() {
               activeDatePreset={screen.activeDatePreset}
               activeBrands={screen.activeBrands}
               activeProductTypes={screen.activeProductTypes}
+              hasComponents={screen.hasComponents}
+              complete={screen.complete}
               dateMenuVisible={filters.dateMenuVisible}
               brandModalVisible={filters.brandModalVisible}
               typeModalVisible={filters.typeModalVisible}
@@ -111,6 +113,8 @@ export default function Products() {
               typeSearch={filters.typeSearch}
               onToggleMine={filters.toggleMine}
               onClearMine={filters.clearMine}
+              onToggleHasComponents={filters.toggleHasComponents}
+              onToggleComplete={filters.toggleComplete}
               onSetDateMenuVisible={filters.setDateMenuVisible}
               onDateChange={filters.applyDatePreset}
               onSetBrandModalVisible={filters.setBrandModalVisible}

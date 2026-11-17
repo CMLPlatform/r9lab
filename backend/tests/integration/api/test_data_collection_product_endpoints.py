@@ -441,6 +441,40 @@ async def test_sorting_products_by_recommended_rank_mixes_recency_and_completene
     assert _order(response.json()["items"], products) == ["new_photo", "old_complete", "new_empty"]
 
 
+@pytest.mark.parametrize(("value", "expect_parent"), [("true", True), ("false", False)])
+async def test_has_components_filter_splits_products_with_and_without_components(
+    api_client: AsyncClient,
+    db_session: AsyncSession,
+    setup_product_graph: ProductGraph,
+    value: str,
+    expect_parent: bool,  # noqa: FBT001
+) -> None:
+    """has_components keeps base products with at least one component, or only those with none."""
+    parent = setup_product_graph.product
+    leaf = Product(owner_id=parent.owner_id, name=f"{PRODUCT_BASE_NAME}Leaf", brand=BRAND_X)
+    db_session.add(leaf)
+    await db_session.flush()
+
+    response = await api_client.get("/v1/products", params={"has_components": value})
+
+    assert response.status_code == status.HTTP_200_OK, response.text
+    ids = {item["id"] for item in response.json()["items"]}
+    assert (parent.id in ids) is expect_parent
+    assert (leaf.id in ids) is not expect_parent
+
+
+async def test_completeness_filter_keeps_complete_records(
+    api_client: AsyncClient, db_session: AsyncSession, db_superuser: User, db_product_type: ProductType
+) -> None:
+    """completeness[ge]=1 keeps only records with every checklist field filled."""
+    products = await _ranked_products(db_session, db_superuser, db_product_type)
+
+    response = await api_client.get("/v1/products", params={"completeness[ge]": "1"})
+
+    assert response.status_code == status.HTTP_200_OK, response.text
+    assert _order(response.json()["items"], products) == ["old_complete"]
+
+
 async def test_product_materials_filter_by_material_name(
     api_client_superuser: AsyncClient,
     db_session: AsyncSession,

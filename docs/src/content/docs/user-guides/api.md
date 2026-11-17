@@ -68,6 +68,18 @@ The category trees (`GET /v1/categories/tree`, `GET /v1/categories/{id}/subcateg
 `GET /v1/taxonomies/{id}/categories/tree`) are paged the same way: each page holds `size` top-level
 categories, each with its subcategories down to `recursion_depth`.
 
+## Filtering product lists
+
+Product lists and the export take filters as query parameters; the interactive docs list them
+all. Dates and measurements take ranges, such as `created_at[ge]=2026-01-01T00:00:00Z` or
+`weight_g[le]=500`. Two filters describe how far a record is filled in:
+
+- `has_components=true` keeps products with at least one component; `false` keeps those with
+  none.
+- `completeness` is the share of the app's missing-data checklist a record has filled, from 0
+  to 1. `completeness[ge]=1` keeps complete records; `completeness[ge]=0.5` keeps those at least
+  half done. Like `recommended_rank`, its weights can change between releases.
+
 ## Exporting products
 
 To analyse a set of products in a spreadsheet or in Python, export them instead of paging through

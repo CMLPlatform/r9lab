@@ -200,6 +200,8 @@ type ProductsFilterBarProps = {
   activeDatePreset: number | null;
   activeBrands: string[];
   activeProductTypes: string[];
+  hasComponents: boolean;
+  complete: boolean;
   dateMenuVisible: boolean;
   brandModalVisible: boolean;
   typeModalVisible: boolean;
@@ -213,6 +215,8 @@ type ProductsFilterBarProps = {
   typeSearch: string;
   onToggleMine: () => void;
   onClearMine: () => void;
+  onToggleHasComponents: () => void;
+  onToggleComplete: () => void;
   onSetDateMenuVisible: (visible: boolean) => void;
   onDateChange: (days?: string) => void;
   onSetBrandModalVisible: (visible: boolean) => void;
@@ -224,6 +228,39 @@ type ProductsFilterBarProps = {
   onSetTypeSearch: (value: string) => void;
   onClearTypes: () => void;
 };
+
+function RecordFilterChips({
+  hasComponents,
+  complete,
+  onToggleHasComponents,
+  onToggleComplete,
+}: {
+  hasComponents: boolean;
+  complete: boolean;
+  onToggleHasComponents: () => void;
+  onToggleComplete: () => void;
+}) {
+  return (
+    <>
+      <FilterChip
+        icon="package"
+        selected={hasComponents}
+        onPress={onToggleHasComponents}
+        onClose={hasComponents ? onToggleHasComponents : undefined}
+      >
+        Has components
+      </FilterChip>
+      <FilterChip
+        icon="circle-check-big"
+        selected={complete}
+        onPress={onToggleComplete}
+        onClose={complete ? onToggleComplete : undefined}
+      >
+        Complete records
+      </FilterChip>
+    </>
+  );
+}
 
 export function ProductsFilterBar({
   isAuthenticated,
@@ -237,6 +274,8 @@ export function ProductsFilterBar({
   activeDatePreset,
   activeBrands,
   activeProductTypes,
+  hasComponents,
+  complete,
   dateMenuVisible,
   brandModalVisible,
   typeModalVisible,
@@ -249,6 +288,8 @@ export function ProductsFilterBar({
   typeSearch,
   onToggleMine,
   onClearMine,
+  onToggleHasComponents,
+  onToggleComplete,
   onSetDateMenuVisible,
   onDateChange,
   onSetBrandModalVisible,
@@ -339,6 +380,13 @@ export function ProductsFilterBar({
             />
           ))}
         </Menu>
+
+        <RecordFilterChips
+          hasComponents={hasComponents}
+          complete={complete}
+          onToggleHasComponents={onToggleHasComponents}
+          onToggleComplete={onToggleComplete}
+        />
 
         <FilterChip
           icon="tag"

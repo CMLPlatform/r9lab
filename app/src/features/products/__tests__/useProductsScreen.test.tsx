@@ -252,6 +252,34 @@ describe('useProductsScreen', () => {
     });
   });
 
+  it('toggles the components and complete-record filters through the URL', async () => {
+    mockSearchParams = { complete: '1' };
+    const { result } = await renderUseProductsScreen();
+
+    await act(() => {
+      result.current.filters.toggleHasComponents();
+      result.current.filters.toggleComplete();
+    });
+
+    expect(mockSetParams).toHaveBeenCalledWith({ components: '1' });
+    expect(mockSetParams).toHaveBeenCalledWith({ complete: undefined });
+  });
+
+  it('passes the components and complete-record filters to the list and export', async () => {
+    mockSearchParams = { components: '1', complete: '1' };
+    const { result } = await renderUseProductsScreen();
+
+    const calls = jest.mocked(productsInfiniteQueryOptions).mock.calls;
+    expect(calls[0][3]).toEqual(expect.objectContaining({ hasComponents: true, complete: true }));
+    expect(jest.mocked(productsListQuery)).toHaveBeenCalledWith(
+      'all',
+      '',
+      expect.anything(),
+      expect.objectContaining({ hasComponents: true, complete: true }),
+    );
+    expect(result.current.filters.activeCount).toBe(2);
+  });
+
   it('exposes the list filters for "Export results"', async () => {
     mockSearchParams = { brands: 'acme' };
     const { result } = await renderUseProductsScreen();

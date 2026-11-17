@@ -15343,6 +15343,51 @@
           },
           {
             "in": "query",
+            "name": "completeness",
+            "required": false,
+            "schema": {
+              "title": "Completeness",
+              "type": "number"
+            }
+          },
+          {
+            "in": "query",
+            "name": "completeness[ge]",
+            "required": false,
+            "schema": {
+              "title": "Completeness[Ge]",
+              "type": "number"
+            }
+          },
+          {
+            "in": "query",
+            "name": "completeness[le]",
+            "required": false,
+            "schema": {
+              "title": "Completeness[Le]",
+              "type": "number"
+            }
+          },
+          {
+            "in": "query",
+            "name": "has_components",
+            "required": false,
+            "schema": {
+              "title": "Has Components",
+              "type": "boolean"
+            }
+          },
+          {
+            "in": "query",
+            "name": "has_components[eq]",
+            "required": false,
+            "schema": {
+              "title": "Has Components[Eq]",
+              "type": "boolean"
+            }
+          },
+          {
+            "in": "query",
             "name": "weight_g",
             "required": false,
             "schema": {
@@ -16059,6 +16104,51 @@
               "format": "date-time",
               "title": "Updated At[Le]",
               "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "completeness",
+            "required": false,
+            "schema": {
+              "title": "Completeness",
+              "type": "number"
+            }
+          },
+          {
+            "in": "query",
+            "name": "completeness[ge]",
+            "required": false,
+            "schema": {
+              "title": "Completeness[Ge]",
+              "type": "number"
+            }
+          },
+          {
+            "in": "query",
+            "name": "completeness[le]",
+            "required": false,
+            "schema": {
+              "title": "Completeness[Le]",
+              "type": "number"
+            }
+          },
+          {
+            "in": "query",
+            "name": "has_components",
+            "required": false,
+            "schema": {
+              "title": "Has Components",
+              "type": "boolean"
+            }
+          },
+          {
+            "in": "query",
+            "name": "has_components[eq]",
+            "required": false,
+            "schema": {
+              "title": "Has Components[Eq]",
+              "type": "boolean"
             }
           },
           {
@@ -17059,6 +17149,51 @@
           },
           {
             "in": "query",
+            "name": "completeness",
+            "required": false,
+            "schema": {
+              "title": "Completeness",
+              "type": "number"
+            }
+          },
+          {
+            "in": "query",
+            "name": "completeness[ge]",
+            "required": false,
+            "schema": {
+              "title": "Completeness[Ge]",
+              "type": "number"
+            }
+          },
+          {
+            "in": "query",
+            "name": "completeness[le]",
+            "required": false,
+            "schema": {
+              "title": "Completeness[Le]",
+              "type": "number"
+            }
+          },
+          {
+            "in": "query",
+            "name": "has_components",
+            "required": false,
+            "schema": {
+              "title": "Has Components",
+              "type": "boolean"
+            }
+          },
+          {
+            "in": "query",
+            "name": "has_components[eq]",
+            "required": false,
+            "schema": {
+              "title": "Has Components[Eq]",
+              "type": "boolean"
+            }
+          },
+          {
+            "in": "query",
             "name": "weight_g",
             "required": false,
             "schema": {
@@ -17702,6 +17837,51 @@
               "format": "date-time",
               "title": "Updated At[Le]",
               "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "completeness",
+            "required": false,
+            "schema": {
+              "title": "Completeness",
+              "type": "number"
+            }
+          },
+          {
+            "in": "query",
+            "name": "completeness[ge]",
+            "required": false,
+            "schema": {
+              "title": "Completeness[Ge]",
+              "type": "number"
+            }
+          },
+          {
+            "in": "query",
+            "name": "completeness[le]",
+            "required": false,
+            "schema": {
+              "title": "Completeness[Le]",
+              "type": "number"
+            }
+          },
+          {
+            "in": "query",
+            "name": "has_components",
+            "required": false,
+            "schema": {
+              "title": "Has Components",
+              "type": "boolean"
+            }
+          },
+          {
+            "in": "query",
+            "name": "has_components[eq]",
+            "required": false,
+            "schema": {
+              "title": "Has Components[Eq]",
+              "type": "boolean"
             }
           },
           {
@@ -21328,6 +21508,51 @@
               "format": "date-time",
               "title": "Updated At[Le]",
               "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "completeness",
+            "required": false,
+            "schema": {
+              "title": "Completeness",
+              "type": "number"
+            }
+          },
+          {
+            "in": "query",
+            "name": "completeness[ge]",
+            "required": false,
+            "schema": {
+              "title": "Completeness[Ge]",
+              "type": "number"
+            }
+          },
+          {
+            "in": "query",
+            "name": "completeness[le]",
+            "required": false,
+            "schema": {
+              "title": "Completeness[Le]",
+              "type": "number"
+            }
+          },
+          {
+            "in": "query",
+            "name": "has_components",
+            "required": false,
+            "schema": {
+              "title": "Has Components",
+              "type": "boolean"
+            }
+          },
+          {
+            "in": "query",
+            "name": "has_components[eq]",
+            "required": false,
+            "schema": {
+              "title": "Has Components[Eq]",
+              "type": "boolean"
             }
           },
           {

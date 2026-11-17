@@ -265,6 +265,10 @@ export type ProductsQuery = {
   brands?: string[];
   createdAfter?: Date;
   productTypeNames?: string[];
+  /** Only products with at least one component. */
+  hasComponents?: boolean;
+  /** Only records with every missing-data checklist field filled (completeness 1). */
+  complete?: boolean;
   /** 'me' scopes to the signed-in user's own products (authenticated); a username to that user's public ones. */
   owner?: string;
 };
@@ -284,6 +288,8 @@ function appendProductFilters(url: URL, query: ProductsQuery): URL {
       'product_type_name[in]',
       query.productTypeNames.join(FILTER_CSV_SEPARATOR),
     );
+  if (query.hasComponents) url.searchParams.append('has_components', 'true');
+  if (query.complete) url.searchParams.append('completeness[ge]', '1');
   if (query.orderBy?.length)
     url.searchParams.append('order_by', query.orderBy.join(FILTER_CSV_SEPARATOR));
   if (query.owner) url.searchParams.append('owner', query.owner);
