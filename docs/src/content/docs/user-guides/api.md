@@ -55,6 +55,15 @@ The same path covers superuser tasks like `POST /v1/admin/cache/clear/{namespace
   that depth, at most 1,000 components across all levels. A larger tree fails with a `400`: lower
   `recursion_depth`, page through `/components` level by level, or export the product.
 
+## Sorting product lists
+
+Product lists take `order_by` with one or more keys, each prefixed `+` (ascending, the default) or
+`-` (descending): `name`, `brand`, `model`, `created_at`, `updated_at`, `product_type_name` and
+`recommended_rank`. `-recommended_rank` puts recent, complete records first, which is the app's
+default order. Treat it as a ranking heuristic: its weights can change between releases. It is
+indexed for the base-product list only, so on component lists it sorts like any other key. With a
+`search` term and no `order_by`, results come in order of relevance.
+
 The category trees (`GET /v1/categories/tree`, `GET /v1/categories/{id}/subcategories/tree`,
 `GET /v1/taxonomies/{id}/categories/tree`) are paged the same way: each page holds `size` top-level
 categories, each with its subcategories down to `recursion_depth`.

@@ -3,15 +3,10 @@ import type { useRouter } from 'expo-router';
 import { useEffect, useMemo } from 'react';
 import type { useAuth } from '@/context/auth';
 import { FILTER_CSV_SEPARATOR } from '@/services/api/products';
-import {
-  DEFAULT_PRODUCT_SORT,
-  PRODUCT_SORT_OPTIONS,
-  productsInfiniteQueryOptions,
-} from './queries';
+import { DEFAULT_PRODUCT_SORT, NEWEST_FIRST_SORT, productsInfiniteQueryOptions } from './queries';
 
 export type ProductFilter = 'all' | 'mine';
 export type RouterSetParams = Parameters<ReturnType<typeof useRouter>['setParams']>[0];
-const FALLBACK_DEFAULT_SORT = Array.from(PRODUCT_SORT_OPTIONS[1].value);
 
 export type ProductsSearchParams = {
   filterMode?: string;
@@ -22,18 +17,21 @@ export type ProductsSearchParams = {
   days?: string;
 };
 
+function defaultSort(filterMode: ProductFilter, search: string): string[] {
+  if (search) return [];
+  if (filterMode === 'mine') return [...NEWEST_FIRST_SORT];
+  return [...DEFAULT_PRODUCT_SORT];
+}
+
 export function normalizeProductsParams(params: ProductsSearchParams) {
   const searchQueryURL = params.q ?? '';
   const activeDatePreset = params.days ? Number(params.days) : null;
+  const filterMode = (params.filterMode as ProductFilter) || 'all';
 
   return {
-    filterMode: (params.filterMode as ProductFilter) || 'all',
+    filterMode,
     searchQueryURL,
-    sortBy: params.sort
-      ? params.sort.split(',')
-      : searchQueryURL
-        ? []
-        : Array.from(DEFAULT_PRODUCT_SORT ?? FALLBACK_DEFAULT_SORT),
+    sortBy: params.sort ? params.sort.split(',') : defaultSort(filterMode, searchQueryURL),
     activeDatePreset,
     // Brand and type values are free user text that may contain commas, so the
     // URL round-trip uses the same separator the API layer sends.

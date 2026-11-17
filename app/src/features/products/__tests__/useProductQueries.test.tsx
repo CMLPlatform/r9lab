@@ -138,7 +138,7 @@ describe('useProductQueries', () => {
       expect(mockedProducts.mock.calls[0][0]).not.toHaveProperty('owner');
     });
 
-    it('scopes to owner: <username> for a public profile', async () => {
+    it('scopes to owner: <username> for a public profile, newest first', async () => {
       mockedProducts.mockResolvedValue({ items: [], total: 0, page: 1, pages: 1, size: 24 });
 
       const { result } = await renderHook(
@@ -148,7 +148,7 @@ describe('useProductQueries', () => {
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
       expect(products).toHaveBeenCalledWith(
-        expect.objectContaining({ owner: 'alice', page: 1, size: 24 }),
+        expect.objectContaining({ owner: 'alice', orderBy: ['-created_at'], page: 1, size: 24 }),
       );
     });
 

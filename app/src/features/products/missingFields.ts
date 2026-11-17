@@ -57,7 +57,8 @@ const COMPONENT_FIELDS: MissingField[] = [WEIGHT, PHOTO];
  * Missing-data checklist for the completeness indicator. Components (role
  * 'component') only need weight and a photo; model number, videos, research
  * files, circularity properties, components and the bill of materials are
- * never counted.
+ * never counted. The backend's completeness score
+ * (the SQL function r9lab_product_completeness) counts the same fields.
  */
 export function missingFields(product: Product): MissingField[] {
   const fields = product.role === 'component' ? COMPONENT_FIELDS : BASE_FIELDS;

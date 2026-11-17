@@ -21,7 +21,7 @@ from app.api.data_collection.exceptions import (
 from app.api.data_collection.models.product import MaterialProductLink, Product
 from app.api.data_collection.schemas import ComponentCreateWithComponents, ProductCreateWithComponents, ProductUpdate
 from app.api.file_storage.models import Video
-from app.api.file_storage.upload_quota import recompute_user_upload_quota
+from app.api.file_storage.upload_quota import lock_product_owner, recompute_user_upload_quota
 from app.api.reference_data.models import Material, ProductType
 
 if TYPE_CHECKING:
@@ -185,6 +185,7 @@ async def update_product(
 
 async def delete_product(db: AsyncSession, product_id: int) -> None:
     """Delete a product and its components, commit, then remove their media from storage."""
+    await lock_product_owner(db, product_id=product_id)
     owner_id = (await require_locked_model(db, Product, product_id)).owner_id
     # Bulk statements over the subtree: the ORM delete cascade would load every
     # component's media, videos and components one row at a time.

@@ -94,7 +94,14 @@ class ProductFilter(BaseFilterSet):
     """FilterSet for Product."""
 
     filter_model: ClassVar[type[Product]] = Product
-    sortable_fields: ClassVar[tuple[str, ...]] = ("name", "brand", "model", "created_at", "updated_at")
+    sortable_fields: ClassVar[tuple[str, ...]] = (
+        "name",
+        "brand",
+        "model",
+        "created_at",
+        "updated_at",
+        "recommended_rank",
+    )
 
     name: FilterField[str] = filter_field(_TEXT_OPERATORS)
     description: FilterField[str] = filter_field(_TEXT_OPERATORS)

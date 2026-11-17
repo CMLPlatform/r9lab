@@ -27,6 +27,7 @@ from app.api.file_storage.upload_policy import (
     validate_image_upload_metadata,
 )
 from app.api.file_storage.upload_quota import (
+    lock_product_owner,
     release_product_upload_quota_for_media,
     reserve_product_upload_quota,
 )
@@ -207,6 +208,10 @@ class StoredMediaService[StorageModelT: StorageModel, CreateSchemaT: StorageCrea
 
     async def delete(self, db: AsyncSession, item_id: UUID4) -> None:
         """Delete a file-backed model and best-effort clean up its storage file."""
+        parent_product_id = select(self.model.parent_id).where(
+            self.model.id == item_id, self.model.parent_type == MediaParentType.PRODUCT
+        )
+        await lock_product_owner(db, product_id=parent_product_id.scalar_subquery())
         db_item = await require_locked_model(db, self.model, item_id)
         await db.delete(db_item)
         await release_product_upload_quota_for_media(db, db_item)

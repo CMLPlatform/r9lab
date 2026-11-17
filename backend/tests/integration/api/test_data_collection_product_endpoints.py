@@ -1,13 +1,15 @@
 """Integration tests for product-focused data-collection endpoints."""
 
 import logging
+from datetime import UTC, datetime, timedelta
 from typing import TYPE_CHECKING
 
 import pytest
 from fastapi import status
-from sqlalchemy import select, update
+from sqlalchemy import select, text, update
 
 from app.api.data_collection.models.product import Product
+from app.api.file_storage.models import Image, MediaParentType
 from app.api.reference_data.models import Material, ProductType
 from scripts.seed.factories.models import ProductFactory, UserFactory
 from tests.constants import (
@@ -390,6 +392,53 @@ async def test_sorting_products_by_product_type_name_keeps_untyped_products(
     ids = [item["id"] for item in response.json()["items"]]
     assert typed_product.id in ids
     assert untyped_product.id in ids
+
+
+async def _ranked_products(db_session: AsyncSession, owner: User, product_type: ProductType) -> dict[str, Product]:
+    """Make a 20-day-old complete product, a new empty one and a new one with only a photo."""
+    old_complete = Product(
+        owner_id=owner.id,
+        name=f"{PRODUCT_BASE_NAME}OldComplete",
+        brand=BRAND_X,
+        description=PRODUCT_DESC,
+        product_type=product_type,
+        weight_g=WEIGHT_500,
+        height_cm=HEIGHT_10,
+        created_at=datetime.now(UTC) - timedelta(days=20),
+    )
+    new_empty = Product(owner_id=owner.id, name=f"{PRODUCT_BASE_NAME}NewEmpty")
+    new_photo = Product(owner_id=owner.id, name=f"{PRODUCT_BASE_NAME}NewPhoto")
+    db_session.add_all([old_complete, new_empty, new_photo])
+    await db_session.flush()
+    db_session.add_all(
+        Image(filename="i.png", file="i.png", upload_size_bytes=1, parent_type=MediaParentType.PRODUCT, parent_id=p.id)
+        for p in (old_complete, new_photo)
+    )
+    await db_session.flush()
+    # The image trigger is deferred to commit, which the test transaction never reaches.
+    await db_session.execute(text("SET CONSTRAINTS ALL IMMEDIATE"))
+    return {"old_complete": old_complete, "new_empty": new_empty, "new_photo": new_photo}
+
+
+def _order(response_items: list[dict], products: dict[str, Product]) -> list[str]:
+    names_by_id = {product.id: name for name, product in products.items()}
+    return [names_by_id[item["id"]] for item in response_items if item["id"] in names_by_id]
+
+
+async def test_sorting_products_by_recommended_rank_mixes_recency_and_completeness(
+    api_client: AsyncClient, db_session: AsyncSession, db_superuser: User, db_product_type: ProductType
+) -> None:
+    """Full completeness is worth 30 days of recency.
+
+    A new photo-only record (+11 days) beats a complete one 20 days old (+10 days), which
+    beats a new empty one.
+    """
+    products = await _ranked_products(db_session, db_superuser, db_product_type)
+
+    response = await api_client.get("/v1/products?order_by=-recommended_rank")
+
+    assert response.status_code == status.HTTP_200_OK, response.text
+    assert _order(response.json()["items"], products) == ["new_photo", "old_complete", "new_empty"]
 
 
 async def test_product_materials_filter_by_material_name(

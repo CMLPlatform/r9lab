@@ -23,7 +23,7 @@ from app.api.auth.services.email_identity import canonicalize_email
 from app.api.auth.services.oauth.accounts import google_tokens_to_revoke, revoke_google_tokens
 from app.api.auth.services.password_hashing import build_password_helper
 from app.api.common.audit import AuditAction, audit_event
-from app.api.common.crud.query import require_model
+from app.api.common.crud.query import require_locked_model
 from app.api.common.exceptions import ConflictError
 from app.api.data_collection.crud.profile_stats import recompute_user_profile_stats
 from app.api.data_collection.crud.storage import (
@@ -151,8 +151,10 @@ async def require_erasable_account(session: AsyncSession, user: User) -> User:
         ConflictError: when the target is the anonymous system account or the last
             active superuser.
     """
-    # The caller's instance may belong to the auth dependency's own session.
-    user = await require_model(session, User, user.id)
+    # The caller's instance may belong to the auth dependency's own session. Locked first,
+    # before any product row, in the owner-first order every product writer uses
+    # (lock_product_owner).
+    user = await require_locked_model(session, User, user.id)
 
     if user.email_canonical in {
         canonicalize_email(ANONYMOUS_USER_EMAIL),
