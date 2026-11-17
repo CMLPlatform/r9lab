@@ -3040,7 +3040,7 @@ export interface components {
      * @description Cache namespace identifiers for different application areas.
      * @enum {string}
      */
-    CacheNamespace: 'reference-data' | 'stats';
+    CacheNamespace: 'reference-data' | 'stats' | 'profile-stats';
     /**
      * CameraConnectionStatus
      * @description Camera connection status.

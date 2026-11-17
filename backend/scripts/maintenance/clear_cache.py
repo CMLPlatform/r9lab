@@ -8,6 +8,7 @@ Run with: python -m scripts.maintenance.clear_cache [namespace]
 Available namespaces:
 - reference-data (default): All reference data GET endpoints
 - stats: Contribution statistics endpoints
+- profile-stats: Public profile statistics
 """
 
 import asyncio
