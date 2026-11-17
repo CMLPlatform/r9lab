@@ -37,7 +37,7 @@ body:
     id: alternatives
     attributes:
       label: Alternatives considered
-      description: Other approaches and why they were set aside.
+      description: Other approaches, and why you set them aside.
 
   - type: textarea
     id: context

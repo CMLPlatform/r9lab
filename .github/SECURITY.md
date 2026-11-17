@@ -4,7 +4,7 @@
 
 Do not open a public GitHub issue for security vulnerabilities.
 
-Instead, report it privately through GitHub's
+Report it privately through GitHub's
 [private vulnerability reporting](https://github.com/CMLPlatform/r9lab/security/advisories/new), or
 email [info@r9lab.io](mailto:info@r9lab.io), with:
 
@@ -161,8 +161,8 @@ Supply-chain and code-security checks:
   required `CI Result` check. The app bypasses the review (the `protect_main` ruleset) and
   merges what `.github/renovate.json` marks automerge itself. It cannot skip the check, which
   `protect_main_checks` requires with no app bypass, so a leaked key cannot reach `main`
-  without a pull request that passes CI. That is not all it can do: its `contents` and `workflows` write
-  access reaches every other branch, and the workflows a push there starts run its changes.
+  without a pull request that passes CI. It can still push to every other branch through its `contents` and `workflows`
+  write access, and the workflows a push there starts run its changes.
   Release tags are held by the `release tags` ruleset (`infra/cloudflare/github.tf`), which only
   repository admins and maintainers bypass, so the key cannot mint or move the tag hosts deploy
   from, and every job in the `staging` and `prod` Environments waits for a required reviewer.

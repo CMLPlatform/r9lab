@@ -25,7 +25,7 @@ _What problem does this solve?_
 
 - [ ] I've read the [contributing guidelines](CONTRIBUTING.md)
 - [ ] Code follows style guidelines and passes quality checks (`just ci`)
-- [ ] Unit tests added/updated and passing locally (`just test`)
+- [ ] Unit tests added or updated, and passing locally (`just test`)
 - [ ] Documentation updated (if applicable)
 - [ ] Database migrations created (if applicable)
 

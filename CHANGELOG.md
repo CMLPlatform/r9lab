@@ -98,9 +98,9 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   text, the activity chart's readout closes on Escape while the pointer rests on it, the app's
   username screen has its own heading and offers autofill, and each sign-up step's question is a
   heading.
-- More accessibility fixes from the same check: double-tapping a photo in the app's viewer zooms
-  in on that spot, so no drag is needed to see part of it; the account screen's theme and
-  visibility choices respond to Space; a product's components are read as a list; and the
+- The same WCAG 2.2 self-assessment led to more fixes. Double-tapping a photo in the app's viewer zooms
+  in on that spot, so no drag is needed to see part of it. The account screen's theme and
+  visibility choices respond to Space. A product's components are read as a list. The
   documentation search announces its result count.
 
 ### Security
@@ -115,12 +115,11 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Logging out with a stolen, already-rotated refresh token no longer hides the theft, and a
   device holding a token revoked by "log out everywhere" no longer logs you out again.
 - Parallel password guesses from many addresses can no longer get past the per-account login
-  limit, and password login for an account stops after 100 wrong passwords in a row, as NIST
-  SP 800-63B asks; a correct password starts the count again. A browser or app that has signed
+  limit. Password login for an account stops after 100 wrong passwords in a row, as NIST
+  SP 800-63B asks. A correct password starts the count again. A browser or app that has signed
   in to the account before keeps its own count in a device cookie (for bearer clients also in
   an `X-Device-Token` header), so someone guessing at your address cannot lock you out of your
-  own devices. Login answers 429 with `Retry-After` when a
-  limit is reached.
+  own devices. Login answers 429 with `Retry-After` when a limit is reached.
 - The common-password and disposable-email checks keep working when their Redis cache is
   flushed or evicted, and the common-password list refills its cache on the next check.
 - `GET /v1/oauth/{provider}/token/authorize` refuses a `redirect_uri`: the bearer flow returns
