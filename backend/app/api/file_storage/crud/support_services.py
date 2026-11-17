@@ -9,6 +9,7 @@ from anyio import to_thread
 from fastapi import UploadFile
 from pydantic import UUID4
 from sqlalchemy import Select, select
+from sqlalchemy.exc import DBAPIError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.auth.roles import UserRole, image_upload_max_mb_for_role, image_upload_max_pixels_for_role
@@ -187,19 +188,32 @@ class StoredMediaService[StorageModelT: StorageModel, CreateSchemaT: StorageCrea
             # media only); the charge itself always targets the parent's owner.
             await reserve_product_upload_quota(db, parent_id=payload.parent_id, upload_size_bytes=upload_size_bytes)
 
-        stored_name = await self.get_storage().write_upload(payload.file, stored_filename)
-        db_item = build_storage_instance(
-            model=self.model,
-            file_id=file_id,
-            upload_size_bytes=upload_size_bytes,
-            original_filename=original_filename,
-            stored_name=stored_name,
-            payload=payload,
-            **extra_fields,
-        )
-
-        db.add(db_item)
-        await db.commit()
+        storage = self.get_storage()
+        stored_name = await storage.write_upload(payload.file, stored_filename)
+        try:
+            db_item = build_storage_instance(
+                model=self.model,
+                file_id=file_id,
+                upload_size_bytes=upload_size_bytes,
+                original_filename=original_filename,
+                stored_name=stored_name,
+                payload=payload,
+                **extra_fields,
+            )
+            db.add(db_item)
+            await db.commit()
+        except Exception as error:
+            # A connection lost during COMMIT may have committed the row, so keep the bytes;
+            # the periodic sweep removes them if the row is missing.
+            if isinstance(error, DBAPIError) and error.connection_invalidated:
+                raise
+            # No row will point at the bytes, so remove them. A cleanup failure is logged,
+            # never raised over the original error; the periodic sweep catches local leftovers.
+            try:
+                await storage.delete(stored_name)
+            except Exception:
+                logger.exception("Could not remove stored upload %s after a failed commit.", stored_name)
+            raise
         await db.refresh(db_item)
         if isinstance(db_item, Image):
             await _generate_image_thumbnails(db_item)
@@ -213,10 +227,14 @@ class StoredMediaService[StorageModelT: StorageModel, CreateSchemaT: StorageCrea
         await db.commit()
 
         # Backend deletes are idempotent for a missing object, so no path gating (None on S3).
-        if isinstance(db_item, Image):
-            await delete_image_from_storage(db_item)
-        else:
-            await delete_file_from_storage(db_item)
+        # The row is already gone, so a storage failure is logged rather than failing the delete.
+        try:
+            if isinstance(db_item, Image):
+                await delete_image_from_storage(db_item)
+            else:
+                await delete_file_from_storage(db_item)
+        except OSError:
+            logger.warning("Storage cleanup failed for an already-deleted %s row.", self.model.__name__, exc_info=True)
 
 
 async def _validate_file_upload(payload: FileCreate, _caps_role: UserRole) -> int:
