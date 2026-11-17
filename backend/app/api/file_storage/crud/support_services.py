@@ -204,9 +204,10 @@ class StoredMediaService[StorageModelT: StorageModel, CreateSchemaT: StorageCrea
             db.add(db_item)
             await db.commit()
         except Exception as error:
-            # A connection lost during COMMIT may have committed the row, so keep the bytes;
-            # the periodic sweep removes them if the row is missing.
+            # A connection lost during COMMIT may have committed the row, so keep the bytes.
+            # The periodic sweep removes local leftovers; on S3 only this log names them.
             if isinstance(error, DBAPIError) and error.connection_invalidated:
+                logger.warning("Kept stored upload %s: the commit outcome is unknown.", stored_name)
                 raise
             # No row will point at the bytes, so remove them. A cleanup failure is logged,
             # never raised over the original error; the periodic sweep catches local leftovers.
