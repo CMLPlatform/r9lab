@@ -203,7 +203,8 @@ async def test_public_profile_counts_drop_after_deletes(
     assert deleted.status_code == 204
     assert (await api_client_superuser.get(path)).json()["image_count"] == 0
 
-    assert (await api_client_superuser.delete(f"/v1/products/{product_id}")).status_code == 204
+    deleted = await api_client_superuser.delete(f"/v1/products/{product_id}")
+    assert deleted.status_code == 204
     assert (await api_client_superuser.get(path)).json()["product_count"] == 0
 
 
