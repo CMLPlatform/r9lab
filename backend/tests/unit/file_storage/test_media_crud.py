@@ -333,7 +333,7 @@ async def test_failed_commit_removes_the_stored_upload(
 
 
 async def test_a_commit_lost_with_its_connection_keeps_the_stored_upload(
-    mock_session: AsyncMock, mocker: MockerFixture
+    mock_session: AsyncMock, mocker: MockerFixture, caplog: pytest.LogCaptureFixture
 ) -> None:
     """The row may have committed before the connection dropped, so its bytes must stay."""
     storage = MagicMock()
@@ -348,6 +348,7 @@ async def test_a_commit_lost_with_its_connection_keeps_the_stored_upload(
         await file_storage_service.create(mock_session, _text_upload(), caps_role=UserRole.CONTRIBUTOR)
 
     storage.delete.assert_not_awaited()
+    assert any(r.levelname == "WARNING" and "Kept stored upload stored.txt" in r.getMessage() for r in caplog.records)
 
 
 async def test_a_failed_cleanup_does_not_hide_the_commit_error(
