@@ -3,7 +3,7 @@ import { type MutableRefObject, useCallback, useEffect, useRef } from 'react';
 import { Platform } from 'react-native';
 import type { useDialog } from '@/components/base/dialogContext';
 import { API_URL } from '@/config';
-import { SUPPORT_EMAIL } from '@/constants';
+import { SUPPORT_EMAIL, SUSPENDED_ACCOUNT_MESSAGE } from '@/constants';
 import { claimOAuthMfaHandoff, type MfaLoginPending } from '@/services/api/auth/authMfa';
 import { markWebSessionActive } from '@/services/api/auth/authSession';
 import { getUser } from '@/services/api/auth/authUser';
@@ -40,13 +40,13 @@ function getOAuthErrorMessage(error?: string, platform: 'ios' | 'android' | 'web
     return `Sign-in with this provider isn't set up correctly. Email ${SUPPORT_EMAIL}.`;
   }
   if (error === 'server_error' || error === 'temporarily_unavailable') {
-    return 'The provider is temporarily unavailable. Please try again in a moment.';
+    return 'The provider is temporarily unavailable. Try again in a moment.';
   }
   if (error) return error;
   if (platform !== 'web') {
     return 'Sign-in failed. Check your internet connection and try again.';
   }
-  return 'Sign-in failed. Please try again.';
+  return 'Sign-in failed. Try again.';
 }
 
 function isAccountNotLinkedError(error: string | undefined): boolean {
@@ -69,9 +69,7 @@ async function getAuthenticatedUserWithRetry(
     if (retryCount >= maxRetries) {
       throw new Error(
         "Signed in, but we couldn't start your session. " +
-          (Platform.OS !== 'web'
-            ? 'Check your internet connection and try again.'
-            : 'Please try again.'),
+          (Platform.OS !== 'web' ? 'Check your internet connection and try again.' : 'Try again.'),
       );
     }
   }
@@ -121,13 +119,13 @@ async function finalizeOAuthSession({
   const authenticatedUser = await getAuthenticatedUserWithRetry();
 
   if (!authenticatedUser) {
-    throw new Error("Signed in, but we couldn't start your session. Please try again.");
+    throw new Error("Signed in, but we couldn't start your session. Try again.");
   }
 
   if (!authenticatedUser.isActive) {
     dialog.alert({
       title: 'Account suspended',
-      message: `Your account has been suspended. Email ${SUPPORT_EMAIL} if you think this is a mistake.`,
+      message: SUSPENDED_ACCOUNT_MESSAGE,
     });
     return;
   }
@@ -163,7 +161,7 @@ async function startOAuthLogin({
         return;
       }
 
-      throw new Error(detail || "Couldn't reach the sign-in service. Please try again.");
+      throw new Error(detail || "Couldn't reach the sign-in service. Try again.");
     }
 
     if (!isAllowedOAuthRedirectUrl(authorization.authorizationUrl)) {
@@ -188,7 +186,7 @@ async function startOAuthLogin({
   } catch (error: unknown) {
     dialog.alert({
       title: "Couldn't sign in",
-      message: getErrorMessage(error, 'Please try again.'),
+      message: getErrorMessage(error, 'Try again.'),
     });
   }
 }
@@ -227,7 +225,7 @@ function useOAuthCallbackEffect({
     finalizeOAuthLogin(fragmentCallback).catch((error: unknown) => {
       dialog.alert({
         title: "Couldn't sign in",
-        message: getErrorMessage(error, 'Please try again.'),
+        message: getErrorMessage(error, 'Try again.'),
       });
     });
   }, [dialog, finalizeOAuthLogin, handledOAuthCallbackRef, postLoginRedirect]);
