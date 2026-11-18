@@ -1,19 +1,19 @@
 """Integration tests for public profile statistics."""
 
-from datetime import UTC, datetime
 from typing import TYPE_CHECKING
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.auth.models import User
-from app.api.data_collection.crud.profile_stats import (
-    compute_profile_stats,
-    recompute_user_profile_stats,
-)
+from app.api.auth.preferences import ProfileVisibility
+from app.api.data_collection.crud.profile_stats import compute_profile_stats
 from app.api.data_collection.models.product import Product
+from app.api.file_storage.models import Image, MediaParentType
 from app.api.reference_data.models import ProductType
+from tests.fixtures.client import override_authenticated_user
 
 if TYPE_CHECKING:
+    from fastapi import FastAPI
     from httpx import AsyncClient
 
 
@@ -36,90 +36,45 @@ async def create_root_with_component(db_session: AsyncSession, user: User) -> No
     )
     db_session.add_all([product_type, root, component])
     await db_session.flush()
+    # A component photo counts towards the owner's photos.
+    db_session.add(
+        Image(
+            filename="c.png",
+            file="c.png",
+            upload_size_bytes=1,
+            parent_type=MediaParentType.PRODUCT,
+            parent_id=component.id,
+        )
+    )
+    await db_session.flush()
 
 
-async def test_recompute_user_profile_stats_counts_base_product_weight_only(
+async def test_compute_profile_stats_counts_base_product_weight_only(
     db_session: AsyncSession,
     db_superuser: User,
 ) -> None:
     """Profile weight should not count component rows on top of the base product."""
     await create_root_with_component(db_session, db_superuser)
 
-    stats = await recompute_user_profile_stats(db_session, db_superuser.id)
+    stats = await compute_profile_stats(db_session, db_superuser.id)
 
     assert stats.product_count == 1
     assert stats.total_weight_g == 35_000
 
 
-async def test_compute_profile_stats_is_read_only(
-    db_session: AsyncSession,
-    db_superuser: User,
-) -> None:
-    """compute_profile_stats returns the numbers without staging a snapshot write.
-
-    The public-profile GET relies on this to stay write-free (a committing read
-    breaks read-replica routing); recompute_* is the write path.
-    """
-    await create_root_with_component(db_session, db_superuser)
-    db_superuser.profile_stats = {}
-    db_superuser.profile_stats_computed_at = None
-    await db_session.flush()
-
-    stats = await compute_profile_stats(db_session, db_superuser.id)
-
-    assert stats.product_count == 1
-    assert db_superuser.profile_stats == {}
-    assert db_superuser.profile_stats_computed_at is None
-
-
-async def test_public_profile_computes_missing_snapshot_on_read(
+async def test_public_profile_counts_on_read(
     db_session: AsyncSession,
     api_client: AsyncClient,
     db_superuser: User,
 ) -> None:
-    """A profile with no snapshot yet still returns freshly computed stats."""
+    """The profile returns stats counted from the owner's products."""
     await create_root_with_component(db_session, db_superuser)
-    db_superuser.profile_stats = {}
-    db_superuser.profile_stats_computed_at = None
-    await db_session.flush()
 
     response = await api_client.get(f"/v1/profiles/{db_superuser.username}")
 
     assert response.status_code == 200
     assert response.json()["total_weight_kg"] == 35.0
-
-
-async def test_public_profile_returns_latest_snapshot_without_external_cache(
-    db_session: AsyncSession,
-    api_client: AsyncClient,
-    db_superuser: User,
-) -> None:
-    """Profile reads should return the latest persisted snapshot without Redis invalidation."""
-    db_superuser.profile_stats = {
-        "product_count": 1,
-        "total_weight_g": 35_000,
-        "image_count": 0,
-        "top_category": "Profile Stats Tool",
-    }
-    db_superuser.profile_stats_computed_at = datetime.now(UTC)
-    await db_session.flush()
-
-    response = await api_client.get(f"/v1/profiles/{db_superuser.username}")
-    assert response.status_code == 200
-    assert response.json()["total_weight_kg"] == 35.0
-
-    db_superuser.profile_stats = {
-        "product_count": 1,
-        "total_weight_g": 72_000,
-        "image_count": 0,
-        "top_category": "Profile Stats Tool",
-    }
-    db_superuser.profile_stats_computed_at = datetime.now(UTC)
-    await db_session.flush()
-
-    fresh_response = await api_client.get(f"/v1/profiles/{db_superuser.username}")
-    assert fresh_response.status_code == 200
-    assert fresh_response.json()["total_weight_kg"] == 72.0
+    assert response.json()["image_count"] == 1
 
 
 async def test_public_profile_does_not_resolve_uuid_identifiers(
@@ -157,12 +112,116 @@ async def test_public_profile_shows_the_label_of_a_cpv_top_category(
     api_client: AsyncClient,
     db_superuser: User,
 ) -> None:
-    """A snapshot holding a CPV code reads back as the type's label."""
-    db_session.add(ProductType(name="CPV: 14622", description="Steel"))
-    db_superuser.profile_stats = {"product_count": 1, "top_category": "CPV: 14622"}
-    db_superuser.profile_stats_computed_at = datetime.now(UTC)
+    """A top category stored as a CPV code reads back as the type's label."""
+    db_session.add(
+        Product(owner_id=db_superuser.id, name="Pan", product_type=ProductType(name="CPV: 14622", description="Steel"))
+    )
     await db_session.flush()
 
     response = await api_client.get(f"/v1/profiles/{db_superuser.username}")
     assert response.status_code == 200
     assert response.json()["top_category"] == "Steel"
+
+
+async def test_public_profile_counts_products_written_outside_the_product_routes(
+    db_session: AsyncSession,
+    api_client_superuser: AsyncClient,
+    db_superuser: User,
+) -> None:
+    """A product added by any writer (an import, a restore) shows on the profile at once."""
+    created = await api_client_superuser.post("/v1/products", json={"name": "Kettle", "weight_g": 35_000})
+    assert created.status_code == 201
+
+    db_session.add(Product(owner_id=db_superuser.id, name="Imported kettle", weight_g=1_000))
+    await db_session.flush()
+
+    response = await api_client_superuser.get(f"/v1/profiles/{db_superuser.username}")
+    assert response.json()["product_count"] == 2
+    assert response.json()["total_weight_kg"] == 36.0
+
+
+async def test_public_profile_follows_a_renamed_top_category(
+    db_session: AsyncSession,
+    api_client_superuser: AsyncClient,
+    db_superuser: User,
+) -> None:
+    """Renaming a product type changes the top category every owner's profile shows."""
+    product_type = ProductType(name="Profile Stats Tool")
+    db_session.add(product_type)
+    await db_session.flush()
+    created = await api_client_superuser.post(
+        "/v1/products", json={"name": "Kettle", "product_type_id": product_type.id}
+    )
+    assert created.status_code == 201
+
+    product_type.name = "Hand Tool"
+    await db_session.flush()
+
+    response = await api_client_superuser.get(f"/v1/profiles/{db_superuser.username}")
+    assert response.json()["top_category"] == "Hand Tool"
+
+
+async def test_public_profile_caches_for_others_but_not_for_the_owner(
+    db_session: AsyncSession,
+    api_client: AsyncClient,
+    test_app: FastAPI,
+    db_user: User,
+    db_superuser: User,
+) -> None:
+    """Other viewers may read a cached count; the owner always sees their own edits."""
+    path = f"/v1/profiles/{db_superuser.username}"
+    with override_authenticated_user(test_app, db_user):
+        before = (await api_client.get(path)).json()["product_count"]
+
+    db_session.add(Product(owner_id=db_superuser.id, name="Cached kettle"))
+    await db_session.flush()
+
+    with override_authenticated_user(test_app, db_user):
+        assert (await api_client.get(path)).json()["product_count"] == before
+    with override_authenticated_user(test_app, db_superuser, superuser=True):
+        assert (await api_client.get(path)).json()["product_count"] == before + 1
+
+
+async def test_public_profile_counts_drop_after_deletes(
+    db_session: AsyncSession,
+    api_client_superuser: AsyncClient,
+    db_superuser: User,
+) -> None:
+    """Deleting an image or a product lowers the owner's counts on the next read."""
+    path = f"/v1/profiles/{db_superuser.username}"
+    created = await api_client_superuser.post("/v1/products", json={"name": "Kettle"})
+    assert created.status_code == 201
+    product_id = created.json()["id"]
+    image = Image(
+        filename="k.png", file="k.png", upload_size_bytes=1, parent_type=MediaParentType.PRODUCT, parent_id=product_id
+    )
+    db_session.add(image)
+    await db_session.flush()
+    assert (await api_client_superuser.get(path)).json()["image_count"] == 1
+
+    deleted = await api_client_superuser.delete(f"/v1/products/{product_id}/images/{image.id}")
+    assert deleted.status_code == 204
+    assert (await api_client_superuser.get(path)).json()["image_count"] == 0
+
+    deleted = await api_client_superuser.delete(f"/v1/products/{product_id}")
+    assert deleted.status_code == 204
+    assert (await api_client_superuser.get(path)).json()["product_count"] == 0
+
+
+async def test_public_profile_checks_visibility_before_the_cache(
+    db_session: AsyncSession,
+    api_client: AsyncClient,
+    test_app: FastAPI,
+    db_user: User,
+    db_superuser: User,
+) -> None:
+    """A profile made private stops showing at once, even with its stats still cached."""
+    path = f"/v1/profiles/{db_superuser.username}"
+    with override_authenticated_user(test_app, db_user):
+        assert (await api_client.get(path)).status_code == 200
+
+    db_superuser.preferences = {**db_superuser.preferences, "profile_visibility": ProfileVisibility.PRIVATE.value}
+    await db_session.flush()
+
+    with override_authenticated_user(test_app, db_user):
+        assert (await api_client.get(path)).status_code == 404

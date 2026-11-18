@@ -57,7 +57,7 @@ def device_id_for(token: str | None, identifier: str) -> str | None:
 def set_device_cookie(response: Response, identifier: str, *, in_header: bool = False) -> None:
     """Remember this client for the account it just proved the password of.
 
-    It outlives logout on purpose: the point is that this client stays known.
+    It outlives logout: the point is that this client stays known.
     ``in_header`` also returns the token in DEVICE_TOKEN_HEADER, for native apps that may
     not keep cookies and send it back in that header instead.
     """

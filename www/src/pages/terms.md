@@ -9,7 +9,7 @@ description: The terms you agree to when you contribute records, images, or note
 # no re-prompt.
 version: 1
 meta: "Version 1 · Last updated: September 28, 2026"
-intro: These terms cover what you contribute to R9lab and how it may be used. They are short on purpose.
+intro: These terms cover what you contribute to R9lab and how it may be used.
 ---
 
 <!-- What a contributor agrees to. Kept separate from the privacy policy, which is
@@ -35,7 +35,7 @@ We may move a later release to a newer version of CC BY, or to another licence t
 
 You confirm that you made what you upload: you took the photographs yourself and wrote the measurements and notes yourself. Do not upload someone else’s photographs, or images and text copied from a manual, a datasheet, a catalogue, or another site.
 
-Photographing a product you took apart is exactly what R9lab is for, and those photographs will show brand names, logos, model numbers and the design of the product itself. That is expected and is not a problem: you are not promising your photographs are free of other people’s trademarks, only that the photographs are yours.
+Photographing a product you took apart is what R9lab is for. Those photographs will show brand names, logos, model numbers and the design of the product itself. That is expected. You are not promising your photographs are free of other people’s trademarks, only that the photographs are yours.
 
 If you are not sure you hold the rights to something, do not upload it.
 

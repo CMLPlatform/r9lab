@@ -65,9 +65,8 @@ def email_log_token(email: EmailStr) -> str:
     """Return the opaque label an address is logged under.
 
     Not a mask: `j***@gmail.com` still carries the domain, and with a timestamp and the
-    surrounding fields that can re-identify one person in a small research population;
-    which is why the masked form needed a CodeQL suppression at every call site. A keyed
-    digest keeps the only property operations actually needs, that two lines about the
+    surrounding fields that can re-identify one person in a small research population.
+    A keyed digest keeps the only property operations actually needs, that two lines about the
     same address match, and carries no address.
 
     Diagnosing a provider-wide failure still works: the send path logs the failure's class
@@ -81,8 +80,8 @@ def _send_failure_detail(exc: BaseException) -> str:
 
     Provider exceptions name the address they were refused for: aiosmtplib puts it in
     `SMTPRecipientRefused.args` and the whole refused list in `SMTPRecipientsRefused.args`,
-    so the exception text and its traceback would print the address that the surrounding
-    lines deliberately log only as an opaque token. The class and, where the provider gave
+    so the exception text and its traceback would print an address that the surrounding
+    lines log only as an opaque token. The class and, where the provider gave
     one, the SMTP response code are what diagnosis actually needs.
     """
     code = getattr(exc, "code", None)
@@ -223,11 +222,11 @@ async def send_registration_email(
     token: str,
     background_tasks: BackgroundTasks | None = None,
 ) -> None:
-    """Send a registration email with verification token."""
+    """Send the verification link to a new account."""
     verification_link = generate_token_link(token, "/verify")
     await send_templated_email(
         to_email=to_email,
-        subject="Welcome to R9lab — Verify Your Email",
+        subject="Welcome to R9lab: verify your email",
         template_name=REGISTRATION_TEMPLATE,
         template_body={"username": _display_name(username, to_email), "verification_link": verification_link},
         background_tasks=background_tasks,
@@ -240,11 +239,11 @@ async def send_reset_password_email(
     token: str,
     background_tasks: BackgroundTasks | None = None,
 ) -> None:
-    """Send a reset password email with the token."""
+    """Send the password reset link."""
     reset_link = generate_token_link(token, "/reset-password")
     await send_templated_email(
         to_email=to_email,
-        subject="Password Reset",
+        subject="Reset your R9lab password",
         template_name=ACCOUNT_RECOVERY_TEMPLATE,
         template_body={"username": _display_name(username, to_email), "reset_link": reset_link},
         background_tasks=background_tasks,
@@ -342,7 +341,7 @@ async def send_existing_account_notification(
         "You already have an R9lab account",
         (
             "<p>Someone tried to create an R9lab account with this email address, but you already "
-            "have one. If this was you, just log in — or reset your password if you have forgotten it. "
+            "have one. If this was you, sign in, or reset your password if you have forgotten it. "
             "If it was not you, you can safely ignore this email.</p>"
         ),
         "Existing-account notification",
@@ -423,11 +422,11 @@ async def send_verification_email(
     token: str,
     background_tasks: BackgroundTasks | None = None,
 ) -> None:
-    """Send a verification email with the token."""
+    """Send the verification link."""
     verification_link = generate_token_link(token, "/verify")
     await send_templated_email(
         to_email=to_email,
-        subject="Email Verification",
+        subject="Verify your R9lab email",
         template_name=VERIFICATION_TEMPLATE,
         template_body={"username": _display_name(username, to_email), "verification_link": verification_link},
         background_tasks=background_tasks,
@@ -442,7 +441,7 @@ async def send_post_verification_email(
     """Send a post-verification email."""
     await send_templated_email(
         to_email=to_email,
-        subject="Email Verified",
+        subject="Your R9lab email is verified",
         template_name=POST_VERIFICATION_TEMPLATE,
         template_body={"username": _display_name(username, to_email)},
         background_tasks=background_tasks,

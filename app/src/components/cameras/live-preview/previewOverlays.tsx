@@ -49,7 +49,7 @@ export function PreviewLoadingOverlay() {
     <View className="absolute inset-0 items-center justify-center gap-2" style={styles.overlay}>
       <ActivityIndicator size={24} />
       <AppText className="text-center text-primary-foreground">
-        {stalled ? "Still connecting — check the camera's network" : 'Loading preview…'}
+        {stalled ? "Still connecting. Check the camera's network" : 'Loading preview…'}
       </AppText>
     </View>
   );

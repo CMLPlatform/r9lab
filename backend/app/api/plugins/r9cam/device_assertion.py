@@ -117,7 +117,7 @@ async def _extract_bearer(request: Request) -> str:
     if not token:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Missing Authorization header.",
+            detail='Send an "Authorization: Bearer <assertion>" header.',
             headers={"WWW-Authenticate": "Bearer"},
         )
     return token

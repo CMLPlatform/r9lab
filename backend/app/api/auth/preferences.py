@@ -58,8 +58,7 @@ def load_user_preferences(payload: object | None) -> UserPreferences:
     """Return typed preferences from a stored JSON payload.
 
     Reading a user's own stored preferences must never fail the request: a value
-    that no longer validates (a removed enum member, a legacy key from before
-    ``extra="forbid"``) is dropped in favour of that field's default, and an
+    that no longer validates is dropped in favour of that field's default, and an
     invalid ``profile_visibility`` fails *closed* to private rather than public.
     """
     if not isinstance(payload, dict):

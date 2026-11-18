@@ -1022,7 +1022,7 @@ import pyarrow.parquet as pq
 records = pq.read_table("records.parquet")
 ```
 
-`manifest.csv` and `SHA256SUMS` are deliberately plain text: they are operational files for
+`manifest.csv` and `SHA256SUMS` are plain text: they are operational files for
 looking up a path or a checksum by hand, not dataset tables.
 
 The reference tables are frozen into the release rather than referenced remotely: a record
@@ -1052,7 +1052,7 @@ The full text is in `LICENSE.txt`.
 
 ### Trademarks are not licensed
 
-Teardown photographs of products show brand marks, logos and model numbers — that is
+Teardown photographs of products show brand marks, logos and model numbers. That is
 unavoidable in the subject matter. The licence covers the images and the data. It grants no
 rights in the trademarks visible in them; CC BY 4.0 says so in section 2(b)(2). Research,
 analysis, model training and publication of results are unaffected. If you intend to use
@@ -1159,8 +1159,8 @@ reuser credits the release, not each person who worked on it. The attribution st
 ## Contributor codes
 
 Every record carries the pseudonymous code of the account that authored it. The codes are
-stable across releases, so records can be grouped by contributor — which is what a
-contributor-level train/test split needs. No code resolves to a person in the released data.
+stable across releases, so records can be grouped by contributor. A contributor-level
+train/test split needs that. No code resolves to a person in the released data.
 
 | Code | Records |
 | --- | --- |
@@ -1172,7 +1172,7 @@ def render_changelog(meta: ReleaseMetadata, stats: BuildStats) -> str:
     """Render CHANGELOG.md."""
     return f"""# Changelog
 
-## v{meta.version} — {meta.released.isoformat()}
+## v{meta.version}: {meta.released.isoformat()}
 
 - First public release: {stats.records} records and {stats.images} images from contributors
   who accepted the contributor terms, licensed under {meta.licence_name}.
@@ -1770,7 +1770,7 @@ def write_review_extracts(
 ) -> None:
     """Write the extracts a human has to read before the release is published.
 
-    The exclusion list is here rather than in the archive on purpose: a record dropped from
+    The exclusion list is here rather than in the archive: a record dropped from
     a release is not part of it, but a maintainer still has to be able to see what went and
     why. A silently dropped record reads as "we never collected it".
     """
@@ -1813,7 +1813,7 @@ _UNIFORM_BORDER_STDDEV = 6.0
 def provenance_flags(path: Path, width: int, height: int) -> list[str]:
     """Return reasons why *path* may not be an in-house teardown photograph.
 
-    Heuristics only, and deliberately loose: this surfaces candidates for a
+    Heuristics only, and loose: this surfaces candidates for a
     third-party-copyright read-through, it does not adjudicate any of them.
     """
     reasons = []

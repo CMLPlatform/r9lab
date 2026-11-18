@@ -11,7 +11,7 @@ from app.core.config.core import settings
 def image_resize_limiter() -> anyio.CapacityLimiter:
     """Return the shared cap on concurrent image-resize thread-pool workers.
 
-    NOTE: a lazily-built process-wide singleton, deliberately not request-scoped
+    NOTE: a lazily-built process-wide singleton, not request-scoped
     DI. A request-scoped limiter would mean threading it through Request -> router
     -> handler -> service call chains across the data_collection/reference_data
     routers that call into this pipeline; that plumbing existed once and was

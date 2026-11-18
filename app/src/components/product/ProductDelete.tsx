@@ -49,13 +49,13 @@ export default function ProductDelete({ product, editMode, onDelete }: Props) {
  */
 function deleteMessage(product: Product): string {
   if (product.components === undefined) {
-    return `This deletes the ${entityLabel(product)}, any components under it, and all their photos and files. You cannot undo this.`;
+    return `This deletes the ${entityLabel(product)}, any components under it, and all their photos and files. You can't undo this.`;
   }
   const count = product.components.length;
   if (count === 0)
-    return `This deletes the ${entityLabel(product)} with its photos and files. You cannot undo this.`;
+    return `This deletes the ${entityLabel(product)} with its photos and files. You can't undo this.`;
   const children = count === 1 ? '1 component' : `${count} components`;
-  return `This also deletes its ${children}, everything recorded under them, and all their photos and files. You cannot undo this.`;
+  return `This also deletes its ${children}, everything recorded under them, and all their photos and files. You can't undo this.`;
 }
 
 const styles = {

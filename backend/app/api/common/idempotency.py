@@ -35,6 +35,10 @@ logger = logging.getLogger(__name__)
 # Pass as ``responses=IDEMPOTENCY_RESPONSES`` on each guarded route. 422 is left to FastAPI's
 # own entry (overriding it drops the ``HTTPValidationError`` schema); describe the
 # "key reused with a different body" case in the route docstring.
+_IN_FLIGHT_DETAIL = (
+    "A request with this Idempotency-Key is already being processed. Wait a moment, then retry with the same key."
+)
+
 IDEMPOTENCY_RESPONSES: dict[int | str, dict[str, str]] = {
     status.HTTP_409_CONFLICT: {"description": "A request with this Idempotency-Key is already being processed."},
     status.HTTP_503_SERVICE_UNAVAILABLE: {"description": "The idempotency store is unreachable; retry later."},
@@ -56,7 +60,7 @@ def validate_idempotency_key(raw: str | None) -> str | None:
     if not _KEY_PATTERN.fullmatch(raw):
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
-            detail="Idempotency-Key must be 1-128 visible ASCII characters.",
+            detail="Send an Idempotency-Key of 1 to 128 visible ASCII characters.",
         )
     return raw
 
@@ -108,20 +112,20 @@ async def _load_replay(redis: Redis, cache_key: str, body_hash: str) -> JSONResp
         # Claimed a moment ago but gone now (marker expired mid-flight): treat as still running.
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail="A request with this Idempotency-Key is already being processed.",
+            detail=_IN_FLIGHT_DETAIL,
         )
     payload = json.loads(stored)
     if payload.get("hash") != body_hash:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
-            detail="Idempotency-Key was already used with a different request body.",
+            detail="This Idempotency-Key went with a different request body. Use a new key for a new request.",
         )
     stored_status = payload.get("status")
     if stored_status is None:
         # Marker only: the first request claimed the key and is still running.
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail="A request with this Idempotency-Key is already being processed.",
+            detail=_IN_FLIGHT_DETAIL,
         )
     return JSONResponse(status_code=stored_status, content=payload["body"])
 
@@ -161,7 +165,7 @@ async def idempotent_request(
     if claimed is None:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Idempotency store unavailable. Retry later.",
+            detail="The idempotency store is unavailable. Retry in a few seconds.",
         )
     if not claimed:
         state.replay = await _load_replay(redis, cache_key, state.body_hash)

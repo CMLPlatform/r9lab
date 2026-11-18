@@ -11,7 +11,7 @@ export async function getPublicProfile(username: string): Promise<PublicProfileV
   });
 
   if (!response?.ok) {
-    await throwFromResponse(response, 'Failed to load profile');
+    await throwFromResponse(response, "Couldn't load the profile. Try again.");
   }
 
   return response.json();

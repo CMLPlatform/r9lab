@@ -35,8 +35,6 @@ function componentCreateUrl(product: Product): URL {
   return new URL(`${baseUrl}/${parentRoot}/${product.parentID}/components`);
 }
 
-// ─── API payload types ────────────────────────────────────────────────────────
-
 type ProductPayload = {
   name: string;
   brand?: string;
@@ -50,8 +48,6 @@ type ProductPayload = {
   depth_cm: number | null;
   circularity_properties: Product['circularityProperties'] | null;
 };
-
-// ─── Serialization helpers ────────────────────────────────────────────────────
 
 function toNullableNumber(value: number | undefined): number | null {
   return value ?? null;
@@ -93,7 +89,7 @@ const ACCEPT_HEADERS = { Accept: 'application/json' };
 
 async function throwOnError(response: Response, label: string): Promise<void> {
   if (response.ok) return;
-  await throwFromResponse(response, `Failed to ${label}`);
+  await throwFromResponse(response, `Couldn't ${label}. Try again.`);
 }
 
 /** The entity write landed but its media sync did not; callers must still refresh caches. */
@@ -155,7 +151,7 @@ async function saveNewProduct(product: Product, idempotencyKey?: string): Promis
     headers: idempotencyKey ? { ...JSON_HEADERS, 'Idempotency-Key': idempotencyKey } : JSON_HEADERS,
     body: JSON.stringify(toProductPayload(product)),
   });
-  await throwOnError(response, 'save product');
+  await throwOnError(response, 'save the product');
 
   const data = await response.json();
   product.id = data.id;
@@ -199,7 +195,7 @@ async function updateProduct(
 
   // A retry of a save that already landed changes nothing, which the API
   // accepts whatever version it names.
-  await throwOnError(productRes, 'update product');
+  await throwOnError(productRes, 'update the product');
   const saved = await productRes.json();
   savedVersions.set(id, saved.version);
 
@@ -234,7 +230,7 @@ async function updateProductImages(product: Product, originalImages: Product['im
       if (imagesToAdd.length > 1) {
         setImageUploadProgress({ current: i + 1, total: imagesToAdd.length });
       }
-      // biome-ignore lint/performance/noAwaitInLoops: sequential on purpose; parallel large uploads overwhelm the server.
+      // biome-ignore lint/performance/noAwaitInLoops: sequential, because parallel large uploads overwhelm the server.
       await addImage(product, imagesToAdd[i]);
     }
   } finally {
@@ -249,7 +245,7 @@ async function deleteImage(product: Product, image: { id: string }) {
   });
   // Already gone server-side: a retried save must not get stuck on it.
   if (response.status === 404) return;
-  await throwOnError(response, 'delete image');
+  await throwOnError(response, 'delete the image');
 }
 
 // The backend requires filename extension, declared MIME type, and sniffed
@@ -308,7 +304,7 @@ async function addImage(
     // A 20 MB lab photo takes about 30 s on a 5 Mbit/s uplink; slower links need the headroom.
     timeoutMs: 120_000,
   });
-  await throwOnError(response, 'upload image');
+  await throwOnError(response, 'upload the image');
 
   // Mutate the image in place so callers see the persisted id/url.
   const data = await response.json().catch(() => null);
@@ -366,7 +362,7 @@ async function updateProductVideos(product: Product, originalVideos: Product['vi
           method: 'DELETE',
           headers: ACCEPT_HEADERS,
         });
-        await throwOnError(response, 'delete video');
+        await throwOnError(response, 'delete the video');
       }),
     ...videosToUpdate
       .filter((vid) => vid.id)
@@ -376,18 +372,18 @@ async function updateProductVideos(product: Product, originalVideos: Product['vi
           headers: JSON_HEADERS,
           body: JSON.stringify({ url: vid.url, description: vid.description, title: vid.title }),
         });
-        await throwOnError(response, 'update video');
+        await throwOnError(response, 'update the video');
       }),
   ]);
 
   for (const vid of videosToAdd) {
-    // biome-ignore lint/performance/noAwaitInLoops: sequential on purpose; mirrors image uploads.
+    // biome-ignore lint/performance/noAwaitInLoops: sequential, to mirror image uploads.
     const response = await fetchWithAuth(new URL(`${baseUrl}/products/${product.id}/videos`), {
       method: 'POST',
       headers: JSON_HEADERS,
       body: JSON.stringify({ url: vid.url, description: vid.description, title: vid.title }),
     });
-    await throwOnError(response, 'add video');
+    await throwOnError(response, 'add the video');
   }
 }
 
@@ -397,5 +393,5 @@ export async function deleteProduct(product: Product): Promise<void> {
     method: 'DELETE',
     headers: ACCEPT_HEADERS,
   });
-  await throwOnError(response, 'delete product');
+  await throwOnError(response, 'delete the product');
 }

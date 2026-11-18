@@ -23,7 +23,7 @@ username=you@example.com&password=CHANGE_ME
 POST {{baseUrl}}/admin/cache/clear/stats
 Authorization: Bearer {{token}}
 
-### Clear any cache namespace: stats | reference-data | docs.
+### Clear any cache namespace: stats | profile-stats | reference-data | docs.
 POST {{baseUrl}}/admin/cache/clear/reference-data
 Authorization: Bearer {{token}}
 

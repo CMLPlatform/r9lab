@@ -109,7 +109,7 @@ describe('product gallery section components', () => {
       />,
     );
 
-    await fireEvent.press(screen.getByLabelText('Set up RPi camera'));
+    await fireEvent.press(screen.getByLabelText('Set up Raspberry Pi camera'));
     expect(onRpiCapture).toHaveBeenCalled();
   });
 
@@ -130,7 +130,7 @@ describe('product gallery section components', () => {
     const actions = [
       screen.getByLabelText('Take photo with camera'),
       screen.getByLabelText('Add photos from gallery'),
-      screen.getByLabelText('Capture from RPi camera'),
+      screen.getByLabelText('Capture from Raspberry Pi camera'),
     ];
     for (const action of actions) {
       expect(action.props.className).toContain('min-h-11');

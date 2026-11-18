@@ -6,10 +6,12 @@ from unittest.mock import AsyncMock, MagicMock, patch
 from uuid import uuid4
 
 import pytest
+from anyio import Path as AnyIOPath
 from fastapi import UploadFile
 from PIL import Image as PILImage
 from PIL.ExifTags import GPS, IFD
 from pydantic import ValidationError
+from sqlalchemy.exc import IntegrityError, OperationalError
 from starlette.datastructures import Headers
 
 from app.api.auth.roles import UserRole
@@ -18,6 +20,7 @@ from app.api.file_storage.crud import support_services
 from app.api.file_storage.crud.support_services import file_storage_service, image_storage_service
 from app.api.file_storage.exceptions import UploadTooLargeError
 from app.api.file_storage.models import File, Image, MediaParentType
+from app.api.file_storage.models.storage_filesystem import FileSystemStorage
 from app.api.file_storage.models.storage_s3 import S3Storage
 from app.api.file_storage.schemas import FileCreate, ImageCreateInternal
 
@@ -72,7 +75,7 @@ async def test_create_file_rejects_oversized_upload(mock_session: AsyncMock) -> 
         file=mock_file, description=TEST_FILE_DESC, parent_id=1, parent_type=MediaParentType.PRODUCT
     )
 
-    with pytest.raises(UploadTooLargeError, match="Maximum size: 50 MB"):
+    with pytest.raises(UploadTooLargeError, match="The limit is 50 MB"):
         await file_storage_service.create(mock_session, file_create, caps_role=UserRole.CONTRIBUTOR)
 
 
@@ -90,7 +93,7 @@ async def test_create_file_uses_configured_upload_size_limit(
         file=mock_file, description=TEST_FILE_DESC, parent_id=1, parent_type=MediaParentType.PRODUCT
     )
 
-    with pytest.raises(UploadTooLargeError, match="Maximum size: 2 MB"):
+    with pytest.raises(UploadTooLargeError, match="The limit is 2 MB"):
         await file_storage_service.create(mock_session, file_create, caps_role=UserRole.CONTRIBUTOR)
 
 
@@ -154,7 +157,7 @@ async def test_create_image_rejects_upload_over_the_uploader_role_cap(
         file=mock_file, description=TEST_IMAGE_DESC, parent_id=1, parent_type=MediaParentType.PRODUCT
     )
 
-    with pytest.raises(UploadTooLargeError, match=f"Maximum size: {limit_mb} MB"):
+    with pytest.raises(UploadTooLargeError, match=f"The limit is {limit_mb} MB"):
         await image_storage_service.create(mock_session, image_create, caps_role=caps_role)
 
 
@@ -192,7 +195,7 @@ async def test_create_image_uses_configured_upload_size_limit(
         file=mock_file, description=TEST_IMAGE_DESC, parent_id=1, parent_type=MediaParentType.PRODUCT
     )
 
-    with pytest.raises(UploadTooLargeError, match="Maximum size: 2 MB"):
+    with pytest.raises(UploadTooLargeError, match="The limit is 2 MB"):
         await image_storage_service.create(mock_session, image_create, caps_role=UserRole.CONTRIBUTOR)
 
 
@@ -307,3 +310,76 @@ async def test_create_image_charges_the_quota_for_the_stored_size(
     assert len(stored) < len(original) - 40_000
     mock_reserve.assert_awaited_once_with(mock_session, parent_id=1, upload_size_bytes=len(stored))
     assert db_image.upload_size_bytes == len(stored)
+
+
+def _text_upload() -> FileCreate:
+    upload = UploadFile(
+        file=BytesIO(b"hello"), filename=TEST_FILENAME, size=5, headers=Headers({"content-type": "text/plain"})
+    )
+    return FileCreate(file=upload, description=TEST_FILE_DESC, parent_id=1, parent_type=MediaParentType.PRODUCT)
+
+
+async def test_failed_commit_removes_the_stored_upload(
+    mock_session: AsyncMock, mocker: MockerFixture, tmp_path: Path
+) -> None:
+    """A commit that fails after the bytes are stored leaves no file without a row."""
+    mocker.patch.object(file_storage_service, "get_storage", return_value=FileSystemStorage(str(tmp_path)))
+    mock_session.commit.side_effect = IntegrityError("INSERT", {}, Exception("duplicate key"))
+
+    with pytest.raises(IntegrityError):
+        await file_storage_service.create(mock_session, _text_upload(), caps_role=UserRole.CONTRIBUTOR)
+
+    assert [path async for path in AnyIOPath(tmp_path).iterdir()] == []
+
+
+async def test_a_commit_lost_with_its_connection_keeps_the_stored_upload(
+    mock_session: AsyncMock, mocker: MockerFixture, caplog: pytest.LogCaptureFixture
+) -> None:
+    """The row may have committed before the connection dropped, so its bytes must stay."""
+    storage = MagicMock()
+    storage.write_upload = AsyncMock(return_value="stored.txt")
+    storage.delete = AsyncMock()
+    mocker.patch.object(file_storage_service, "get_storage", return_value=storage)
+    mock_session.commit.side_effect = OperationalError(
+        "COMMIT", {}, Exception("connection reset"), connection_invalidated=True
+    )
+
+    with pytest.raises(OperationalError):
+        await file_storage_service.create(mock_session, _text_upload(), caps_role=UserRole.CONTRIBUTOR)
+
+    storage.delete.assert_not_awaited()
+    assert any(r.levelname == "WARNING" and "Kept stored upload stored.txt" in r.getMessage() for r in caplog.records)
+
+
+async def test_a_failed_cleanup_does_not_hide_the_commit_error(
+    mock_session: AsyncMock, mocker: MockerFixture, caplog: pytest.LogCaptureFixture
+) -> None:
+    """When removing the stored upload also fails, the commit error still reaches the caller."""
+    storage = MagicMock()
+    storage.write_upload = AsyncMock(return_value="stored.txt")
+    storage.delete = AsyncMock(side_effect=OSError("storage down"))
+    mocker.patch.object(file_storage_service, "get_storage", return_value=storage)
+    mock_session.commit.side_effect = IntegrityError("INSERT", {}, Exception("duplicate key"))
+
+    with pytest.raises(IntegrityError):
+        await file_storage_service.create(mock_session, _text_upload(), caps_role=UserRole.CONTRIBUTOR)
+
+    storage.delete.assert_awaited_once_with("stored.txt")
+    assert "stored.txt" in caplog.text
+
+
+async def test_delete_succeeds_when_storage_cleanup_fails(mock_session: AsyncMock) -> None:
+    """The row is committed away first, so a storage error afterwards is logged, not raised."""
+    mock_db_file = MagicMock(spec=File)
+
+    with (
+        patch("app.api.file_storage.crud.support_services.require_locked_model", return_value=mock_db_file),
+        patch(
+            "app.api.file_storage.crud.support_services.delete_file_from_storage",
+            new=AsyncMock(side_effect=OSError("storage down")),
+        ),
+        patch("app.api.file_storage.crud.support_services.release_product_upload_quota_for_media", new=AsyncMock()),
+    ):
+        await file_storage_service.delete(mock_session, uuid4())
+
+    mock_session.commit.assert_awaited_once()

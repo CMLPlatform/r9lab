@@ -3,6 +3,8 @@ import { designTokens } from '@/theme/tokens.generated';
 /** Maintainer contact, shown wherever a user needs a human. Mirrors www's PUBLIC_CONTACT_EMAIL default. */
 export const SUPPORT_EMAIL = 'info@r9lab.io';
 
+export const SUSPENDED_ACCOUNT_MESSAGE = `Your account has been suspended. Email ${SUPPORT_EMAIL} if you think this is a mistake.`;
+
 export const spacing = {
   xs: 4,
   sm: 8,

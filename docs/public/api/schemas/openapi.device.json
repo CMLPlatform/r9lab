@@ -406,7 +406,7 @@
       "identifier": "Apache-2.0",
       "name": "Apache-2.0"
     },
-    "title": "R9lab \u2013 Data Collection API",
+    "title": "R9lab Data Collection API",
     "version": "1.0.0",
     "x-api-major": "v1",
     "x-api-version": "1.0.0",
@@ -416,7 +416,7 @@
   "paths": {
     "/v1/plugins/r9cam/device/cameras/{camera_id}/image-upload": {
       "post": {
-        "description": "Called by the Pi after a successful capture. Authenticated with a short-lived device assertion (same credential used by the WebSocket relay). The Pi provides the JPEG body plus two JSON blobs: `capture_metadata` (libcamera metadata) and `upload_metadata` (opaque dict forwarded by whichever caller triggered the capture, typically `{product_id, description}`). The backend stores the image via the normal image storage service and returns a tiny ack envelope the Pi consumes.",
+        "description": "The Raspberry Pi camera calls this after a successful capture. It signs in with a short-lived device assertion (the same credential as the WebSocket relay). The camera sends the JPEG body plus two JSON blobs: `capture_metadata` (libcamera metadata) and `upload_metadata` (opaque dict forwarded by whichever caller triggered the capture, typically `{product_id, description}`). The backend stores the image via the normal image storage service and returns a short acknowledgement to the camera.",
         "operationId": "receive_camera_upload_v1_plugins_r9cam_device_cameras__camera_id__image_upload_post",
         "parameters": [
           {
@@ -462,7 +462,7 @@
             "description": "Validation Error"
           }
         },
-        "summary": "Internal: receive an image pushed directly from a paired Raspberry Pi",
+        "summary": "Internal: receive an image pushed directly from a paired Raspberry Pi camera",
         "tags": [
           "r9cam-device"
         ],
@@ -473,7 +473,7 @@
     },
     "/v1/plugins/r9cam/device/cameras/{camera_id}/preview-thumbnail-upload": {
       "post": {
-        "description": "Called by the Pi's background thumbnail worker. Authenticated with the same short-lived device assertion used by the WebSocket relay. Stores a deterministic per-camera JPEG cache file for camera-card previews without creating an Image database row.",
+        "description": "The Raspberry Pi camera's background thumbnail worker calls this. It signs in with the same short-lived device assertion used by the WebSocket relay. Stores a deterministic per-camera JPEG cache file for camera-card previews without creating an Image database row.",
         "operationId": "receive_preview_thumbnail_upload_v1_plugins_r9cam_device_cameras__camera_id__preview_thumbnail_upload_post",
         "parameters": [
           {
@@ -519,7 +519,7 @@
             "description": "Validation Error"
           }
         },
-        "summary": "Internal: receive a cached preview thumbnail pushed directly from a paired Raspberry Pi",
+        "summary": "Internal: receive a cached preview thumbnail pushed directly from a paired Raspberry Pi camera",
         "tags": [
           "r9cam-device"
         ],
@@ -530,7 +530,7 @@
     },
     "/v1/plugins/r9cam/device/cameras/{camera_id}/self": {
       "delete": {
-        "description": "Called by the Pi when the user triggers unpair from the local /setup page. Authenticates via the device's assertion. Deletes the camera from the database so the backend no longer shows it as offline.",
+        "description": "The Raspberry Pi camera calls this when the user unpairs it from the local /setup page. It signs in with its device assertion. The backend deletes the camera, so it stops listing it as offline.",
         "operationId": "self_unpair_camera_v1_plugins_r9cam_device_cameras__camera_id__self_delete",
         "parameters": [
           {
@@ -559,7 +559,7 @@
             "description": "Validation Error"
           }
         },
-        "summary": "Pi-initiated self-unpair",
+        "summary": "Unpair a camera from the camera itself",
         "tags": [
           "r9cam-device"
         ],
@@ -604,7 +604,7 @@
             "description": "Validation Error"
           }
         },
-        "summary": "Poll pairing status (called by RPi)",
+        "summary": "Poll pairing status (called by the camera)",
         "tags": [
           "RPi Camera Pairing"
         ],
@@ -649,7 +649,7 @@
             "description": "Validation Error"
           }
         },
-        "summary": "Register a pairing code (called by RPi)",
+        "summary": "Register a pairing code (called by the camera)",
         "tags": [
           "RPi Camera Pairing"
         ],

@@ -141,7 +141,7 @@ describe('completeMfaChallenge', () => {
     fetchWithTimeout.mockResolvedValueOnce({ ok: true, status: 204 } as never);
 
     await expect(completeMfaChallenge('mfa-token', '123456')).rejects.toThrow(
-      'Invalid MFA login response.',
+      'Something went wrong on our side. Try again in a moment.',
     );
   });
 
@@ -267,7 +267,9 @@ describe('TOTP enrolment', () => {
       json: async () => ({ setup_token: 'setup-token', secret: 'BASE32SECRET' }),
     } as never);
 
-    await expect(startTotpSetup()).rejects.toThrow('Invalid MFA setup response.');
+    await expect(startTotpSetup()).rejects.toThrow(
+      'Something went wrong on our side. Try again in a moment.',
+    );
   });
 
   it('surfaces the server detail when setup is refused', async () => {
@@ -424,7 +426,7 @@ describe('MFA challenge token persistence', () => {
       fetchWithTimeout.mockResolvedValueOnce({ ok: true, status: 200, json: async () => body });
 
       await expect(completeMfaChallenge('mfa-token', '123456')).rejects.toThrow(
-        'Invalid MFA login response.',
+        'Something went wrong on our side. Try again in a moment.',
       );
       expect(persistAccessToken).not.toHaveBeenCalled();
     },
@@ -440,7 +442,7 @@ describe('MFA challenge token persistence', () => {
     });
 
     await expect(completeMfaChallenge('mfa-token', '123456')).rejects.toThrow(
-      'Invalid MFA login response.',
+      'Something went wrong on our side. Try again in a moment.',
     );
     expect(persistAccessToken).not.toHaveBeenCalled();
   });
@@ -449,7 +451,7 @@ describe('MFA challenge token persistence', () => {
     fetchWithTimeout.mockResolvedValueOnce({ ok: true, json: async () => ({ status: 'ok' }) });
 
     await expect(claimOAuthMfaHandoff('handoff-token')).rejects.toThrow(
-      'Invalid MFA handoff response.',
+      'Something went wrong on our side. Try again in a moment.',
     );
   });
 });

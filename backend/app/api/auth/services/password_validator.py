@@ -88,7 +88,7 @@ async def validate_password(
     if len(password) < MIN_PASSWORD_LENGTH:
         raise InvalidPasswordException(reason=f"Password should be at least {MIN_PASSWORD_LENGTH} characters")
     if normalized_email in normalized_password or _password_contains_context(normalized_password, email_local_part):
-        raise InvalidPasswordException(reason="Password should not contain e-mail")
+        raise InvalidPasswordException(reason="Password must not contain your email address")
     if _password_contains_context(normalized_password, username):
         raise InvalidPasswordException(reason="Password should not contain username")
     if common_password_checker is not None:
@@ -101,5 +101,5 @@ async def validate_password(
         breach_count = await check_pwned_password(password, http_client)
         if breach_count > 0:
             raise InvalidPasswordException(
-                reason="Password has appeared in a known data breach. Please choose a different password."
+                reason="Password has appeared in a known data breach. Choose a different password."
             )

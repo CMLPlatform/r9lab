@@ -70,7 +70,7 @@ export default function VerifyEmailScreen() {
                 ) : (
                   <>
                     <AppText variant="body" className="text-center">
-                      If you signed up in the app, you're still signed in there — just head back.
+                      If you signed up in the app, you're still signed in there. Go back to the app.
                     </AppText>
                     <AppButton variant="primary" onPress={goToLogin}>
                       Sign in here

@@ -13,16 +13,16 @@ just dev
 ```
 
 The API is then available at <http://127.0.0.1:8010>. Docker Compose runs PostgreSQL and Redis;
-Redis is required at startup. Put backend-only non-secret overrides in `.env.dev`; local secrets live
-in `../secrets/dev/`. Use `SEED_DUMMY_DATA=true just dev-migrate` (from the root) for sample data.
+Redis is required at startup. Put backend-only non-secret overrides in `.env.dev`. Local secrets live
+in `../secrets/dev/`. For sample data, run `SEED_DUMMY_DATA=true just dev-migrate` from the root.
 
-`ENVIRONMENT` is required, and the backend fails fast without it. `just dev` does not export it, so
-set `ENVIRONMENT=dev` in `.env.dev` or export it in your shell.
+`ENVIRONMENT` is required, and the backend fails at startup without it. `just dev` does not export
+it, so set `ENVIRONMENT=dev` in `.env.dev` or export it in your shell.
 
 - Filtered public contracts: <http://127.0.0.1:8010/openapi.public.json> and
   <http://127.0.0.1:8010/openapi.device.json>
 - Public API reference UI: <http://127.0.0.1:8012/api/public/>
-- Public device/plugin API reference UI: <http://127.0.0.1:8012/api/device/>
+- Public device and plugin API reference UI: <http://127.0.0.1:8012/api/device/>
 - Development/testing-only internal contracts: <http://127.0.0.1:8010/openapi.json> and
   <http://127.0.0.1:8010/openapi.admin.json>
 
@@ -41,36 +41,36 @@ just migrate-create "description"  # create a migration from the current model c
 just fix           # lint autofix + format
 ```
 
-After `uv add --group <g>`, run `uv sync --all-groups --frozen` (or `just install`). `uv add` syncs only
-the default groups plus `<g>`, which removes alembic and the test dependencies from `.venv`. The
-error then reads `cannot import name 'command' from 'alembic'`.
+After `uv add --group <g>`, run `uv sync --all-groups --frozen` (or `just install`). `uv add` syncs
+only the default groups plus `<g>`, which removes alembic and the test dependencies from `.venv`.
+The error then reads `cannot import name 'command' from 'alembic'`.
 
 The disposable-email validator starts from the committed list in
 [app/api/auth/resources/disposable_email_domains.txt](app/api/auth/resources/disposable_email_domains.txt),
-so startup works offline. The background refresh or the command above updates it.
+so startup works offline. The background refresh and the command above update it.
 
 Seed payloads live under [data/seed/](data/seed/) and ship in the migrations image. `dummy_data.json`
 seeds one full teardown (an HP ProBook 430 G2 with a component tree and a photograph per part). Seed
-photographs must stay wider than 800px: `generate_thumbnails` skips widths at or above the original's,
-and a narrower file loses its `srcset`.
+photographs must stay wider than 800px. `generate_thumbnails` skips widths at or above the
+original's, so a narrower file loses its `srcset`.
 [tests/integration/db/test_dummy_seed.py](tests/integration/db/test_dummy_seed.py) checks this.
 
 To use `SEED_CPV_*` or `SEED_HS_CATEGORIES`, rebuild `backend/Dockerfile.migrations` with
-`BACKEND_MIGRATIONS_INCLUDE_TAXONOMY_SEED_DEPS=true` to include the `seed-taxonomies` dependency
+`BACKEND_MIGRATIONS_INCLUDE_TAXONOMY_SEED_DEPS=true`. That adds the `seed-taxonomies` dependency
 group.
 
-[`backend/Dockerfile`](Dockerfile) is multi-target: the default `runtime` stage builds the production
-image; `--target dev` builds the hot-reload image used by `compose.dev.yaml`.
+[`backend/Dockerfile`](Dockerfile) has two targets. The default `runtime` stage builds the production
+image. `--target dev` builds the hot-reload image that `compose.dev.yaml` uses.
 
 ## Backend Architecture
 
-- Routers are thin; domain read paths are local `select(...).where(...)` helpers.
+- Routers are thin. Domain read paths are local `select(...).where(...)` helpers.
 - The shared CRUD kernel is `require_model`, `require_models`, `page_models`, `exists`, and
   persistence helpers.
 - Tree endpoints (`/v1/categories/tree`, `/v1/products/{product_id}/components/tree`) use bounded
-  loaders plus pure serialization, never lazy ORM traversal during serialization.
+  loaders and pure serialization. They never traverse the ORM lazily during serialization.
 - User values become bind parameters. Dynamic identifiers such as sort or facet fields pass an
-  allowlist before SQL is built. Raw SQL stays static.
+  allowlist before the SQL is built. Raw SQL stays static.
 - Product reads: `app/api/data_collection/routers/product_read_routers.py`; tree queries:
   `crud/product_tree_queries.py`; mutations: `crud/product_commands.py`.
 
@@ -109,7 +109,7 @@ EMAIL_REPLY_TO=relab@example.com
 ```
 
 Store the SMTP password in `../secrets/<env>/smtp_password`. Use an app password for a personal
-Google account, or the Workspace SMTP relay when domain policy allows it. Keep SPF, DKIM, and DMARC
+Google account, or the Workspace SMTP relay when domain policy allows it. Keep SPF, DKIM and DMARC
 aligned for the sending domain. Google references:
 [send email with SMTP](https://support.google.com/a/answer/176600) and
 [email authentication](https://support.google.com/a/answer/10583557).
@@ -128,8 +128,9 @@ MICROSOFT_GRAPH_SENDER_USER=relab@example.edu
 ```
 
 Store the Graph client secret in `../secrets/<env>/microsoft_graph_client_secret`. Before
-production: create a dedicated mailbox, register an Entra app, grant it the application permission
-`Mail.Send`, and restrict it to that mailbox with an application access policy. Microsoft references:
+production, create a dedicated mailbox and register an Entra app. Grant the app the application
+permission `Mail.Send`, and restrict it to that mailbox with an application access policy.
+Microsoft references:
 [send mail with Graph](https://learn.microsoft.com/en-us/graph/api/user-sendmail),
 [client credentials](https://learn.microsoft.com/en-us/entra/identity-platform/v2-oauth2-client-creds-grant-flow),
 and
@@ -139,5 +140,5 @@ Newsletter delivery is not part of the runtime API.
 
 ## More
 
-Test tiers and conventions: [tests/README.md](tests/README.md). Schema-change rules and OpenAPI
-examples: [CONTRIBUTING.md](../.github/CONTRIBUTING.md#backend-development).
+Test tiers and conventions are in [tests/README.md](tests/README.md). Schema-change rules and
+OpenAPI examples are in [CONTRIBUTING.md](../.github/CONTRIBUTING.md#backend-development).

@@ -104,7 +104,7 @@ export function useProductPageScreen(formOptions: UseProductFormOptions) {
         title: hasUnsavedChanges ? 'Discard changes?' : 'Stream still active',
         message: hasUnsavedChanges
           ? 'You have unsaved changes. Are you sure you want to discard them and leave the screen?'
-          : "You're currently live on YouTube. Leaving won't stop the stream — use Stop first.",
+          : "You're currently live on YouTube. Leaving won't stop the stream. Use Stop first.",
         buttons: hasUnsavedChanges
           ? [
               { text: "Don't leave" },

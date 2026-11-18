@@ -83,7 +83,7 @@ def ensure_storage_directories() -> None:
             with tempfile.NamedTemporaryFile(dir=path, prefix=".write-test-", delete=True):
                 pass
         except OSError as e:
-            msg = f"Storage path is not writable: {path}"
+            msg = f"Storage path is not writable: {path}. Check the directory's owner and mode."
             raise RuntimeError(msg) from e
 
 

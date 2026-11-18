@@ -99,6 +99,8 @@ export default function Products() {
               activeDatePreset={screen.activeDatePreset}
               activeBrands={screen.activeBrands}
               activeProductTypes={screen.activeProductTypes}
+              hasComponents={screen.hasComponents}
+              complete={screen.complete}
               dateMenuVisible={filters.dateMenuVisible}
               brandModalVisible={filters.brandModalVisible}
               typeModalVisible={filters.typeModalVisible}
@@ -111,6 +113,8 @@ export default function Products() {
               typeSearch={filters.typeSearch}
               onToggleMine={filters.toggleMine}
               onClearMine={filters.clearMine}
+              onToggleHasComponents={filters.toggleHasComponents}
+              onToggleComplete={filters.toggleComplete}
               onSetDateMenuVisible={filters.setDateMenuVisible}
               onDateChange={filters.applyDatePreset}
               onSetBrandModalVisible={filters.setBrandModalVisible}
@@ -144,6 +148,13 @@ export default function Products() {
             total={list.total}
             hasNextPage={list.hasNextPage}
             searchQuery={search.query}
+            isFiltered={
+              screen.activeDatePreset !== null ||
+              screen.activeBrands.length > 0 ||
+              screen.activeProductTypes.length > 0 ||
+              screen.hasComponents ||
+              screen.complete
+            }
             isAuthenticated={screen.isAuthenticated}
             onScroll={list.onScroll}
             onRefresh={handleRetry}

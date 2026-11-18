@@ -53,7 +53,7 @@ export async function fetchProductFiles(product: Product): Promise<ApiFileRead[]
   const url = filesUrl(product);
   url.searchParams.set('size', '50');
   const response = await fetchWithAuth(url, { method: 'GET' });
-  if (!response.ok) await throwFromResponse(response, 'Failed to load files');
+  if (!response.ok) await throwFromResponse(response, "Couldn't load the files. Try again.");
   const data = await response.json();
   return (data.items ?? []) as ApiFileRead[];
 }
@@ -74,7 +74,7 @@ export async function uploadProductFile(
     throw new Error(`${file.name} is not a supported research file type.`);
   }
   if (typeof file.size === 'number' && file.size > MAX_RESEARCH_FILE_BYTES) {
-    throw new Error('File is too large. Please use a file smaller than 50 MB.');
+    throw new Error('File is too large. Use a file smaller than 50 MB.');
   }
 
   const body = new FormData();
@@ -89,7 +89,7 @@ export async function uploadProductFile(
   } else {
     const blob = await (await fetch(file.uri)).blob();
     if (blob.size > MAX_RESEARCH_FILE_BYTES) {
-      throw new Error('File is too large. Please use a file smaller than 50 MB.');
+      throw new Error('File is too large. Use a file smaller than 50 MB.');
     }
     body.append('file', blob, file.name);
   }
@@ -100,7 +100,7 @@ export async function uploadProductFile(
     body,
     timeoutMs: 120_000,
   });
-  if (!response.ok) await throwFromResponse(response, 'Failed to upload file');
+  if (!response.ok) await throwFromResponse(response, "Couldn't upload the file. Try again.");
   return (await response.json()) as ApiFileRead;
 }
 
@@ -110,5 +110,5 @@ export async function deleteProductFile(product: Product, fileId: string): Promi
   });
   // Already gone server-side is the outcome the caller wanted.
   if (response.status === 404) return;
-  if (!response.ok) await throwFromResponse(response, 'Failed to remove file');
+  if (!response.ok) await throwFromResponse(response, "Couldn't remove the file. Try again.");
 }

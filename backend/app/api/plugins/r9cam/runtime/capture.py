@@ -64,10 +64,7 @@ async def capture_and_store_image(
     status_value = str(capture_data.get("status") or ImageCaptureStatus.UPLOADED)
     if status_value == ImageCaptureStatus.QUEUED:
         raise InvalidCameraResponseError(
-            details=(
-                "Camera captured the image but the synchronous push to the backend failed; "
-                "it was queued on the device for retry. Please try again."
-            ),
+            details=("The camera took the image but could not send it, and queued it for retry. Try again."),
         )
     if status_value != ImageCaptureStatus.UPLOADED:
         raise InvalidCameraResponseError(
@@ -90,8 +87,8 @@ async def capture_and_store_image(
     if image is None:
         raise InvalidCameraResponseError(
             details=(
-                f"Camera reported a successful upload but image {image_id_hex} was not found "
-                "in the backend database — upload may have been written to a different session."
+                f"The camera reported a successful upload, but the backend has no image {image_id_hex}. "
+                "Retry the capture."
             ),
         )
     return image

@@ -327,7 +327,9 @@ describe('Login screen', () => {
     });
 
     await waitFor(() => {
-      expect(screen.getByText('Invalid email or password')).toBeOnTheScreen();
+      expect(
+        screen.getByText('Email or password is wrong. Check both, or reset your password.'),
+      ).toBeOnTheScreen();
     });
     expect(screen.getByLabelText('Password').props.accessibilityDescribedBy).toBe(
       'login-password-error',

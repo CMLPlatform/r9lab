@@ -49,14 +49,14 @@ export function ProfileSecuritySection({
               <View className="flex-1">
                 <AppText className="font-semibold">Two-step verification</AppText>
                 <AppText variant="caption" className="mt-px text-muted-foreground">
-                  On — you enter a code at login
+                  On. You enter a code at login
                 </AppText>
               </View>
               <Icon name="circle-check-big" size={22} color={theme.tokens.status.success} />
             </View>
             <ProfileAction
               title="Generate new recovery codes"
-              subtitle="Replace your saved backup codes"
+              subtitle="Replace your saved recovery codes"
               onPress={beginRegenerate}
               triggerRef={regenerateTriggerRef}
             />

@@ -114,12 +114,14 @@ export function useOAuthAssociations({
 
     if (authorization.status === STEP_UP_REQUIRED_STATUS && !currentPassword) {
       throw new OAuthStepUpRequiredError(
-        authorization.detail || 'Current password is required to link a social login.',
+        authorization.detail || 'Enter your current password to link a social login.',
       );
     }
 
     if (!(authorization.ok && authorization.authorizationUrl)) {
-      throw new Error(authorization.detail || 'Failed to reach association endpoint.');
+      throw new Error(
+        authorization.detail || "Couldn't reach the sign-in service. Try again in a moment.",
+      );
     }
 
     if (!isAllowedOAuthRedirectUrl(authorization.authorizationUrl)) {
@@ -166,7 +168,7 @@ export function useOAuthAssociations({
         'Linking a YouTube account changes how you can sign in, so confirm your password.',
         (error) =>
           feedback.error(
-            `Failed to start YouTube authorization: ${getErrorMessage(error, 'Try again.')}`,
+            `Couldn't start YouTube authorization: ${getErrorMessage(error, 'Try again.')}`,
             'Authorization failed',
           ),
         mfaEnabled,
@@ -195,7 +197,7 @@ export function useOAuthAssociations({
       'Linking a social login changes how you can sign in, so confirm your password.',
       (error) =>
         feedback.error(
-          `Failed to start link flow: ${getErrorMessage(error, 'Try again.')}`,
+          `Couldn't start linking: ${getErrorMessage(error, 'Try again.')}`,
           'Link failed',
         ),
       mfaEnabled,

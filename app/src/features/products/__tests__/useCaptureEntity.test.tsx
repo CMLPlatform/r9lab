@@ -16,7 +16,7 @@ const mockError = jest.fn();
 let mockIsPaused = false;
 
 jest.mock('@/features/products/queries', () => ({
-  QUEUED_OFFLINE_LABEL: 'Queued — sends when online',
+  QUEUED_OFFLINE_LABEL: 'Queued. Sends when online',
   useSaveProductMutation: () => ({
     mutateAsync: mockMutateAsync,
     isPending: false,
@@ -366,7 +366,7 @@ describe('useCaptureEntity', () => {
           idempotencyKey: expect.any(String),
         }),
       );
-      expect(mockToast).toHaveBeenCalledWith('Bolt queued — sends when online');
+      expect(mockToast).toHaveBeenCalledWith('Bolt queued. Sends when online');
       expect(result.current.name).toBe('');
       expect(result.current.images).toEqual([]);
       expect(result.current.amount).toBe(1);
@@ -500,7 +500,7 @@ describe('useCaptureEntity', () => {
 
     expect(result.current.isPaused).toBe(true);
     expect(mockToast).toHaveBeenCalledTimes(1);
-    expect(mockToast).toHaveBeenCalledWith('Queued — sends when online');
+    expect(mockToast).toHaveBeenCalledWith('Queued. Sends when online');
   });
 
   it('does not toast when the save mutation is not paused', async () => {

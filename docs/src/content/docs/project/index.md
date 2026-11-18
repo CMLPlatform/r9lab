@@ -10,7 +10,7 @@ framing, current priorities, and the path from live records to curated dataset r
 
 Circular-economy and industrial-ecology research depends on detailed product data: what things are
 made of, how they come apart, and what evidence backs those claims. Without it, life-cycle
-assessment and material flow analysis cannot quantify environmental impacts, identify recovery
+assessment (LCA) and material flow analysis cannot quantify environmental impacts, identify recovery
 pathways, or inform circular design. That data is scarce, mostly closed, and slow to produce.
 Producers tend to hold it as proprietary, and small expert teams sampling products by hand cannot
 keep pace with everything entering the market. The Global LCA Data Access network hosted roughly

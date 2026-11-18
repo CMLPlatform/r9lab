@@ -50,7 +50,7 @@ async def test_relay_via_websocket_returns_retry_after_when_camera_is_disconnect
         await relay_mod.relay_via_websocket(camera_id, "GET", "/camera", redis=redis)  # ty: ignore[invalid-argument-type]
 
     assert exc_info.value.status_code == 503
-    assert exc_info.value.detail == "Camera is not connected via WebSocket."
+    assert exc_info.value.detail == "The camera is offline. Check its power and network, then retry."
     assert exc_info.value.headers == {"Retry-After": "2"}
 
 
@@ -141,7 +141,7 @@ async def test_mid_command_disconnect_skips_cross_worker_bridge() -> None:
         await relay_mod.relay_via_websocket(camera_id, "GET", "/camera", redis=redis)  # ty: ignore[invalid-argument-type]
 
     assert exc_info.value.status_code == 503
-    assert exc_info.value.detail == "Camera is not connected via WebSocket."
+    assert exc_info.value.detail == "The camera is offline. Check its power and network, then retry."
     relay_cross_worker.assert_not_awaited()
 
 
@@ -163,7 +163,7 @@ async def test_cross_worker_relay_fast_fails_when_camera_not_marked_online() -> 
         await relay_mod.relay_via_websocket(camera_id, "GET", "/camera", redis=redis)  # ty: ignore[invalid-argument-type]
 
     assert exc_info.value.status_code == 503
-    assert exc_info.value.detail == "Camera is not connected via WebSocket."
+    assert exc_info.value.detail == "The camera is offline. Check its power and network, then retry."
     relay_cross_worker.assert_not_awaited()
 
 
@@ -210,7 +210,7 @@ async def test_cross_worker_generic_error_still_surfaces_as_503() -> None:
         await relay_mod.relay_via_websocket(camera_id, "GET", "/camera", redis=redis)  # ty: ignore[invalid-argument-type]
 
     assert exc_info.value.status_code == 503
-    assert exc_info.value.detail == "Camera is not connected via WebSocket."
+    assert exc_info.value.detail == "The camera is offline. Check its power and network, then retry."
 
 
 async def test_cross_worker_relay_forwards_trace_headers() -> None:

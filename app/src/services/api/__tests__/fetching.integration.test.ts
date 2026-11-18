@@ -182,7 +182,7 @@ describe('Fetching API Service logic', () => {
         ),
       );
 
-      await expect(searchProductBrands()).rejects.toThrow('Failed to fetch');
+      await expect(searchProductBrands()).rejects.toThrow("Couldn't load the list");
     });
 
     it('sends search param when searching brands', async () => {
@@ -333,7 +333,7 @@ describe('Fetching API Service logic', () => {
     it('throws a generic HTTP error for non-404 failures', async () => {
       server.use(http.get(`${API_URL}/products/99`, () => HttpResponse.json({}, { status: 500 })));
 
-      await expect(getBaseProduct(99)).rejects.toThrow('Failed to fetch product');
+      await expect(getBaseProduct(99)).rejects.toThrow("Couldn't load the product. Try again.");
     });
   });
 
@@ -488,6 +488,21 @@ describe('Fetching API Service logic', () => {
       expect(capturedUrl?.searchParams.getAll('product_type_name[in]')).toHaveLength(1);
     });
 
+    it('sends has_components and completeness[ge] for the record filters', async () => {
+      let capturedUrl: URL | undefined;
+      server.use(
+        http.get(`${API_URL}/products`, ({ request }) => {
+          capturedUrl = new URL(request.url);
+          return HttpResponse.json(makePage([]));
+        }),
+      );
+
+      await products({ hasComponents: true, complete: true });
+
+      expect(capturedUrl?.searchParams.get('has_components')).toBe('true');
+      expect(capturedUrl?.searchParams.get('completeness[ge]')).toBe('1');
+    });
+
     it('omits brand[in], order_by, and product_type_name[in] when arrays are empty', async () => {
       let capturedUrl: URL | undefined;
       server.use(
@@ -502,12 +517,14 @@ describe('Fetching API Service logic', () => {
       expect(capturedUrl?.searchParams.has('brand[in]')).toBe(false);
       expect(capturedUrl?.searchParams.has('order_by')).toBe(false);
       expect(capturedUrl?.searchParams.has('product_type_name[in]')).toBe(false);
+      expect(capturedUrl?.searchParams.has('has_components')).toBe(false);
+      expect(capturedUrl?.searchParams.has('completeness[ge]')).toBe(false);
     });
 
     it('throws on HTTP error', async () => {
       server.use(http.get(`${API_URL}/products`, () => HttpResponse.json({}, { status: 500 })));
 
-      await expect(products()).rejects.toThrow('Failed to fetch products');
+      await expect(products()).rejects.toThrow("Couldn't load products. Try again.");
     });
   });
 
@@ -566,7 +583,7 @@ describe('Fetching API Service logic', () => {
     it('throws on non-401 HTTP error', async () => {
       server.use(http.get(`${API_URL}/products`, () => HttpResponse.json({}, { status: 500 })));
 
-      await expect(products({ owner: 'me' })).rejects.toThrow('Failed to fetch products');
+      await expect(products({ owner: 'me' })).rejects.toThrow("Couldn't load products. Try again.");
     });
   });
 

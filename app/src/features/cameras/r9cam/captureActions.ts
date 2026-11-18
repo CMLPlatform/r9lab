@@ -91,7 +91,7 @@ export function useCameraCaptureActions({
             // The raw error is for the log; the toast gets a sentence a
             // contributor can act on.
             logError('Capture failed', err);
-            toast('Capture failed — check the cameras are online and try again.');
+            toast('Capture failed. Check the cameras are online and try again.');
           },
         },
       );
@@ -107,7 +107,7 @@ export function useCameraCaptureActions({
     (camera: CameraReadWithStatus) => {
       if (!captureModeEnabled) return;
       if (!isCameraReachable(camera)) {
-        toast(`${camera.name} is offline — can't capture.`);
+        toast(`${camera.name} is offline. Can't capture.`);
         return;
       }
       if (!selectionMode) {

@@ -104,7 +104,7 @@ components:
 ## Overview
 
 **Creative North Star: "Cyanotype & Manila, the colour of engineering documentation."** The same
-north star as `www/`, inherited. See the [Named Rules](#named-rules) for how the inheritance works.
+north star as `www/`, inherited. The [Named Rules](#named-rules) show how.
 
 This is a **Starlight** site. Starlight ships its own design system (typography scale, color roles,
 sidebar chrome, code blocks, search UI) as CSS custom properties (`--sl-color-*`,
@@ -118,9 +118,9 @@ badge and aside components (except the danger aside, see [Components](#component
 table-of-contents behavior. The `R9lab-authored vs. Starlight-default`
 note under each section marks the boundary.
 
-**The duplicated brand rules below are duplicated on purpose. Do not deduplicate them into a
-citation.** Whoever edits a component reads the design file next to it and does not open a second
-one, and `assets/DESIGN.md` sits at a path no design tooling looks in. Each restatement carries a
+**The brand rules below repeat `assets/DESIGN.md`. Do not replace them with a citation.** Whoever
+edits a component reads the design file next to it and does not open a second one, and
+`assets/DESIGN.md` sits at a path no design tooling looks in. Each copy carries a
 `Mirrors assets/DESIGN.md:NN` marker. Run `rg "Mirrors assets/DESIGN.md"` to list every copy and
 check it against source. Change a rule in `assets/DESIGN.md` first.
 
@@ -139,7 +139,7 @@ theming surface. See [Elevation & Depth](#elevation--depth) and [Components](#co
 
 **Key Characteristics:**
 
-- A brand layer of custom properties sits *underneath* Starlight's token layer; only a short, named
+- A brand layer of custom properties sits *underneath* Starlight's token layer. Only a short, named
   list of `--sl-*` tokens is overridden.
 - No Tailwind. Tailwind's preflight reset stripped list bullets and indent from every markdown
   list, so docs uses plain CSS and Starlight's `sl-*` utility classes only (stated in `base.css`).
@@ -200,9 +200,9 @@ to `www/src/styles/tokens.css`. **Do not hand-edit these values here**; change
 
 A 7-hue categorical ramp, each hue a fill/stroke/text triplet, generated into
 `tokens.generated.css` (`--r9lab-chart-<hue>-fill/-stroke/-text`) and used in every mermaid diagram
-under `src/content/docs/architecture/*.mdx`. Same ramp as `assets/DESIGN.md`: blue and manila are
-the brand primaries, verdigris and copper come from the alternative brand direction, and violet,
-rose, and slate fill out the seven roles.
+under `src/content/docs/architecture/*.mdx`. It is the same ramp as in `assets/DESIGN.md`: blue and
+manila are the brand primaries, verdigris and copper come from the alternative brand direction, and
+violet, rose, and slate complete the seven roles.
 
 | Hue             | Fill      | Stroke    | Text      |
 | --------------- | --------- | --------- | --------- |
@@ -223,10 +223,10 @@ copied verbatim from this table. The tokens in `tokens.generated.css` and the li
 Mermaid's own **chrome** (diagram background, un-classed node fill, line color) is themed by
 `src/scripts/mermaid.ts` through `themeVariables`, all literal hex because mermaid's `khroma`
 parser cannot read custom properties or `light-dark()`. `primaryBorderColor`, `primaryTextColor`
-and `background` copy `--r9lab-brand-primary`, `-text` and `-background`; `tertiaryColor` and
-`edgeLabelBackground` copy the frame tone (6% primary over the page ground);
-`primaryColor`/`lineColor` are hand-tuned. Nothing updates them if the brand moves; the file's
-own comment says so. This is a named drift risk.
+and `background` copy `--r9lab-brand-primary`, `-text` and `-background`. `tertiaryColor` and
+`edgeLabelBackground` copy the frame tone (6% primary over the page ground).
+`primaryColor`/`lineColor` are hand-tuned. Nothing updates them if the brand moves, as the file's
+own comment says. This is a named drift risk.
 
 ### Named Rules
 
@@ -237,13 +237,13 @@ mapped to `--sl-color-accent`; that would turn every Starlight link and active n
 which `assets/DESIGN.md` forbids. The accent never fills a button and never drives a hover or
 pressed state; primary blue carries all interaction. Accent is for small text, never for mass;
 bars and big figures stay ink.
-*Mirrors assets/DESIGN.md:167 — change it there first.*
+*Mirrors assets/DESIGN.md:167-175; change it there first.*
 
 **The No-Eyebrow Rule.** Docs carries no eyebrows or kickers, same as `www/`. A mono uppercase
 label that only restates the heading beneath it is chrome, not data. The app's `eyebrow` text
 variant is the one sanctioned exception, and it is app-only: there an eyebrow labels a *value*
 inside a compact tag, the Accent-Is-Data Rule in different clothes. No component in this subrepo
-uses an eyebrow pattern. *Mirrors assets/DESIGN.md:169 — change it there first.*
+uses an eyebrow pattern. *Mirrors assets/DESIGN.md:167-173; change it there first.*
 
 ## Typography
 
@@ -253,7 +253,7 @@ uses an eyebrow pattern. *Mirrors assets/DESIGN.md:169 — change it there first
 
 **The Expo app diverges.** `app/` stays on platform system fonts (native feel, Dynamic Type, zero
 load cost) and adopts only the *scale and palette*. Do not "unify" the app onto IBM Plex.
-*Mirrors assets/DESIGN.md:33 — change it there first.*
+*Mirrors assets/DESIGN.md:31-37; change it there first.*
 
 **Character:** a serif/sans/mono superfamily split by role. The serif marks a heading, the sans
 carries prose, and the mono marks data (R-numbers, tier labels, ladder-end captions, the
@@ -263,8 +263,9 @@ used above the fold.
 Docs sets no type scale of its own. It maps the shared web scale from `assets/DESIGN.md` onto
 Starlight's heading tokens (`--sl-text-h1/h2/h3/h4`) and leaves every other `--sl-text-*` token
 (body, small, code) untouched. Components size small text with those Starlight tokens, never a
-literal: `--sl-text-sm` (14px), `--sl-text-xs` (13px) and `--sl-text-2xs` (12px). Starlight's stock ramp rendered 54px/35px/29px against a 16px body,
-roughly 1.45× the brand scale, which read as a landing page inside a reference site.
+literal: `--sl-text-sm` (14px), `--sl-text-xs` (13px) and `--sl-text-2xs` (12px). Starlight's stock ramp
+renders 54px/35px/29px against a 16px body, roughly 1.45× the brand scale, which reads as a landing
+page inside a reference site.
 
 ### Hierarchy
 
@@ -303,10 +304,11 @@ column. The one change is content width: `--sl-content-width` is `45rem`, not St
 the 45-75 range. (A rem-to-character estimate gave ~86ch and was wrong; trust the measurement.)
 Mermaid diagrams are the sole content allowed to exceed this column: on viewports ≥72rem,
 `.r9lab-mermaid` bleeds into the content padding (`--sl-content-pad-x` less a 0.5rem gutter, so
-it never slides under the sidebar or TOC column). Below that
-breakpoint the column is already full-width, so no break-out happens. The header grid gets one
-density tweak at ≥50rem
-(`grid-template-columns: minmax(max-content, auto) minmax(14rem, 1fr) auto`) to keep the widened
+it never slides under the sidebar or TOC column). Below that breakpoint the column is already
+full-width, so no break-out happens.
+
+The header grid gets one density tweak at ≥50rem
+(`grid-template-columns: minmax(max-content, auto) minmax(14rem, 1fr) auto`). It keeps the widened
 `SiteTitle` wordmark, search box, and `SocialIcons`/CTA cluster proportioned. Sidebar width, TOC
 column, mobile nav collapse breakpoints, and header height (`--sl-nav-height`) are Starlight
 defaults.
@@ -320,7 +322,7 @@ still ships those values for the whole monorepo; `base.css` uses only `--radius-
 
 The monorepo rule: inline surfaces (cards, rows, inputs) are flat, a 1px hairline border plus a
 surface fill, no shadow. Shadow is reserved for one tier, `shadow-overlay`, on surfaces that float.
-*Mirrors assets/DESIGN.md:121 — change it there first.*
+*Mirrors assets/DESIGN.md:119-128; change it there first.*
 
 Depth in the rendered page comes from Starlight's own chrome (search modal, mobile nav drawer),
 which docs does not restyle, except that the prev/next pagination cards lose Starlight's stock
@@ -331,10 +333,10 @@ box-shadow.
 ## Shapes
 
 The full scale is control 6px, card 8px, overlay 12px, full 9999 (avatars and true pills only).
-*Mirrors assets/DESIGN.md:111 — change it there first.*
+*Mirrors assets/DESIGN.md:109-114; change it there first.*
 
 Docs draws from the bottom two rungs only. `--radius-control` (6px) sizes the site-title logo image
-and the sidebar active-link box-shadow inset; `--radius-card` (8px) sizes `.r9lab-card-grid` items
+and the sidebar active-link box-shadow inset. `--radius-card` (8px) sizes `.r9lab-card-grid` items
 and the `.r9lab-mermaid` frame. Borders are 1px hairlines in `--r9lab-brand-divider` or a
 `color-mix()` tint of primary, never heavier. `NineRLadder`'s staircase (see
 [Components](#components)) is the one custom shape: each rung's `border-left` + `border-bottom`
@@ -438,8 +440,8 @@ the Public/Device/RPi-camera references, built from `--r9lab-brand-primary` and
   `just assets-sync`.
 - **Do** map any new Starlight interaction-state override onto the primary blue family, never
   manila. Starlight's `accent` token is its *interaction* color, not R9lab's *data-label* accent.
-- **Do** keep the manila accent scarce and small (the R-number in `NineRLadder`), per "accent is
-  for small text, never for mass".
+- **Do** keep the manila accent scarce and small (the R-number in `NineRLadder`): accent is for
+  small text, never for mass.
 - **Do** reuse the chart ramp's hue-to-category mapping (actor=blue, backend=manila,
   frontend=verdigris, external=copper, datastore=violet, hardware=rose, neutral=slate) in a new
   architecture diagram, and copy the literal hex from the table above.

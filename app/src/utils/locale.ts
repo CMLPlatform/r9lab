@@ -3,8 +3,7 @@
 /**
  * The decimal separator for a locale tag, defaulting to the user's.
  *
- * A malformed tag (`de-DE@posix` from some Linux browsers) throws a RangeError, which
- * once took the whole app down at module load rather than one input. The part before the
+ * A malformed tag (`de-DE@posix` from some Linux browsers) throws a RangeError. The part before the
  * extension is a valid tag carrying the same separator, so try that before assuming a
  * dot: assuming one is wrong in every comma-decimal locale.
  */

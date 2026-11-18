@@ -1477,7 +1477,7 @@ export interface paths {
     get?: never;
     put?: never;
     /**
-     * Login with email and password for bearer-token clients
+     * Sign in with email and password for bearer-token clients
      * @description Authenticate a bearer client and return access and refresh tokens in JSON.
      */
     post: operations['auth_bearer_login_v1_auth_bearer_login_post'];
@@ -1497,8 +1497,8 @@ export interface paths {
     get?: never;
     put?: never;
     /**
-     * Login with email and password for browser sessions
-     * @description Authenticate a browser client and return MFA challenge only when MFA is enabled.
+     * Sign in with email and password for browser sessions
+     * @description Sign in a browser client. Returns a two-step verification challenge only when the account has it on.
      */
     post: operations['auth_session_login_v1_auth_session_login_post'];
     delete?: never;
@@ -1642,7 +1642,7 @@ export interface paths {
     put?: never;
     /**
      * Start Totp Setup
-     * @description Start authenticated TOTP enrollment for an account that opted into MFA.
+     * @description Start setting up two-step verification with an authenticator app.
      */
     post: operations['start_totp_setup_v1_auth_mfa_totp_setup_post'];
     delete?: never;
@@ -1662,7 +1662,7 @@ export interface paths {
     put?: never;
     /**
      * Confirm Totp Setup
-     * @description Confirm TOTP enrollment, return one-time recovery codes, and replace the session.
+     * @description Finish setting up two-step verification, return one-time recovery codes, and replace the session.
      *
      *     Enrolment signs out every other session. A client that authenticated with a bearer
      *     token gets new tokens in ``tokens``; a browser session gets new cookies.
@@ -1685,7 +1685,7 @@ export interface paths {
     put?: never;
     /**
      * Disable Totp
-     * @description Turn off TOTP MFA after confirming the password and a current or recovery code.
+     * @description Turn off two-step verification after confirming the password and a current or recovery code.
      *
      *     Accounts without a usable password (signed up with Google or GitHub) send only the code.
      */
@@ -1707,7 +1707,7 @@ export interface paths {
     put?: never;
     /**
      * Regenerate Recovery Codes
-     * @description Reissue recovery codes after confirming a current TOTP code.
+     * @description Issue new recovery codes after confirming a current authentication code.
      */
     post: operations['regenerate_recovery_codes_v1_auth_mfa_recovery_codes_regenerate_post'];
     delete?: never;
@@ -1727,7 +1727,7 @@ export interface paths {
     put?: never;
     /**
      * Claim Oauth Mfa Handoff
-     * @description Claim a one-time OAuth MFA handoff and return pending MFA state.
+     * @description Claim a one-time social sign-in handoff that still needs two-step verification.
      */
     post: operations['claim_oauth_mfa_handoff_v1_auth_mfa_oauth_claim_post'];
     delete?: never;
@@ -1747,7 +1747,7 @@ export interface paths {
     put?: never;
     /**
      * Complete Mfa Challenge
-     * @description Complete login for a user with TOTP already enabled.
+     * @description Finish signing in a user who has two-step verification on.
      */
     post: operations['complete_mfa_challenge_v1_auth_mfa_challenge_post'];
     delete?: never;
@@ -2124,7 +2124,7 @@ export interface paths {
     post?: never;
     /**
      * Remove Oauth Association
-     * @description Remove a linked OAuth account (password and MFA step-up where the account has them).
+     * @description Remove a linked OAuth account (asks for the password and authentication code where the account has them).
      */
     delete: operations['remove_oauth_association_v1_oauth__provider__associate_delete'];
     options?: never;
@@ -2149,7 +2149,7 @@ export interface paths {
      *
      *     Personal data is erased; contributed products and media stay on the platform without
      *     the owner's name. Requires the current password, the same step-up as an email or
-     *     password change, and a current MFA code when the account has MFA enabled. An account
+     *     password change, and a current authentication code when two-step verification is on. An account
      *     with neither must have signed in within the last few minutes. The former address gets
      *     a notification email.
      */
@@ -2248,8 +2248,8 @@ export interface paths {
     get?: never;
     put?: never;
     /**
-     * Reset a user's MFA enrollment
-     * @description Reset TOTP MFA after an administrator performs identity-proofed recovery.
+     * Reset a user's two-step verification
+     * @description Turn off a user's two-step verification after an administrator has confirmed who they are.
      */
     post: operations['reset_user_mfa_v1_admin_users__user_id__mfa_reset_post'];
     delete?: never;
@@ -2299,7 +2299,6 @@ export interface paths {
      * @description Get public profile statistics for a specified user by username.
      *
      *     Returns 404 if the user is not found or if the profile is marked as private (and you are not the user).
-     *     Recomputes stats on the fly when no snapshot exists yet, without persisting the result.
      */
     get: operations['get_public_profile_v1_profiles__username__get'];
     put?: never;
@@ -2379,7 +2378,7 @@ export interface paths {
      *
      *     Owner-checked (``UserOwnedCameraDep`` 404s for non-owners) and served off the
      *     private preview directory rather than the public ``/uploads/images`` mount, so
-     *     a camera id alone no longer grants a stranger a recent frame. Cached only
+     *     a camera id alone does not grant access to a recent frame. Cached only
      *     privately and revalidated, never long-lived immutable like the public mount.
      */
     get: operations['get_camera_preview_thumbnail_v1_plugins_r9cam_cameras__camera_id__preview_thumbnail_get'];
@@ -2420,7 +2419,7 @@ export interface paths {
     };
     /**
      * Get local direct-connection info for a camera
-     * @description Relays GET /system/local-access to the Pi via the WebSocket connection. Returns the local API key and candidate IP addresses so the frontend can auto-configure Ethernet/USB-C direct access without manual key copying. Returns 503 when the camera is offline.
+     * @description Relays GET /system/local-access to the Raspberry Pi camera over the WebSocket connection. Returns the local API key and candidate IP addresses so the frontend can auto-configure Ethernet/USB-C direct access without manual key copying. Returns 503 when the camera is offline.
      */
     get: operations['get_camera_local_access_v1_plugins_r9cam_cameras__camera_id__local_access_get'];
     put?: never;
@@ -2508,7 +2507,7 @@ export interface paths {
     };
     /**
      * Get a camera's latest telemetry snapshot
-     * @description Return the most recent telemetry snapshot for the camera. Backed by a Redis cache with a 120s TTL so mosaic polling does not fan out one relay round-trip per camera on every refresh. Pass ``force_refresh=true`` to bypass the cache and re-fetch from the Pi.
+     * @description Return the most recent telemetry snapshot for the camera. Backed by a Redis cache with a 120s TTL so mosaic polling does not fan out one relay round-trip per camera on every refresh. Pass ``force_refresh=true`` to bypass the cache and re-fetch from the Raspberry Pi camera.
      */
     get: operations['get_camera_telemetry_v1_plugins_r9cam_cameras__camera_id__telemetry_get'];
     put?: never;
@@ -2528,7 +2527,7 @@ export interface paths {
     };
     /**
      * Proxy LL-HLS playlists and segments from the camera's MediaMTX
-     * @description Forward an LL-HLS request to the camera over its WebSocket relay. Playlist requests return ``application/vnd.apple.mpegurl`` text; segment/part requests return binary ``video/mp4`` or ``video/iso.segment``. The frontend simply points ``hls.js`` / ``expo-video`` at this URL and the player walks the manifest on its own.
+     * @description Forward an LL-HLS request to the camera over its WebSocket relay. Playlist requests return ``application/vnd.apple.mpegurl`` text; segment/part requests return binary ``video/mp4`` or ``video/iso.segment``. The frontend points ``hls.js`` or ``expo-video`` at this URL, and the player reads the manifest itself.
      */
     get: operations['proxy_hls_v1_plugins_r9cam_cameras__camera_id__hls__hls_path__get'];
     put?: never;
@@ -2550,8 +2549,8 @@ export interface paths {
     put?: never;
     post?: never;
     /**
-     * Pi-initiated self-unpair
-     * @description Called by the Pi when the user triggers unpair from the local /setup page. Authenticates via the device's assertion. Deletes the camera from the database so the backend no longer shows it as offline.
+     * Unpair a camera from the camera itself
+     * @description The Raspberry Pi camera calls this when the user unpairs it from the local /setup page. It signs in with its device assertion. The backend deletes the camera, so it stops listing it as offline.
      */
     delete: operations['self_unpair_camera_v1_plugins_r9cam_device_cameras__camera_id__self_delete'];
     options?: never;
@@ -2569,8 +2568,8 @@ export interface paths {
     get?: never;
     put?: never;
     /**
-     * Internal: receive an image pushed directly from a paired Raspberry Pi
-     * @description Called by the Pi after a successful capture. Authenticated with a short-lived device assertion (same credential used by the WebSocket relay). The Pi provides the JPEG body plus two JSON blobs: `capture_metadata` (libcamera metadata) and `upload_metadata` (opaque dict forwarded by whichever caller triggered the capture, typically `{product_id, description}`). The backend stores the image via the normal image storage service and returns a tiny ack envelope the Pi consumes.
+     * Internal: receive an image pushed directly from a paired Raspberry Pi camera
+     * @description The Raspberry Pi camera calls this after a successful capture. It signs in with a short-lived device assertion (the same credential as the WebSocket relay). The camera sends the JPEG body plus two JSON blobs: `capture_metadata` (libcamera metadata) and `upload_metadata` (opaque dict forwarded by whichever caller triggered the capture, typically `{product_id, description}`). The backend stores the image via the normal image storage service and returns a short acknowledgement to the camera.
      */
     post: operations['receive_camera_upload_v1_plugins_r9cam_device_cameras__camera_id__image_upload_post'];
     delete?: never;
@@ -2589,8 +2588,8 @@ export interface paths {
     get?: never;
     put?: never;
     /**
-     * Internal: receive a cached preview thumbnail pushed directly from a paired Raspberry Pi
-     * @description Called by the Pi's background thumbnail worker. Authenticated with the same short-lived device assertion used by the WebSocket relay. Stores a deterministic per-camera JPEG cache file for camera-card previews without creating an Image database row.
+     * Internal: receive a cached preview thumbnail pushed directly from a paired Raspberry Pi camera
+     * @description The Raspberry Pi camera's background thumbnail worker calls this. It signs in with the same short-lived device assertion used by the WebSocket relay. Stores a deterministic per-camera JPEG cache file for camera-card previews without creating an Image database row.
      */
     post: operations['receive_preview_thumbnail_upload_v1_plugins_r9cam_device_cameras__camera_id__preview_thumbnail_upload_post'];
     delete?: never;
@@ -2634,7 +2633,7 @@ export interface paths {
     get?: never;
     put?: never;
     /**
-     * Register a pairing code (called by RPi)
+     * Register a pairing code (called by the camera)
      * @description Register a short-lived pairing code and the camera's public device key.
      */
     post: operations['register_pairing_code_v1_plugins_r9cam_pairing_register_post'];
@@ -2654,7 +2653,7 @@ export interface paths {
     get?: never;
     put?: never;
     /**
-     * Poll pairing status (called by RPi)
+     * Poll pairing status (called by the camera)
      * @description Poll for pairing completion. Returns non-secret relay metadata once claimed.
      *
      *     Takes the code and fingerprint in a POST body (not query params) so the
@@ -3041,7 +3040,7 @@ export interface components {
      * @description Cache namespace identifiers for different application areas.
      * @enum {string}
      */
-    CacheNamespace: 'reference-data' | 'stats';
+    CacheNamespace: 'reference-data' | 'stats' | 'profile-stats';
     /**
      * CameraConnectionStatus
      * @description Camera connection status.
@@ -4481,7 +4480,7 @@ export interface components {
       mfa_required: boolean;
       /**
        * Mfa Token
-       * @description Short-lived token for completing an MFA challenge
+       * @description Short-lived token for finishing two-step verification at sign-in
        */
       mfa_token: string;
     };
@@ -5136,7 +5135,7 @@ export interface components {
      * ProductSummary
      * @description Minimal product summary for embedding in unrelated contexts (e.g. material links).
      *
-     *     Deliberately narrower than ``ProductRead``: no owner, physical/circularity
+     *     Narrower than ``ProductRead``: no owner, physical/circularity
      *     properties, or other detail-view fields since no consumer needs them here.
      *     Extend with more fields only when an actual caller needs them.
      */
@@ -5303,7 +5302,7 @@ export interface components {
       /**
        * Refresh Token
        * Format: password
-       * @description Refresh token obtained from login
+       * @description Refresh token returned when the user signed in
        */
       refresh_token: string;
     };
@@ -5344,14 +5343,14 @@ export interface components {
      * RegistrationResponse
      * @description Uniform registration acknowledgement.
      *
-     *     Deliberately reveals nothing about whether the email already exists; the same
-     *     body is returned whether a new account was created or the address was already
-     *     taken, so registration cannot be used to enumerate accounts.
+     *     Reveals nothing about whether the email already exists. The same body comes back
+     *     whether a new account was created or the address was taken, so registration
+     *     cannot be used to list accounts.
      */
     RegistrationResponse: {
       /**
        * Detail
-       * @default If the email address is available, a verification link has been sent. Please check your inbox.
+       * @default If the email address is available, we sent a verification link. Check your inbox.
        */
       detail: string;
     };
@@ -5441,7 +5440,7 @@ export interface components {
       current_password?: string | null;
       /**
        * Mfa Code
-       * @description Current authenticator code or a recovery code. Required when the account has MFA enabled.
+       * @description Current authenticator code or a recovery code. Required when the account has two-step verification on.
        */
       mfa_code?: string | null;
     };
@@ -5764,7 +5763,7 @@ export interface components {
       oauth_accounts?: components['schemas']['OAuthAccountRead'][];
       /**
        * Mfa Enabled
-       * @description Whether TOTP MFA is enabled for this account.
+       * @description Whether two-step verification is on for this account.
        * @default false
        */
       mfa_enabled: boolean;
@@ -7794,6 +7793,11 @@ export interface operations {
         updated_at?: string;
         'updated_at[ge]'?: string;
         'updated_at[le]'?: string;
+        completeness?: number;
+        'completeness[ge]'?: number;
+        'completeness[le]'?: number;
+        has_components?: boolean;
+        'has_components[eq]'?: boolean;
         weight_g?: number;
         'weight_g[ge]'?: number;
         'weight_g[le]'?: number;
@@ -7817,18 +7821,21 @@ export interface operations {
           | '+model'
           | '+created_at'
           | '+updated_at'
+          | '+recommended_rank'
           | '+product_type_name'
           | 'name'
           | 'brand'
           | 'model'
           | 'created_at'
           | 'updated_at'
+          | 'recommended_rank'
           | 'product_type_name'
           | '-name'
           | '-brand'
           | '-model'
           | '-created_at'
           | '-updated_at'
+          | '-recommended_rank'
           | '-product_type_name'
         )[];
       };
@@ -7885,6 +7892,11 @@ export interface operations {
         updated_at?: string;
         'updated_at[ge]'?: string;
         'updated_at[le]'?: string;
+        completeness?: number;
+        'completeness[ge]'?: number;
+        'completeness[le]'?: number;
+        has_components?: boolean;
+        'has_components[eq]'?: boolean;
         weight_g?: number;
         'weight_g[ge]'?: number;
         'weight_g[le]'?: number;
@@ -7908,18 +7920,21 @@ export interface operations {
           | '+model'
           | '+created_at'
           | '+updated_at'
+          | '+recommended_rank'
           | '+product_type_name'
           | 'name'
           | 'brand'
           | 'model'
           | 'created_at'
           | 'updated_at'
+          | 'recommended_rank'
           | 'product_type_name'
           | '-name'
           | '-brand'
           | '-model'
           | '-created_at'
           | '-updated_at'
+          | '-recommended_rank'
           | '-product_type_name'
         )[];
       };
@@ -8021,6 +8036,11 @@ export interface operations {
         updated_at?: string;
         'updated_at[ge]'?: string;
         'updated_at[le]'?: string;
+        completeness?: number;
+        'completeness[ge]'?: number;
+        'completeness[le]'?: number;
+        has_components?: boolean;
+        'has_components[eq]'?: boolean;
         weight_g?: number;
         'weight_g[ge]'?: number;
         'weight_g[le]'?: number;
@@ -8044,18 +8064,21 @@ export interface operations {
           | '+model'
           | '+created_at'
           | '+updated_at'
+          | '+recommended_rank'
           | '+product_type_name'
           | 'name'
           | 'brand'
           | 'model'
           | 'created_at'
           | 'updated_at'
+          | 'recommended_rank'
           | 'product_type_name'
           | '-name'
           | '-brand'
           | '-model'
           | '-created_at'
           | '-updated_at'
+          | '-recommended_rank'
           | '-product_type_name'
         )[];
       };
@@ -8295,6 +8318,11 @@ export interface operations {
         updated_at?: string;
         'updated_at[ge]'?: string;
         'updated_at[le]'?: string;
+        completeness?: number;
+        'completeness[ge]'?: number;
+        'completeness[le]'?: number;
+        has_components?: boolean;
+        'has_components[eq]'?: boolean;
         weight_g?: number;
         'weight_g[ge]'?: number;
         'weight_g[le]'?: number;
@@ -8318,18 +8346,21 @@ export interface operations {
           | '+model'
           | '+created_at'
           | '+updated_at'
+          | '+recommended_rank'
           | '+product_type_name'
           | 'name'
           | 'brand'
           | 'model'
           | 'created_at'
           | 'updated_at'
+          | 'recommended_rank'
           | 'product_type_name'
           | '-name'
           | '-brand'
           | '-model'
           | '-created_at'
           | '-updated_at'
+          | '-recommended_rank'
           | '-product_type_name'
         )[];
       };
@@ -8391,6 +8422,11 @@ export interface operations {
         updated_at?: string;
         'updated_at[ge]'?: string;
         'updated_at[le]'?: string;
+        completeness?: number;
+        'completeness[ge]'?: number;
+        'completeness[le]'?: number;
+        has_components?: boolean;
+        'has_components[eq]'?: boolean;
         weight_g?: number;
         'weight_g[ge]'?: number;
         'weight_g[le]'?: number;
@@ -8414,18 +8450,21 @@ export interface operations {
           | '+model'
           | '+created_at'
           | '+updated_at'
+          | '+recommended_rank'
           | '+product_type_name'
           | 'name'
           | 'brand'
           | 'model'
           | 'created_at'
           | 'updated_at'
+          | 'recommended_rank'
           | 'product_type_name'
           | '-name'
           | '-brand'
           | '-model'
           | '-created_at'
           | '-updated_at'
+          | '-recommended_rank'
           | '-product_type_name'
         )[];
       };
@@ -10361,7 +10400,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description MFA is not on for this account. */
+      /** @description Two-step verification is not on for this account. */
       401: {
         headers: {
           [name: string]: unknown;
@@ -11202,14 +11241,14 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description The current password or MFA code is missing. */
+      /** @description The current password or authentication code is missing. */
       400: {
         headers: {
           [name: string]: unknown;
         };
         content?: never;
       };
-      /** @description The current password or MFA code is invalid, or the account needs a fresh sign-in. */
+      /** @description The current password or authentication code is wrong, or the account needs a fresh sign-in. */
       403: {
         headers: {
           [name: string]: unknown;

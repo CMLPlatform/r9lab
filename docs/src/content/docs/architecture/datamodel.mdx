@@ -77,11 +77,11 @@ User accounts, linked OAuth accounts, and ownership and access control. Account 
 
 Usernames are unique and indexed. They are nullable only while an OAuth-created account completes onboarding; password registration requires a username up front.
 
-`hashed_password` and `mfa_totp_secret` appear in no read schema; the TOTP secret is also encrypted at rest. `profile_stats` is a cached aggregate stamped by `profile_stats_computed_at`. `upload_file_count` and `upload_total_bytes` hold the per-account upload quota ledger.
+`hashed_password` and `mfa_totp_secret` appear in no read schema; the TOTP secret is also encrypted at rest. Profile statistics are counted on read, so the model no longer maps `profile_stats` and `profile_stats_computed_at` and the diagram leaves them out. The table keeps both columns for the previous release; the next release drops them. `upload_file_count` and `upload_total_bytes` hold the per-account upload quota ledger.
 
 ## Reference data
 
-Taxonomies, categories and subcategories, materials, product types, and units. These records are shared across users and products and make research records easier to search, compare, and reuse.
+Taxonomies, categories and subcategories, materials, product types, and units. These records are shared across users and products.
 
 <ReferenceData />
 
@@ -96,6 +96,7 @@ Taxonomies, categories and subcategories, materials, product types, and units. T
 - circularity notes are stored on the product as nullable JSON with optional `recyclability`, `disassemblability`, and `remanufacturability` fields
 - ownership is attached to the user level
 - materials, product types, and media can be linked without making every field mandatory
+- `completeness` (0 to 1) and `recommended_rank` are derived, and database triggers keep them current on every product and image write. `completeness` is the weighted share of the app's missing-data checklist a product has filled in, with a photo counting three times any other field. `recommended_rank` is the creation time in epoch seconds plus up to 30 days in proportion to completeness. It is a sort key only, so its value means nothing on its own
 
 <DataCollection />
 

@@ -35,10 +35,10 @@ and the [Code of Conduct](.github/CODE_OF_CONDUCT.md).
 - Changes to `main` go through pull requests that need one approving review and the `CI Result`
   check on an up-to-date branch. Admins and the Renovate app may merge without the review; only
   admins may merge without the check. Force-pushes and deletion of `main` are blocked.
-- Images reach GHCR only through `publish-images.yml`: `release.yml` calls it when a GitHub release
-  is published, and an admin can run it by hand to publish one commit as `:sha-<short sha>`. The
-  release's `staging` and `prod` deploy jobs wait for an approving review from the maintainer. Only admins and
-  maintainers may create, move, or delete release tags.
+- Images reach GHCR only through `publish-images.yml`. `release.yml` calls it when a GitHub release
+  is published. An admin can also run it by hand to publish one commit as `:sha-<short sha>`. The
+  release's `staging` and `prod` deploy jobs wait for an approving review from the maintainer. Only
+  admins and maintainers may create, move, or delete release tags.
 - Renovate opens the dependency pull requests.
 
 ## If the Maintainer Is Unavailable

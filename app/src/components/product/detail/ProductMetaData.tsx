@@ -38,7 +38,7 @@ export default function ProductMetaData({ product }: Props) {
         </MetaRow>
       ) : null}
       {product.updatedAt ? (
-        <MetaRow label="Last Updated">
+        <MetaRow label="Last updated">
           <AppText variant="data">{new Date(product.updatedAt).toLocaleDateString()}</AppText>
         </MetaRow>
       ) : null}

@@ -4,7 +4,7 @@
 
 Do not open a public GitHub issue for security vulnerabilities.
 
-Instead, report it privately through GitHub's
+Report it privately through GitHub's
 [private vulnerability reporting](https://github.com/CMLPlatform/r9lab/security/advisories/new), or
 email [info@r9lab.io](mailto:info@r9lab.io), with:
 
@@ -111,10 +111,7 @@ Security-sensitive areas:
 - client IP: the API takes the client address from `X-Forwarded-For` only when the request comes
   from Docker's private range (`172.16.0.0/12`, `FORWARDED_ALLOW_IPS` and `TRUSTED_PROXY_CIDRS`
   in `compose.deploy.yaml`). The API publishes no port, so only containers on its own networks
-  can reach it, and all of them belong to the stack. Accepted risk: one of those containers, if
-  compromised, could set a false client address and get around the per-IP rate limits. It would
-  already hold database or Redis access, which matters more. Pinning the `edge` subnet would
-  narrow this but needs a per-host setting that must not overlap the host's other networks.
+  can reach it, and all of them belong to the stack.
 - authenticated mutation APIs: create endpoints accept an `Idempotency-Key` header and cache the
   response in Redis for one hour.
   - The cache entry is scoped by authenticated user id, endpoint (parent id included), and key, so
@@ -161,8 +158,7 @@ Supply-chain and code-security checks:
   required `CI Result` check. The app bypasses the review (the `protect_main` ruleset) and
   merges what `.github/renovate.json` marks automerge itself. It cannot skip the check, which
   `protect_main_checks` requires with no app bypass, so a leaked key cannot reach `main`
-  without a pull request that passes CI. That is not all it can do: its `contents` and `workflows` write
-  access reaches every other branch, and the workflows a push there starts run its changes.
+  without a pull request that passes CI.
   Release tags are held by the `release tags` ruleset (`infra/cloudflare/github.tf`), which only
   repository admins and maintainers bypass, so the key cannot mint or move the tag hosts deploy
   from, and every job in the `staging` and `prod` Environments waits for a required reviewer.

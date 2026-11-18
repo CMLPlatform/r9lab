@@ -3,6 +3,10 @@ title: Install
 description: Run the R9lab stack locally with Docker.
 ---
 
+You need [Docker](https://docs.docker.com/get-started/get-docker/) and, optionally,
+[`just`](https://just.systems/man/en/). To change code, also [`uv`](https://docs.astral.sh/uv/),
+and Node and pnpm at the versions pinned in `.node-version` and `package.json`.
+
 ## Local Docker setup
 
 1. Clone the repository.
@@ -79,9 +83,6 @@ description: Run the R9lab stack locally with Docker.
    ```bash
    just ci
    ```
-
-To run the stack for other people on a production or staging host, continue with
-[Configure](/operations/configure/).
 
 ## Raspberry Pi camera plugin
 

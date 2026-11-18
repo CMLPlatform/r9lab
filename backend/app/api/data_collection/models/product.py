@@ -4,8 +4,11 @@ from typing import TYPE_CHECKING
 
 from pydantic import UUID4
 from sqlalchemy import (
+    REAL,
     CheckConstraint,
     Computed,
+    Double,
+    FetchedValue,
     ForeignKey,
     Index,
     and_,
@@ -74,6 +77,13 @@ class Product(ProductFieldsMixin, TimeStampMixinBare, Base):
         Index("ix_product_product_type_id", "product_type_id"),
         # Sort key and range filter on the product list; stats series bucket by it.
         Index("ix_product_created_at", "created_at"),
+        # Default order of the base-product list, with the pagination tie-breaker.
+        Index(
+            "ix_product_recommended_rank",
+            text("recommended_rank DESC"),
+            "id",
+            postgresql_where=text("parent_id IS NULL"),
+        ),
         CheckConstraint(
             "(parent_id IS NULL AND amount_in_parent IS NULL) "
             "OR (parent_id IS NOT NULL AND amount_in_parent IS NOT NULL AND amount_in_parent > 0)",
@@ -98,6 +108,16 @@ class Product(ProductFieldsMixin, TimeStampMixinBare, Base):
             persisted=True,
         ),
         default=None,
+    )
+
+    # Both maintained by database triggers; the SQL function r9lab_product_completeness
+    # holds the weights. A share of the app's missing-data checklist, and the list rank key.
+    completeness: Mapped[float] = mapped_column(
+        REAL, server_default=text("0"), server_onupdate=FetchedValue(), default=None
+    )
+    # Epoch seconds of created_at plus 30 days per unit of completeness.
+    recommended_rank: Mapped[float] = mapped_column(
+        Double, server_default=text("0"), server_onupdate=FetchedValue(), default=None
     )
 
     @declared_attr

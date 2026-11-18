@@ -59,7 +59,7 @@ export function useAddCameraForm() {
           title: 'Pairing failed',
           message: isCodeMissing
             ? CODE_NOT_FOUND_MESSAGE
-            : getErrorMessage(err, 'Could not add the camera. Please try again.'),
+            : getErrorMessage(err, "Couldn't add the camera. Try again."),
           buttons: [{ text: 'OK' }],
         });
       }

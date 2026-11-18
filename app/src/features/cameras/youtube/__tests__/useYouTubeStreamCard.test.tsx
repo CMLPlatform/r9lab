@@ -163,6 +163,6 @@ describe('useYouTubeStreamCard', () => {
     const mutateOptions = mockMutate.mock.calls[0]?.[1] as { onError: (error: Error) => void };
     mutateOptions.onError(new Error('network down'));
 
-    expect(mockError).toHaveBeenCalledWith('Failed to stop stream: network down', 'Stop failed');
+    expect(mockError).toHaveBeenCalledWith("Couldn't stop the stream: network down", 'Stop failed');
   });
 });

@@ -24,14 +24,14 @@ support industrial ecology and circular economy research with better primary pro
 
 Repairers, refurbishers, dismantlers, and recyclers meet products at the point of failure. R9lab
 turns their routine work into structured, openly shared records of what products are made of and
-how they come apart. [Why R9lab exists](https://docs.r9lab.io/project/) sets out the argument.
+how they come apart. [Why R9lab exists](https://docs.r9lab.io/project/) explains the case.
 
-It combines:
+R9lab has four parts:
 
 - a FastAPI backend for structured product, media, and user data
 - an Expo / React Native app for authenticated data collection
 - an Astro site for publicly viewing project and dataset information
-- a docs site for users, architecture, and self-hosting
+- a docs site for users and architecture
 
 ## Start Here
 
@@ -39,8 +39,7 @@ Use the hosted platform at [app.r9lab.io](https://app.r9lab.io).
 
 To go deeper:
 
-- [Install and self-host](https://docs.r9lab.io/operations/prerequisites/) for running or
-  self-hosting the stack
+- [Install](https://docs.r9lab.io/operations/install/) for running the stack locally
 - [CONTRIBUTING.md](.github/CONTRIBUTING.md) for making code or docs changes
 - [docs.r9lab.io](https://docs.r9lab.io) for architecture and user-facing docs
 
@@ -53,13 +52,13 @@ To go deeper:
 | `www/`     | Astro public website                                  |
 | `docs/`    | Documentation site                                    |
 
-Docker Compose orchestrates the stack from the repo root.
+Docker Compose runs the stack from the repo root.
 
 Shared brand assets live in `assets/`; `just assets-sync` copies them into the consumer subrepos.
 
 Configuration has five homes: the committed secret inventory in `deploy/env/variables.toml`,
 deploy-host inputs in the gitignored root `.env`, runtime secrets in gitignored `secrets/<env>/`
-files, optional backend-only local overrides in `backend/.env.dev`, and framework/test fixtures such
+files, optional backend-only local overrides in `backend/.env.dev`, and framework and test files such
 as `app/.env.development` and `backend/.env.test`.
 
 ## Common Commands
@@ -75,7 +74,7 @@ just deploy-secrets-template dev  # create local backend secret files
 
 ## Accessibility
 
-CI runs axe scans and per-PR a11y lint across `www/`, `docs/`, and `app/`. See
+CI runs axe scans across `www/`, `docs/`, and `app/`, and accessibility lint on each pull request. See
 [Quality Controls](.github/CONTRIBUTING.md#quality-controls) for what runs where.
 
 ## Project Links

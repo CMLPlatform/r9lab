@@ -109,7 +109,7 @@ def test_schema_info_names_the_institute(exported_schemas: Path) -> None:
     """The reference title uses an en dash and the description spells out CML."""
     info = json.loads((exported_schemas / "openapi.public.json").read_text(encoding="utf-8"))["info"]
 
-    assert info["title"] == "R9lab \u2013 Data Collection API"
+    assert info["title"] == "R9lab Data Collection API"
     assert "Institute of Environmental Sciences (CML), Leiden University" in info["description"]
 
 

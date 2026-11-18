@@ -174,19 +174,23 @@ describe('r9cam API service', () => {
 
   it('throws descriptive errors for failed camera requests', async () => {
     mockJsonResponse({}, { ok: false, status: 503 });
-    await expect(fetchCameras()).rejects.toThrow('Failed to fetch cameras');
+    await expect(fetchCameras()).rejects.toThrow("Couldn't load your cameras. Try again.");
 
     mockJsonResponse({}, { ok: false, status: 404 });
-    await expect(fetchCamera('missing')).rejects.toThrow('Failed to fetch camera');
+    await expect(fetchCamera('missing')).rejects.toThrow("Couldn't load the camera. Try again.");
 
     mockJsonResponse({}, { ok: false, status: 400 });
-    await expect(updateCamera('cam-9', { name: 'Bad' })).rejects.toThrow('Failed to update camera');
+    await expect(updateCamera('cam-9', { name: 'Bad' })).rejects.toThrow(
+      "Couldn't update the camera. Try again.",
+    );
 
     mockFetchWithAuth.mockResolvedValueOnce({ ok: false, status: 401 } as Response);
-    await expect(deleteCamera('cam-9')).rejects.toThrow('Failed to delete camera');
+    await expect(deleteCamera('cam-9')).rejects.toThrow("Couldn't delete the camera. Try again.");
 
     mockJsonResponse({}, { ok: false, status: 502 });
-    await expect(captureImageFromCamera('cam-9', 42)).rejects.toThrow('Failed to capture image');
+    await expect(captureImageFromCamera('cam-9', 42)).rejects.toThrow(
+      "Couldn't capture the image. Check the camera and try again.",
+    );
   });
 
   it('builds the local LL-HLS playlist URL through the Pi FastAPI proxy', () => {
@@ -301,7 +305,7 @@ describe('r9cam API service', () => {
   it('throws a descriptive error when telemetry fetch fails', async () => {
     mockFetchWithAuth.mockResolvedValueOnce({ ok: false, status: 503 } as Response);
     await expect(fetchCameraTelemetry('cam-broken')).rejects.toThrow(
-      'Failed to fetch camera telemetry',
+      "Couldn't load the camera status. Try again.",
     );
   });
 

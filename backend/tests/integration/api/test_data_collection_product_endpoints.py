@@ -1,13 +1,15 @@
 """Integration tests for product-focused data-collection endpoints."""
 
 import logging
+from datetime import UTC, datetime, timedelta
 from typing import TYPE_CHECKING
 
 import pytest
 from fastapi import status
-from sqlalchemy import select, update
+from sqlalchemy import select, text, update
 
 from app.api.data_collection.models.product import Product
+from app.api.file_storage.models import Image, MediaParentType
 from app.api.reference_data.models import Material, ProductType
 from scripts.seed.factories.models import ProductFactory, UserFactory
 from tests.constants import (
@@ -392,6 +394,161 @@ async def test_sorting_products_by_product_type_name_keeps_untyped_products(
     assert untyped_product.id in ids
 
 
+async def _ranked_products(db_session: AsyncSession, owner: User, product_type: ProductType) -> dict[str, Product]:
+    """Make a 20-day-old complete product, a new empty one and a new one with only a photo."""
+    old_complete = Product(
+        owner_id=owner.id,
+        name=f"{PRODUCT_BASE_NAME}OldComplete",
+        brand=BRAND_X,
+        description=PRODUCT_DESC,
+        product_type=product_type,
+        weight_g=WEIGHT_500,
+        height_cm=HEIGHT_10,
+        created_at=datetime.now(UTC) - timedelta(days=20),
+    )
+    new_empty = Product(owner_id=owner.id, name=f"{PRODUCT_BASE_NAME}NewEmpty")
+    new_photo = Product(owner_id=owner.id, name=f"{PRODUCT_BASE_NAME}NewPhoto")
+    db_session.add_all([old_complete, new_empty, new_photo])
+    await db_session.flush()
+    db_session.add_all(
+        Image(filename="i.png", file="i.png", upload_size_bytes=1, parent_type=MediaParentType.PRODUCT, parent_id=p.id)
+        for p in (old_complete, new_photo)
+    )
+    await db_session.flush()
+    # The image trigger is deferred to commit, which the test transaction never reaches.
+    await db_session.execute(text("SET CONSTRAINTS ALL IMMEDIATE"))
+    return {"old_complete": old_complete, "new_empty": new_empty, "new_photo": new_photo}
+
+
+def _order(response_items: list[dict], products: dict[str, Product]) -> list[str]:
+    names_by_id = {product.id: name for name, product in products.items()}
+    return [names_by_id[item["id"]] for item in response_items if item["id"] in names_by_id]
+
+
+async def test_sorting_products_by_recommended_rank_mixes_recency_and_completeness(
+    api_client: AsyncClient, db_session: AsyncSession, db_superuser: User, db_product_type: ProductType
+) -> None:
+    """Full completeness is worth 30 days of recency.
+
+    A new photo-only record (+11 days) beats a complete one 20 days old (+10 days), which
+    beats a new empty one.
+    """
+    products = await _ranked_products(db_session, db_superuser, db_product_type)
+
+    response = await api_client.get("/v1/products?order_by=-recommended_rank")
+
+    assert response.status_code == status.HTTP_200_OK, response.text
+    assert _order(response.json()["items"], products) == ["new_photo", "old_complete", "new_empty"]
+
+
+@pytest.mark.parametrize(("value", "expect_parent"), [("true", True), ("false", False)])
+async def test_has_components_filter_splits_products_with_and_without_components(
+    api_client: AsyncClient,
+    db_session: AsyncSession,
+    setup_product_graph: ProductGraph,
+    value: str,
+    expect_parent: bool,  # noqa: FBT001
+) -> None:
+    """has_components keeps base products with at least one component, or only those with none."""
+    parent = setup_product_graph.product
+    leaf = Product(owner_id=parent.owner_id, name=f"{PRODUCT_BASE_NAME}Leaf", brand=BRAND_X)
+    db_session.add(leaf)
+    await db_session.flush()
+
+    response = await api_client.get("/v1/products", params={"has_components": value})
+
+    assert response.status_code == status.HTTP_200_OK, response.text
+    ids = {item["id"] for item in response.json()["items"]}
+    assert (parent.id in ids) is expect_parent
+    assert (leaf.id in ids) is not expect_parent
+
+
+async def test_completeness_filter_keeps_complete_records(
+    api_client: AsyncClient, db_session: AsyncSession, db_superuser: User, db_product_type: ProductType
+) -> None:
+    """completeness[ge]=1 keeps only records with every checklist field filled."""
+    products = await _ranked_products(db_session, db_superuser, db_product_type)
+
+    response = await api_client.get("/v1/products", params={"completeness[ge]": "1"})
+
+    assert response.status_code == status.HTTP_200_OK, response.text
+    assert _order(response.json()["items"], products) == ["old_complete"]
+
+
+async def _ranked_products_with_components(
+    db_session: AsyncSession, owner: User, product_type: ProductType
+) -> dict[str, Product]:
+    """Add to the ranked products two components of ``old_complete``.
+
+    ``c_parent`` (completeness 0) has a sub-component; ``c_photo`` (0.75) has none.
+    """
+    products = await _ranked_products(db_session, owner, product_type)
+    parent = products["old_complete"]
+    c_parent = Product(owner_id=owner.id, name=f"{COMPONENT_NAME}Parent", parent=parent, amount_in_parent=1)
+    c_photo = Product(owner_id=owner.id, name=f"{COMPONENT_NAME}Photo", parent=parent, amount_in_parent=1)
+    sub = Product(owner_id=owner.id, name=f"{COMPONENT_NAME}Sub", parent=c_parent, amount_in_parent=1)
+    db_session.add_all([c_parent, c_photo, sub])
+    await db_session.flush()
+    db_session.add(
+        Image(
+            filename="i.png",
+            file="i.png",
+            upload_size_bytes=1,
+            parent_type=MediaParentType.PRODUCT,
+            parent_id=c_photo.id,
+        )
+    )
+    await db_session.flush()
+    return {**products, "c_parent": c_parent, "c_photo": c_photo}
+
+
+@pytest.mark.parametrize("endpoint", ["list", "export", "components"])
+@pytest.mark.parametrize(
+    ("params", "expected"),
+    [
+        ({"has_components": "true"}, {"list": {"old_complete"}, "components": {"c_parent"}}),
+        ({"completeness[le]": "0.5"}, {"list": {"new_empty", "new_photo"}, "components": {"c_parent"}}),
+        ({"completeness[ge]": "0.5"}, {"list": {"old_complete"}, "components": {"c_photo"}}),
+    ],
+)
+async def test_component_and_completeness_filters_apply_on_every_product_list(
+    api_client: AsyncClient,
+    db_session: AsyncSession,
+    db_superuser: User,
+    db_product_type: ProductType,
+    endpoint: str,
+    params: dict[str, str],
+    expected: dict[str, set[str]],
+) -> None:
+    """The product list, the export and a product's components list all honour the new filters."""
+    products = await _ranked_products_with_components(db_session, db_superuser, db_product_type)
+    url = {
+        "list": "/v1/products",
+        "export": "/v1/products/export",
+        "components": f"/v1/products/{products['old_complete'].id}/components",
+    }[endpoint]
+    if endpoint == "export":
+        params = {**params, "format": "json"}
+
+    response = await api_client.get(url, params=params)
+
+    assert response.status_code == status.HTTP_200_OK, response.text
+    body = response.json()
+    items = body if endpoint == "export" else body["items"]
+    assert set(_order(items, products)) == expected["components" if endpoint == "components" else "list"]
+
+
+@pytest.mark.parametrize("value", ["nan", "inf", "-inf", "-1", "2"])
+@pytest.mark.parametrize("op", ["ge", "le"])
+async def test_completeness_filter_rejects_values_outside_zero_to_one(
+    api_client: AsyncClient, op: str, value: str
+) -> None:
+    """Completeness takes a share from 0 to 1; NaN would otherwise match every row."""
+    response = await api_client.get("/v1/products", params={f"completeness[{op}]": value})
+
+    assert response.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT, response.text
+
+
 async def test_product_materials_filter_by_material_name(
     api_client_superuser: AsyncClient,
     db_session: AsyncSession,
@@ -498,7 +655,7 @@ async def test_owner_me_without_a_session_is_unauthorized_not_an_error(api_clien
     response = await api_client.get("/v1/products?owner=me")
 
     assert response.status_code == status.HTTP_401_UNAUTHORIZED
-    assert response.json()["detail"] == "Authentication required"
+    assert response.json()["detail"] == "Sign in to view your products."
 
 
 async def test_delete_product_with_components(

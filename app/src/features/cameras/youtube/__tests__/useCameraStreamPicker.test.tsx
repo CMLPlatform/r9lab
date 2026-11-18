@@ -243,7 +243,7 @@ describe('useCameraStreamPicker', () => {
     expect(mockAlert).toHaveBeenCalledWith(
       expect.objectContaining({
         title: 'Stream start failed',
-        message: 'Failed to start stream: stream backend unavailable',
+        message: "Couldn't start the stream: stream backend unavailable",
       }),
     );
     expect(mockSetActiveStream).not.toHaveBeenCalled();

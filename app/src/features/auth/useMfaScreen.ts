@@ -38,7 +38,7 @@ export function useMfaScreen() {
   const runSubmit = useCallback(
     async (submitCode: string = activeCode) => {
       if (!token) {
-        setError('MFA session expired. Please sign in again.');
+        setError('Your two-step verification session expired. Sign in again.');
         return;
       }
       if (submitCode.length < 6) return;
@@ -59,7 +59,12 @@ export function useMfaScreen() {
         }
         router.replace('/products');
       } catch (err) {
-        setError(getErrorMessage(err, 'Invalid MFA code.'));
+        setError(
+          getErrorMessage(
+            err,
+            "That code didn't match. Enter the current code from your authenticator app.",
+          ),
+        );
       } finally {
         setSubmitting(false);
       }

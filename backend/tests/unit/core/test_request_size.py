@@ -55,7 +55,7 @@ async def test_request_size_limit_rejects_large_json(monkeypatch: pytest.MonkeyP
         )
 
     assert response.status_code == 413
-    assert response.json()["detail"]["message"] == "Request body too large. Maximum size: 32 bytes"
+    assert response.json()["detail"]["message"] == "Request body is too large. The limit is 32 bytes."
 
 
 async def test_request_size_limit_rejects_malformed_content_length() -> None:
@@ -70,7 +70,7 @@ async def test_request_size_limit_rejects_malformed_content_length() -> None:
         )
 
     assert response.status_code == 400
-    assert response.json()["detail"]["message"] == "Malformed Content-Length header."
+    assert response.json()["detail"]["message"] == "The Content-Length header is not a number. Fix it or remove it."
 
 
 async def test_request_size_limit_rejects_streaming_body_before_buffering_all_chunks(
@@ -153,4 +153,4 @@ async def test_request_size_limit_rejects_multipart_requests_over_upload_cap(mon
         )
 
     assert response.status_code == 413
-    assert response.json()["detail"]["message"] == f"Request body too large. Maximum size: {limit_bytes} bytes"
+    assert response.json()["detail"]["message"] == f"Request body is too large. The limit is {limit_bytes} bytes."

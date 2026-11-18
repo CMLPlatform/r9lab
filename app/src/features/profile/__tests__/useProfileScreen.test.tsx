@@ -173,9 +173,7 @@ describe('useProfileScreen', () => {
     });
 
     expect(mockVerify).toHaveBeenCalledWith('tester@example.com');
-    expect(mockFeedback.toast).toHaveBeenCalledWith(
-      'Verification email sent. Please check your inbox.',
-    );
+    expect(mockFeedback.toast).toHaveBeenCalledWith('Verification email sent. Check your inbox.');
   });
 
   it('updates the recurring email preference and refetches the profile', async () => {
@@ -242,7 +240,7 @@ describe('useProfileScreen', () => {
     expect(mockLogout).not.toHaveBeenCalled();
     expect(mockSetActiveStream).not.toHaveBeenCalledWith(null);
     expect(mockFeedback.error).toHaveBeenCalledWith(
-      'Failed to stop the stream. Please stop it manually before signing out.',
+      "Couldn't stop the stream. Stop it manually before signing out.",
       'Stream error',
     );
   });
@@ -298,7 +296,7 @@ describe('useProfileScreen', () => {
     expect(mockRevokeAllSessions).not.toHaveBeenCalled();
     expect(mockSetActiveStream).not.toHaveBeenCalledWith(null);
     expect(mockFeedback.error).toHaveBeenCalledWith(
-      'Failed to stop the stream. Please stop it manually before signing out.',
+      "Couldn't stop the stream. Stop it manually before signing out.",
       'Stream error',
     );
   });

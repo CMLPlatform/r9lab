@@ -189,7 +189,7 @@ describe('productTypes API service', () => {
         http.get(`${API_URL}/product-types`, () => HttpResponse.json({}, { status: 500 })),
       );
 
-      await expect(searchProductTypes()).rejects.toThrow('Failed to fetch');
+      await expect(searchProductTypes()).rejects.toThrow("Couldn't load the list");
     });
   });
 });

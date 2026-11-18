@@ -6,7 +6,6 @@ from app.api.common.audit import AuditAction, audit_event
 from app.api.common.crud.persistence import commit_and_refresh
 from app.api.common.crud.query import require_locked_model, require_model, require_models
 from app.api.data_collection.crud.product_tree_queries import MAX_COMPONENT_DEPTH, component_depth
-from app.api.data_collection.crud.profile_stats import recompute_user_profile_stats
 from app.api.data_collection.crud.storage import (
     cleanup_product_media_storage,
     delete_product_media,
@@ -21,7 +20,7 @@ from app.api.data_collection.exceptions import (
 from app.api.data_collection.models.product import MaterialProductLink, Product
 from app.api.data_collection.schemas import ComponentCreateWithComponents, ProductCreateWithComponents, ProductUpdate
 from app.api.file_storage.models import Video
-from app.api.file_storage.upload_quota import recompute_user_upload_quota
+from app.api.file_storage.upload_quota import lock_product_owner, recompute_user_upload_quota
 from app.api.reference_data.models import Material, ProductType
 
 if TYPE_CHECKING:
@@ -131,11 +130,7 @@ async def create_product(
     owner_id: UUID4 | None,
 ) -> Product:
     """Create a new product in the database."""
-    db_product = await create_and_persist_product_tree(db, product, owner_id=owner_id)
-    if owner_id:
-        await recompute_user_profile_stats(db, owner_id)
-        await db.commit()
-    return db_product
+    return await create_and_persist_product_tree(db, product, owner_id=owner_id)
 
 
 async def validate_product_type(db: AsyncSession, product_type_id: int | None) -> None:
@@ -177,14 +172,12 @@ async def update_product(
     if user_id != db_product.owner_id:
         # A moderator's correction of someone else's product.
         audit_event(user_id, AuditAction.UPDATE, Product, product_id)
-    if db_product.owner_id is not None:
-        await recompute_user_profile_stats(db, db_product.owner_id)
-        await db.commit()
     return res
 
 
 async def delete_product(db: AsyncSession, product_id: int) -> None:
     """Delete a product and its components, commit, then remove their media from storage."""
+    await lock_product_owner(db, product_id=product_id)
     owner_id = (await require_locked_model(db, Product, product_id)).owner_id
     # Bulk statements over the subtree: the ORM delete cascade would load every
     # component's media, videos and components one row at a time.
@@ -195,7 +188,6 @@ async def delete_product(db: AsyncSession, product_id: int) -> None:
     if owner_id is not None:
         await db.flush()
         await recompute_user_upload_quota(db, user_id=owner_id)
-        await recompute_user_profile_stats(db, owner_id)
     await db.commit()
     audit_event(owner_id, AuditAction.DELETE, Product, product_id)
     await cleanup_product_media_storage(storage_cleanups)

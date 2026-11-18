@@ -17,7 +17,7 @@ export async function sendVerificationEmail({
   try {
     const ok = await verify(email);
     if (ok) {
-      feedback.toast('Verification email sent. Please check your inbox.');
+      feedback.toast('Verification email sent. Check your inbox.');
       return;
     }
   } catch {
@@ -25,7 +25,7 @@ export async function sendVerificationEmail({
   }
 
   feedback.error(
-    'Failed to send verification email. Please try again later.',
+    "Couldn't send the verification email. Try again in a moment.",
     'Verification failed',
   );
 }
@@ -50,7 +50,7 @@ export async function updateProfileUsername({
     feedback.toast('Username updated.');
   } catch (error: unknown) {
     feedback.error(
-      `Failed to update username: ${getErrorMessage(error, 'Try again.')}`,
+      `Couldn't update your username: ${getErrorMessage(error, 'Try again.')}`,
       'Update failed',
     );
   }
@@ -93,12 +93,12 @@ export type ProfilePreferenceUpdate =
 const PREFERENCE_COPY = {
   profile_visibility: {
     success: () => 'Profile visibility updated.',
-    errorPrefix: 'Failed to update visibility',
+    errorPrefix: "Couldn't update your visibility",
     errorTitle: 'Visibility update failed',
   },
   email_updates_enabled: {
     success: (value: unknown) => (value ? 'Email updates enabled.' : 'Email updates disabled.'),
-    errorPrefix: 'Failed to update email preferences',
+    errorPrefix: "Couldn't update your email preferences",
     errorTitle: 'Email preference update failed',
   },
 } as const;
@@ -200,7 +200,7 @@ export async function confirmOAuthUnlink({
   } catch (error: unknown) {
     closeUnlinkDialog();
     feedback.error(
-      `Failed to disconnect: ${getErrorMessage(error, 'Try again.')}`,
+      `Couldn't disconnect: ${getErrorMessage(error, 'Try again.')}`,
       'Disconnect failed',
     );
     return;
@@ -264,7 +264,7 @@ export async function deleteOwnAccount({
       deleteDialog.mfaCode.trim() || undefined,
     );
   } catch (error: unknown) {
-    deleteDialog.setError(getErrorMessage(error, 'Failed to delete account.'));
+    deleteDialog.setError(getErrorMessage(error, "Couldn't delete your account. Try again."));
     setIsLoggingOut(false);
     return;
   } finally {

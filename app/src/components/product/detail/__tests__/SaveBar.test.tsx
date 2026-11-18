@@ -163,7 +163,7 @@ test('shows a queued label and no spinner while the save mutation is paused offl
       onPrimaryPress={jest.fn()}
     />,
   );
-  expect(screen.getByText('Queued — sends when online')).toBeTruthy();
+  expect(screen.getByText('Queued. Sends when online')).toBeTruthy();
   expect(queryAllHostsByType('ActivityIndicator')).toHaveLength(0);
 });
 
@@ -204,7 +204,7 @@ test('ignores upload progress while the save is paused offline', async () => {
       onPrimaryPress={jest.fn()}
     />,
   );
-  expect(screen.getByText('Queued — sends when online')).toBeTruthy();
+  expect(screen.getByText('Queued. Sends when online')).toBeTruthy();
   expect(screen.queryByText('Uploading 2 of 5…')).toBeNull();
   expect(screen.queryByTestId('upload-progress', { includeHiddenElements: true })).toBeNull();
 });
@@ -328,7 +328,7 @@ test('blocks the press while the save sits queued offline', async () => {
       canModerate
     />,
   );
-  await fireEvent.press(screen.getByText('Queued — sends when online'));
+  await fireEvent.press(screen.getByText('Queued. Sends when online'));
   expect(onPrimaryPress).not.toHaveBeenCalled();
 });
 

@@ -96,7 +96,7 @@ export default function AddCameraScreen() {
             </AppText>
             <MutedText className="mb-2">
               Enter the 6-character code shown on your Raspberry Pi setup page, or read the boxed
-              “PAIRING READY” banner over SSH if the device is headless.
+              &apos;PAIRING READY&apos; banner over SSH if the device is headless.
             </MutedText>
             <ControlledTextField
               control={control}

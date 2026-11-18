@@ -3,7 +3,7 @@ layout: ../layouts/ContentLayout.astro
 title: WCAG 2.2 self-assessment
 description: The criterion-by-criterion check of the R9lab website, documentation site and web app behind the accessibility statement.
 intro: >-
-  This is the check behind the accessibility statement. It covers every level A and AA success criterion of WCAG 2.2 on the website, the documentation site and the web app, and follows the four steps of WCAG-EM, the W3C evaluation method: set the scope, pick a sample, judge each criterion on it, report.
+  This is the check behind the accessibility statement. It covers every level A and AA success criterion of WCAG 2.2 on the website, the documentation site and the web app. It follows the four steps of WCAG-EM, the W3C evaluation method: set the scope, pick a sample, judge each criterion on it, report.
 ---
 
 <!-- One row per WCAG 2.2 level A and AA criterion; accessibility-statement.spec.ts checks
@@ -33,14 +33,14 @@ Each verdict rests on something seen in the browser, not on reading the code alo
 - reflow at 320 px, text at 200% (640 px), and the WCAG 1.4.12 text spacing, checking every text box for clipping;
 - target sizes measured from bounding boxes, with the spacing and inline exceptions;
 - reduced motion emulated, then every running animation listed;
-- error messages triggered on purpose in the app’s forms;
+- error messages triggered in the app’s forms;
 - the accessibility tree of the app’s product and account screens read with Playwright’s `ariaSnapshot()`, and each control’s `aria-checked`, `aria-pressed`, `aria-expanded` and `aria-current` read from the page.
 
 Where a failure was found and fixed, the Evidence column names the test that now guards it. Each of those tests failed before its fix.
 
 ## Results
 
-Pass: no failure found after a real check. Fail: at least one failure in the sample. N/A: the sample has no content the criterion applies to.
+Pass: no failure found by the checks above. Fail: at least one failure in the sample. N/A: the sample has no content the criterion applies to.
 
 Content from other suppliers is judged in the statement, not here: Scalar’s API viewer on the documentation site and videos embedded from YouTube.
 

@@ -12,7 +12,7 @@ components, and tag those components with materials and circularity observations
 structured, citable research dataset about how real products are built and how recoverable their
 materials are.
 
-Success has an order:
+Success has an order.
 
 1. PhD evidence and credibility. The platform must stand up as defensible research infrastructure.
 1. Outside contribution and a published dataset. Both are real goals. Neither outranks credibility
@@ -68,10 +68,10 @@ superuser.
 
 Site line: "R9lab | Product data and disassembly records for the circular economy."
 
-The mechanism a neighbouring product could not truthfully copy: teardown records captured by people
-with the product physically disassembled in front of them. Recursive product → component hierarchy
-of unbounded depth, photographic evidence at every node, and per-node circularity observations.
-Field-captured primary data, not scraped specifications or inferred bills of materials.
+What sets R9lab apart is teardown records captured by people with the product physically
+disassembled in front of them. Each record is a product and component hierarchy, up to 10 levels deep,
+with photographic evidence at every node and circularity observations on each. The data is
+field-captured primary data, not scraped specifications or inferred bills of materials.
 
 R9lab works downstream, at the point of failure, with the people who already open products. That
 vantage captures as-failed composition, wear, and recoverability that as-designed producer
@@ -79,7 +79,7 @@ specifications never record.
 
 The sharpest comparison: repair groups have logged more than 400,000 records under the Open Repair
 Data Standard, but those are event-level, with no component hierarchies, no masses, no geometry.
-R9lab's contribution is exactly that missing depth.
+R9lab adds that missing depth.
 
 **Careful with the 9R framing.** The 9R strategies motivate the project and supply its wordmark.
 They are not applied per record. The platform does not tag a record with an R-strategy and does not
@@ -93,7 +93,7 @@ working through a hierarchy one node at a time. Capture is interleaved with disa
 afterward from notes.
 
 **Capture-first creation.** `/products/new` opens straight into a capture screen, POSTs, then
-`replace`s to the record in edit mode, so a back gesture cannot re-submit the form. `components/new` repeats this one level down. Nesting is uncapped; breadcrumbs truncate at 12
+`replace`s to the record in edit mode, so a back gesture cannot re-submit the form. `components/new` repeats this one level down. Nesting stops at 10 levels below a base product; breadcrumbs truncate at 12
 ancestors.
 
 **Raspberry Pi camera rig.** An optional paired capture device, enabled per user via the
@@ -150,7 +150,7 @@ Runtime hardening lives in `app/Caddyfile`; the security baseline lives in
 
 ## Deliberately absent
 
-Recorded so nobody assumes them into existence:
+These do not exist, and nobody should assume they do.
 
 - **Video is URL-only.** `Product.videos` holds links. Self-hosted video is deferred, roughly a year
   out. Do not design upload affordances for it.

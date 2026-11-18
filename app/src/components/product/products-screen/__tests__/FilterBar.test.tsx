@@ -18,6 +18,8 @@ async function renderFilterBar(props: Partial<Parameters<typeof ProductsFilterBa
       activeDatePreset={null}
       activeBrands={[]}
       activeProductTypes={[]}
+      hasComponents={false}
+      complete={false}
       searchQueryURL=""
       sortBy={['-created_at']}
       sortOptions={SORT_OPTIONS}
@@ -33,6 +35,8 @@ async function renderFilterBar(props: Partial<Parameters<typeof ProductsFilterBa
       onSetSortMenuVisible={onSetSortMenuVisible}
       onToggleMine={jest.fn()}
       onClearMine={jest.fn()}
+      onToggleHasComponents={jest.fn()}
+      onToggleComplete={jest.fn()}
       onSetDateMenuVisible={jest.fn()}
       onDateChange={jest.fn()}
       onSetBrandModalVisible={jest.fn()}
@@ -66,6 +70,19 @@ describe('ProductsFilterBar sort chip', () => {
     // react-native-web ignores accessibilityState, and aria-selected is invalid on
     // role=button, so the pill's state reaches the DOM as aria-pressed.
     expect(screen.getByLabelText('Show all products').props['aria-pressed']).toBe(true);
+  });
+
+  it('toggles the components and complete-record filters', async () => {
+    const onToggleHasComponents = jest.fn();
+    const onToggleComplete = jest.fn();
+    await renderFilterBar({ complete: true, onToggleHasComponents, onToggleComplete });
+
+    await fireEvent.press(screen.getByLabelText('Has components'));
+    await fireEvent.press(screen.getByLabelText('Clear Complete records filter'));
+
+    expect(onToggleHasComponents).toHaveBeenCalledTimes(1);
+    expect(onToggleComplete).toHaveBeenCalledTimes(1);
+    expect(screen.getByLabelText('Complete records').props['aria-pressed']).toBe(true);
   });
 
   it('puts Product Type immediately after Sort in the horizontal row', async () => {

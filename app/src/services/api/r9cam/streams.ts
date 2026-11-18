@@ -30,7 +30,7 @@ export async function startYouTubeStream(
   if (resp.status === 409) {
     throw new ApiError('A stream is already active for this camera.', 409, 'STREAM_ALREADY_ACTIVE');
   }
-  if (!resp.ok) await throwFromResponse(resp, 'Failed to start stream');
+  if (!resp.ok) await throwFromResponse(resp, "Couldn't start the stream. Try again.");
   return resp.json() as Promise<StreamView>;
 }
 
@@ -39,7 +39,8 @@ export async function stopYouTubeStream(cameraId: string): Promise<void> {
     method: 'DELETE',
     headers: { Accept: 'application/json' },
   });
-  if (!resp.ok && resp.status !== 204) await throwFromResponse(resp, 'Failed to stop stream');
+  if (!resp.ok && resp.status !== 204)
+    await throwFromResponse(resp, "Couldn't stop the stream. Try again.");
 }
 
 export async function getStreamStatus(cameraId: string): Promise<StreamView | null> {
@@ -48,6 +49,6 @@ export async function getStreamStatus(cameraId: string): Promise<StreamView | nu
     headers: { Accept: 'application/json' },
   });
   if (resp.status === 404) return null;
-  if (!resp.ok) await throwFromResponse(resp, 'Failed to fetch stream status');
+  if (!resp.ok) await throwFromResponse(resp, "Couldn't load the stream status. Try again.");
   return resp.json() as Promise<StreamView>;
 }

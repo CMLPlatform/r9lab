@@ -13,7 +13,7 @@ export async function fetchPaginatedItems<T>(
   url.searchParams.set('page', page.toString());
   url.searchParams.set('size', size.toString());
   const response = await apiFetch(url, { method: 'GET' });
-  if (!response.ok) await throwFromResponse(response, `Failed to fetch ${url.pathname}`);
+  if (!response.ok) await throwFromResponse(response, "Couldn't load the list. Try again.");
   const data = await response.json();
   return (data.items ?? []) as T[];
 }

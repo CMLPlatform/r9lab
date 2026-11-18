@@ -248,7 +248,7 @@ export function useLocalConnection(
       // Throws for a non-LAN address. Verify the key before persisting it.
       const normalised = normalizeLocalConnectionUrl(baseUrl);
       if (!(await verifyLocalCredentials(normalised, apiKey))) {
-        throw new Error('Could not reach the camera at that address with that key.');
+        throw new Error("Couldn't reach the camera at that address with that key.");
       }
       disconnectedCameras.delete(cameraId);
       await storeLocalConnection(cameraId, normalised, apiKey);

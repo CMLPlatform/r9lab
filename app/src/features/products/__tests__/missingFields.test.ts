@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { describe, expect, it } from '@jest/globals';
 import { missingFields } from '@/features/products/missingFields';
 import { newProduct } from '@/services/api/products';
@@ -113,5 +115,55 @@ describe('missingFields', () => {
       images: [{ url: 'https://example.com/a.jpg', description: '' }],
     };
     expect(missingFields(component)).toEqual([]);
+  });
+});
+
+type SharedCase = {
+  name: string;
+  component?: boolean;
+  product: {
+    has_type?: boolean;
+    brand?: string;
+    description?: string;
+    weight_g?: number;
+    width_cm?: number;
+    height_cm?: number;
+    depth_cm?: number;
+    has_photo?: boolean;
+  };
+  missing: string[];
+};
+
+// The same table drives the SQL function r9lab_product_completeness (backend DB test).
+const { cases } = JSON.parse(
+  readFileSync(
+    resolve(__dirname, '../../../../../tests/fixtures/product_completeness_cases.json'),
+    'utf8',
+  ).replaceAll('<BOM>', '\\ufeff'),
+) as { cases: SharedCase[] };
+
+describe('missingFields shared completeness cases', () => {
+  it.each(cases)('$name', ({ component, product: p, missing }) => {
+    const base = component ? newProduct({ parentID: 1 }) : newProduct({});
+    const product: Product = {
+      ...base,
+      role: component ? 'component' : base.role,
+      productTypeID: p.has_type ? 1 : undefined,
+      productTypeName: p.has_type ? 'Kettle' : undefined,
+      brand: p.brand,
+      description: p.description,
+      physicalProperties: {
+        weight: p.weight_g,
+        width: p.width_cm,
+        height: p.height_cm,
+        depth: p.depth_cm,
+      },
+      images: p.has_photo ? [{ url: 'https://example.com/a.jpg', description: '' }] : [],
+    };
+    expect(
+      missingFields(product)
+        .map((f) => f.id)
+        .sort(),
+    ).toEqual([...missing].sort());
   });
 });

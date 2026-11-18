@@ -175,7 +175,7 @@ export function ProfileDialogs({
           Delete account
         </AppText>
         <AppText>
-          This deletes your account and signs you out on every device. It cannot be undone.
+          This deletes your account and signs you out on every device. You can't undo this.
         </AppText>
         <AppText className="mt-2.5">
           Products and photos you added stay on the platform, without your name.

@@ -3,8 +3,9 @@ import logging
 
 import alembic_postgresql_enum
 from alembic import context
-from sqlalchemy import engine_from_config, pool
+from sqlalchemy import Column, engine_from_config, pool
 from sqlalchemy.engine.url import make_url
+from sqlalchemy.schema import SchemaItem
 
 from app.api.common.models.base import Base
 from app.core.model_registry import load_models
@@ -30,6 +31,15 @@ logger = logging.getLogger("alembic.env")
 load_models()
 target_metadata = Base.metadata
 
+# Unmapped but kept for the previous release (see the User model). The revision that drops
+# these columns also removes this filter.
+_RETIRED_COLUMNS = {("user", "profile_stats"), ("user", "profile_stats_computed_at")}
+
+
+def include_object(obj: SchemaItem, name: str | None, *_: object) -> bool:
+    """Keep retired columns out of autogenerate's diff."""
+    return not (isinstance(obj, Column) and (obj.table.name, name) in _RETIRED_COLUMNS)
+
 
 def run_migrations_offline() -> None:
     """Run migrations in 'offline' mode.
@@ -51,6 +61,7 @@ def run_migrations_offline() -> None:
         url=url,
         target_metadata=target_metadata,
         literal_binds=True,
+        include_object=include_object,
         dialect_opts={"paramstyle": "named"},
     )
 
@@ -82,11 +93,11 @@ def run_migrations_online() -> None:
         # otherwise have both attempt the DDL, and the loser aborts partway through the
         # chain. Session-scoped, so it is released when the connection closes.
         #
-        # Acquired before the timeouts below on purpose: `lock_timeout` and
+        # Take the lock before setting the timeouts below. `lock_timeout` and
         # `statement_timeout` both apply to this wait, so setting them first would make a
-        # migrator that arrives behind a running one abort rather than queue, which under
-        # the `migrations` profile is a failed deploy instead of a wait. The wait here is
-        # deliberately unbounded; the timeouts start once this session owns the lock.
+        # migrator that arrives behind a running one abort instead of queue. Under the
+        # `migrations` profile that is a failed deploy. This wait has no limit; the
+        # timeouts start once this session owns the lock.
         connection.exec_driver_sql(f"SELECT pg_advisory_lock({_MIGRATION_LOCK_ID})")
         # NOTE: an ACCESS EXCLUSIVE lock that cannot be acquired promptly must abort, not
         # queue behind readers and block every other query on prod.
@@ -100,6 +111,7 @@ def run_migrations_online() -> None:
         context.configure(
             connection=connection,
             target_metadata=target_metadata,
+            include_object=include_object,
             # A chain-wide transaction holds every lock until the last revision commits, and
             # autocommit_block() (CREATE INDEX CONCURRENTLY) would commit earlier revisions
             # anyway. A mid-chain failure leaves earlier revisions applied; re-run to resume.

@@ -35,7 +35,7 @@ async def validate_email(
     proxy/uvicorn access logs, matching the pairing endpoints' approach.
     """
     if email_checker and await email_checker.is_disposable(body.email):
-        return {"isValid": False, "reason": "Please use a permanent email address"}
+        return {"isValid": False, "reason": "Use a permanent email address, not a disposable one."}
 
     if not await has_deliverable_domain(body.email):
         return {"isValid": False, "reason": UNDELIVERABLE_EMAIL_MESSAGE}

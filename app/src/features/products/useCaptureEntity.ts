@@ -82,10 +82,7 @@ export function useCaptureEntity({ role, parentID, parentRole }: UseCaptureEntit
           feedback.error('Created, but some photos failed to upload.', 'Upload failed');
           return { id: draft.id, partial: true };
         }
-        feedback.error(
-          getErrorMessage(err, 'Could not create. Please try again.'),
-          'Create failed',
-        );
+        feedback.error(getErrorMessage(err, "Couldn't create. Try again."), 'Create failed');
         return undefined;
       }
     } finally {
@@ -200,7 +197,7 @@ async function reportQueuedCreate(
   draft: Product,
   created: Promise<number>,
 ) {
-  feedback.toast(`${name} queued — sends when online`);
+  feedback.toast(`${name} queued. Sends when online`);
   try {
     await created;
   } catch (err) {
@@ -212,7 +209,7 @@ async function reportQueuedCreate(
       return;
     }
     feedback.error(
-      `"${name}" was not created. ${getErrorMessage(err, 'Please capture it again.')}`,
+      `"${name}" was not created. ${getErrorMessage(err, 'Capture it again.')}`,
       'Create failed',
     );
     return;

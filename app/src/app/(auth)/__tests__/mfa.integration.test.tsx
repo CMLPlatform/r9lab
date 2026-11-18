@@ -91,7 +91,9 @@ describe('MfaScreen challenge flow', () => {
 
   it('allows retrying an MFA challenge after an invalid code', async () => {
     mockedCompleteMfaChallenge
-      .mockRejectedValueOnce(new Error('Invalid MFA code.'))
+      .mockRejectedValueOnce(
+        new Error('That code is wrong or expired. Try again, or use a recovery code.'),
+      )
       .mockResolvedValueOnce();
 
     await renderMfaScreen();
@@ -99,7 +101,9 @@ describe('MfaScreen challenge flow', () => {
     await fireEvent.changeText(screen.getByLabelText('Authentication code'), '000000');
 
     await waitFor(() => {
-      expect(screen.getByText('Invalid MFA code.')).toBeOnTheScreen();
+      expect(
+        screen.getByText('That code is wrong or expired. Try again, or use a recovery code.'),
+      ).toBeOnTheScreen();
     });
 
     await fireEvent.changeText(screen.getByLabelText('Authentication code'), '123456');

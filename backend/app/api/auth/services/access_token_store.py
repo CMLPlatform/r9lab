@@ -58,7 +58,7 @@ class RevocableRedisStrategy(RedisStrategy[models.UP, models.ID]):
     async def write_token(self, user: models.UP) -> str:
         """Issue a token stamped with its issue time.
 
-        Deliberately not ``super().write_token`` plus an overwrite: that would write the
+        Do not call ``super().write_token`` and overwrite its value: that would write the
         key twice per login and leave a brief window holding the un-stamped value.
         """
         token = secrets.token_urlsafe()

@@ -518,9 +518,9 @@ describe('ProfileTab', () => {
 
       const { findByLabelText, findByText } = await renderProfile();
 
-      expect(await findByText('On — you enter a code at login')).toBeTruthy();
+      expect(await findByText('On. You enter a code at login')).toBeTruthy();
       expect(
-        await findByLabelText('Generate new recovery codes, Replace your saved backup codes'),
+        await findByLabelText('Generate new recovery codes, Replace your saved recovery codes'),
       ).toBeTruthy();
       expect(
         await findByLabelText('Reset authenticator key, Swap to a new authenticator app'),
