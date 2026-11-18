@@ -46,8 +46,8 @@ const { appUrl, docsUrl, heroBrand = false } = Astro.props;
 </header>
 
 <style>
-  /* Sticky, opaque, hairline bottom rule, no shadow. Not translucent: at 82%
-     over an 8px blur, scrolled body text read through the bar. */
+  /* Sticky, opaque, hairline bottom rule, no shadow. Opaque: a translucent
+     bar lets scrolled text show through. */
   .site-header {
     position: sticky;
     top: 0;
