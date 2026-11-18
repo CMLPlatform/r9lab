@@ -4,7 +4,7 @@ from enum import StrEnum
 
 from pydantic import BaseModel, Field
 
-from app.core.constants import DAY, HOUR
+from app.core.constants import DAY, HOUR, MINUTE
 
 DEFAULT_BOOTSTRAP_SUPERUSER_EMAIL = "your-email@example.com"
 DEFAULT_CORS_ORIGIN_REGEX = r"https?://(localhost|127\.0\.0\.1|192\.168\.\d+\.\d+)(:\d+)?"
@@ -15,6 +15,7 @@ class CacheNamespace(StrEnum):
 
     REFERENCE_DATA = "reference-data"
     STATS = "stats"
+    PROFILE_STATS = "profile-stats"
 
 
 class CacheSettings(BaseModel):
@@ -25,6 +26,8 @@ class CacheSettings(BaseModel):
         default_factory=lambda: {
             CacheNamespace.REFERENCE_DATA: DAY,
             CacheNamespace.STATS: 12 * HOUR,
+            # Short: other viewers may see a profile this far behind its owner's edits.
+            CacheNamespace.PROFILE_STATS: 5 * MINUTE,
         }
     )
 

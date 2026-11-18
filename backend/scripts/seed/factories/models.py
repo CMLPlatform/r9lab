@@ -165,11 +165,6 @@ class UserFactory(BaseModelFactory[User]):
         """Provide the default `preferences` value for generated instances."""
         return {}
 
-    @classmethod
-    def profile_stats(cls) -> dict[str, Any]:
-        """Provide the default `profile_stats` value for generated instances."""
-        return {}
-
 
 class TaxonomyFactory(BaseModelFactory[Taxonomy]):
     """Factory for creating Taxonomy test instances."""

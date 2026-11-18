@@ -79,6 +79,9 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- Public profile statistics are counted from the owner's products and photos, so they stay
+  right after a product type is renamed or products arrive through an import or a restore.
+  The owner sees changes at once; other viewers within five minutes.
 - An image or file upload, including a camera upload, whose database write fails no longer
   leaves the stored file behind. Deleting media answers success once the record is gone, even
   when removing the stored file fails; that failure is logged.

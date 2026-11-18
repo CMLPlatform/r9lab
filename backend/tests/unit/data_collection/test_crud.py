@@ -41,9 +41,6 @@ async def test_delete_product_commits_db_changes_before_storage_cleanup(mock_ses
     async def recompute_quota(*_args: object, **_kwargs: object) -> None:
         events.append("quota")
 
-    async def refresh_stats(*_args: object, **_kwargs: object) -> None:
-        events.append("stats")
-
     async def delete_from_storage(item: MagicMock) -> None:
         events.append(f"cleanup:{item.file.name}")
 
@@ -60,10 +57,6 @@ async def test_delete_product_commits_db_changes_before_storage_cleanup(mock_ses
             return_value=[(stored_item, delete_from_storage)],
         ),
         patch(
-            "app.api.data_collection.crud.product_commands.recompute_user_profile_stats",
-            AsyncMock(side_effect=refresh_stats),
-        ),
-        patch(
             "app.api.data_collection.crud.product_commands.recompute_user_upload_quota",
             AsyncMock(side_effect=recompute_quota),
         ),
@@ -72,7 +65,7 @@ async def test_delete_product_commits_db_changes_before_storage_cleanup(mock_ses
         await delete_product(mock_session, product_id)
 
     assert mock_session.commit.call_count == 1
-    assert events == ["flush", "quota", "stats", "commit", "cleanup:relab-file.txt"]
+    assert events == ["flush", "quota", "commit", "cleanup:relab-file.txt"]
 
 
 async def test_delete_product_storage_cleanup_failure_does_not_raise(mock_session: AsyncMock) -> None:
@@ -93,10 +86,6 @@ async def test_delete_product_storage_cleanup_failure_does_not_raise(mock_sessio
         patch(
             "app.api.data_collection.crud.product_commands.delete_product_media",
             return_value=[(stored_item, delete_from_storage)],
-        ),
-        patch(
-            "app.api.data_collection.crud.product_commands.recompute_user_profile_stats",
-            AsyncMock(),
         ),
         patch(
             "app.api.data_collection.crud.product_commands.recompute_user_upload_quota",

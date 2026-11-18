@@ -12,8 +12,6 @@ from fastapi import UploadFile
 
 from app.api.common.crud.pagination import paginate_select
 from app.api.common.form_json import parse_optional_json_object
-from app.api.data_collection.crud.profile_stats import recompute_user_profile_stats
-from app.api.data_collection.models.product import Product
 from app.api.file_storage.crud.parent_media import (
     ParentMedia,
     create_parent_media,
@@ -158,14 +156,7 @@ async def handle_upload_image(
     image_metadata: str | None,
     current_user: User,
 ) -> ImageReadWithinParent:
-    """Attach a new image to the given parent and refresh the product owner's stats.
-
-    Components denormalize their base's owner_id, so this resolves correctly for either
-    role, and matches ``handle_delete_image``, which also recomputes for the owner
-    rather than the acting user (who may be a superuser moderating someone else's
-    product).
-    """
-    db_product = await session.get(Product, parent_id)
+    """Attach a new image to the given parent."""
     item = await create_parent_media(
         session,
         _PRODUCT_IMAGES,
@@ -179,20 +170,9 @@ async def handle_upload_image(
         caps_role=current_user.role,
         quota_user_id=current_user.id,
     )
-    if db_product and db_product.owner_id is not None:
-        await recompute_user_profile_stats(session, db_product.owner_id)
-        await session.commit()
     return ImageReadWithinParent.model_validate(item)
 
 
 async def handle_delete_image(session: AsyncSession, parent_id: int, image_id: UUID4) -> None:
-    """Detach an image and recompute stats for the owner.
-
-    Components denormalize their base's owner_id, so the owner lookup here
-    resolves correctly for either role.
-    """
-    product = await session.get(Product, parent_id)
+    """Detach an image from the given parent."""
     await delete_parent_media(session, _PRODUCT_IMAGES, parent_id=parent_id, item_id=image_id)
-    if product and product.owner_id is not None:
-        await recompute_user_profile_stats(session, product.owner_id)
-        await session.commit()

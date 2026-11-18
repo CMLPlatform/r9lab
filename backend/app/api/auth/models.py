@@ -64,9 +64,9 @@ class User(BaseUserDB, TimeStampMixinBare):
 
     preferences: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False, server_default="{}", default=dict)
 
-    # Pre-computed public-profile statistics snapshot.
-    profile_stats: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False, server_default="{}", default=dict)
-    profile_stats_computed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), default=None)
+    # NOTE: the "user" table still holds profile_stats and profile_stats_computed_at for the
+    # previous release; they are unmapped so this release never reads or writes them, and
+    # the next release drops them. alembic/env.py hides them from autogenerate until then.
 
     # Contributor tier. Absent from UserUpdate so no self-service PATCH can reach it;
     # only the admin role route sets it. VARCHAR + CHECK: a Postgres enum can never drop a value.
