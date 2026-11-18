@@ -3,12 +3,12 @@ import { StyleSheet } from 'react-native';
 import { StatusPill } from '@/components/base/StatusPill';
 import { renderWithProviders } from '@/test-utils/index';
 
-test('renders the label', async () => {
+it('renders the label', async () => {
   await renderWithProviders(<StatusPill label="LIVE" tone="live" />);
   expect(screen.getByText('LIVE')).toBeOnTheScreen();
 });
 
-test('solid variant fills with a background and bold text, no border', async () => {
+it('solid variant fills with a background and bold text, no border', async () => {
   await renderWithProviders(<StatusPill label="LIVE" tone="live" testID="pill" />);
   const pill = StyleSheet.flatten(screen.getByTestId('pill').props.style);
   expect(pill.backgroundColor).toBeTruthy();
@@ -16,7 +16,7 @@ test('solid variant fills with a background and bold text, no border', async () 
   expect((screen.getByText('LIVE').props.className as string).includes('font-bold')).toBe(true);
 });
 
-test('soft variant uses a tinted fill with a border and non-bold text', async () => {
+it('soft variant uses a tinted fill with a border and non-bold text', async () => {
   await renderWithProviders(<StatusPill label="Warm" tone="info" variant="soft" testID="pill" />);
   const pill = StyleSheet.flatten(screen.getByTestId('pill').props.style);
   expect(pill.backgroundColor).toBeTruthy();

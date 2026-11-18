@@ -22,6 +22,7 @@ from app.api.auth.services.email.templates import (
     render_email_template,
 )
 from app.core.config.core import settings as core_settings
+from app.core.constants import DAY, HOUR, MINUTE
 from app.core.pseudonyms import LOG_TOKEN_LENGTH, keyed_digest
 
 if TYPE_CHECKING:
@@ -201,6 +202,15 @@ async def _notify(
     )
 
 
+def link_lifetime_text(seconds: int) -> str:
+    """Say a token lifetime in whole days, hours or minutes, for the email body."""
+    for unit, size in (("day", DAY), ("hour", HOUR), ("minute", MINUTE)):
+        if seconds >= size and seconds % size == 0:
+            count = seconds // size
+            return f"{count} {unit}" if count == 1 else f"{count} {unit}s"
+    return f"{seconds} seconds"
+
+
 async def send_templated_email(
     to_email: EmailStr,
     subject: str,
@@ -228,7 +238,11 @@ async def send_registration_email(
         to_email=to_email,
         subject="Welcome to R9lab: verify your email",
         template_name=REGISTRATION_TEMPLATE,
-        template_body={"username": _display_name(username, to_email), "verification_link": verification_link},
+        template_body={
+            "username": _display_name(username, to_email),
+            "verification_link": verification_link,
+            "link_lifetime": link_lifetime_text(auth_settings.verification_token_ttl_seconds),
+        },
         background_tasks=background_tasks,
     )
 
@@ -245,7 +259,11 @@ async def send_reset_password_email(
         to_email=to_email,
         subject="Reset your R9lab password",
         template_name=ACCOUNT_RECOVERY_TEMPLATE,
-        template_body={"username": _display_name(username, to_email), "reset_link": reset_link},
+        template_body={
+            "username": _display_name(username, to_email),
+            "reset_link": reset_link,
+            "link_lifetime": link_lifetime_text(auth_settings.reset_password_token_ttl_seconds),
+        },
         background_tasks=background_tasks,
     )
 
@@ -428,7 +446,11 @@ async def send_verification_email(
         to_email=to_email,
         subject="Verify your R9lab email",
         template_name=VERIFICATION_TEMPLATE,
-        template_body={"username": _display_name(username, to_email), "verification_link": verification_link},
+        template_body={
+            "username": _display_name(username, to_email),
+            "verification_link": verification_link,
+            "link_lifetime": link_lifetime_text(auth_settings.verification_token_ttl_seconds),
+        },
         background_tasks=background_tasks,
     )
 

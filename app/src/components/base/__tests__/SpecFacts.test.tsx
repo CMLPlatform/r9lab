@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react-native';
 import { SpecFacts } from '@/components/base/SpecFacts';
 
-test('renders label/value pairs', async () => {
+it('renders label/value pairs', async () => {
   await render(
     <SpecFacts
       facts={[
@@ -14,12 +14,12 @@ test('renders label/value pairs', async () => {
   expect(screen.getByText('1.2 kg')).toBeOnTheScreen();
 });
 
-test('renders nothing for empty facts', async () => {
+it('renders nothing for empty facts', async () => {
   await render(<SpecFacts facts={[]} />);
   expect(screen.toJSON()).toBeNull();
 });
 
-test('keeps the labels and pulses each value while loading', async () => {
+it('keeps the labels and pulses each value while loading', async () => {
   await render(
     <SpecFacts
       facts={[

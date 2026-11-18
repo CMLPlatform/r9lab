@@ -20,14 +20,14 @@ jest.mock('react-native', () => {
   return actual;
 });
 
-test('fires onPress', async () => {
+it('fires onPress', async () => {
   const onPress = jest.fn();
   await render(<AppButton onPress={onPress}>Save</AppButton>);
   await fireEvent.press(screen.getByText('Save'));
   expect(onPress).toHaveBeenCalledTimes(1);
 });
 
-test('loading disables the button and blocks presses', async () => {
+it('loading disables the button and blocks presses', async () => {
   const onPress = jest.fn();
   await render(
     <AppButton onPress={onPress} loading>
@@ -38,21 +38,21 @@ test('loading disables the button and blocks presses', async () => {
   expect(onPress).not.toHaveBeenCalled();
 });
 
-test('primary variant label uses the primary-foreground text color', async () => {
+it('primary variant label uses the primary-foreground text color', async () => {
   await render(<AppButton variant="primary">Save</AppButton>);
   expect(screen.getByText('Save').props.className).toEqual(
     expect.stringContaining('text-primary-foreground'),
   );
 });
 
-test('destructive variant label uses the destructive-foreground text color', async () => {
+it('destructive variant label uses the destructive-foreground text color', async () => {
   await render(<AppButton variant="destructive">Delete</AppButton>);
   expect(screen.getByText('Delete').props.className).toEqual(
     expect.stringContaining('text-destructive-foreground'),
   );
 });
 
-test('destructive loading spinner uses the onError color', async () => {
+it('destructive loading spinner uses the onError color', async () => {
   await render(
     <AppButton variant="destructive" loading>
       Delete
@@ -61,7 +61,7 @@ test('destructive loading spinner uses the onError color', async () => {
   expect(queryAllHostsByType('ActivityIndicator')[0].props.color).toBe(lightTheme.colors.onError);
 });
 
-test('tonal variant uses the soft-primary fill and primary text color', async () => {
+it('tonal variant uses the soft-primary fill and primary text color', async () => {
   await render(<AppButton variant="tonal">Sign in</AppButton>);
   expect(screen.getByRole('button').props.className).toEqual(
     expect.stringContaining('bg-primary/12'),
@@ -80,7 +80,7 @@ const ACCENT_CLASS_PATTERN = /\baccent\b/;
 // DESIGN.md "Form language — Flat & Sharp": inline surfaces carry no elevation,
 // and controls sit at the 6px control radius (Tailwind's rounded-md === 6px,
 // generated from assets/tokens.json into --radius-md in brand.generated.css).
-test.each(['primary', 'tonal', 'outline', 'ghost', 'destructive'] as const)(
+it.each(['primary', 'tonal', 'outline', 'ghost', 'destructive'] as const)(
   '%s variant is flat and uses the control radius',
   async (variant) => {
     await render(<AppButton variant={variant}>Label</AppButton>);
@@ -94,7 +94,7 @@ test.each(['primary', 'tonal', 'outline', 'ghost', 'destructive'] as const)(
 // hover/pressed state; interaction states use a subtler shade of the primary."
 // `accent` is the brand manila (brand.generated.css: --accent: #8F6212), so no
 // button variant or state may reference it; pressed/hover are primary-derived.
-test.each(['primary', 'tonal', 'outline', 'ghost', 'destructive'] as const)(
+it.each(['primary', 'tonal', 'outline', 'ghost', 'destructive'] as const)(
   '%s variant never uses the accent for a fill or state',
   async (variant) => {
     await render(<AppButton variant={variant}>Label</AppButton>);
@@ -103,7 +103,7 @@ test.each(['primary', 'tonal', 'outline', 'ghost', 'destructive'] as const)(
   },
 );
 
-test.each(['outline', 'ghost'] as const)(
+it.each(['outline', 'ghost'] as const)(
   '%s variant uses a primary tint state-layer, not a neutral',
   async (variant) => {
     await render(<AppButton variant={variant}>Label</AppButton>);
@@ -115,7 +115,7 @@ test.each(['outline', 'ghost'] as const)(
 
 // DESIGN.md Buttons: "if a thing responds to touch, it is blue" — outline and
 // ghost carry blue ink at rest, not only on press; the spinner and composed icons follow.
-test.each(['outline', 'ghost'] as const)('%s variant has blue ink at rest', async (variant) => {
+it.each(['outline', 'ghost'] as const)('%s variant has blue ink at rest', async (variant) => {
   await render(
     <AppButton variant={variant} loading>
       Label
@@ -127,17 +127,17 @@ test.each(['outline', 'ghost'] as const)('%s variant has blue ink at rest', asyn
   expect(queryAllHostsByType('ActivityIndicator')[0].props.color).toBe(lightTheme.colors.primary);
 });
 
-test('meets the 44px a11y tap-target floor regardless of caller className', async () => {
+it('meets the 44px a11y tap-target floor regardless of caller className', async () => {
   await render(<AppButton className="mx-4 my-2">Add component</AppButton>);
   expect(screen.getByRole('button').props.className).toEqual(expect.stringContaining('min-h-11'));
 });
 
-test('forwards arbitrary accessibility props (accessibilityHint) to the underlying button', async () => {
+it('forwards arbitrary accessibility props (accessibilityHint) to the underlying button', async () => {
   await render(<AppButton accessibilityHint="Saves the current product">Save</AppButton>);
   expect(screen.getByRole('button').props.accessibilityHint).toBe('Saves the current product');
 });
 
-test('has web hover, cursor, and focus-visible affordances', async () => {
+it('has web hover, cursor, and focus-visible affordances', async () => {
   await render(<AppButton>Save</AppButton>);
   const className = screen.getByRole('button').props.className;
   expect(className).toEqual(expect.stringContaining('cursor-pointer'));
@@ -145,14 +145,14 @@ test('has web hover, cursor, and focus-visible affordances', async () => {
   expect(className).toEqual(expect.stringContaining('focus-visible:'));
 });
 
-test('interpolated label renders as one Text node', async () => {
+it('interpolated label renders as one Text node', async () => {
   const count = 2;
   await render(<AppButton onPress={() => {}}>Select all ({count})</AppButton>);
   expect(screen.getByText('Select all (2)')).toBeTruthy();
   expect(screen.container.queryAll((el) => el.type === 'Text')).toHaveLength(1);
 });
 
-test('element children are left unwrapped', async () => {
+it('element children are left unwrapped', async () => {
   await render(
     <AppButton onPress={() => {}}>
       <Text>Custom</Text>
@@ -162,7 +162,7 @@ test('element children are left unwrapped', async () => {
 });
 
 // One disabled treatment for every variant: faint muted fill, hairline, muted ink; no fade.
-test.each(['primary', 'outline', 'ghost', 'tonal', 'destructive'] as const)(
+it.each(['primary', 'outline', 'ghost', 'tonal', 'destructive'] as const)(
   'disabled %s takes the shared muted treatment without fading',
   async (variant) => {
     await render(
@@ -179,7 +179,7 @@ test.each(['primary', 'outline', 'ghost', 'tonal', 'destructive'] as const)(
 );
 
 // Loading is busy, not unavailable: the variant keeps its colours.
-test('a loading primary keeps its fill and announces busy', async () => {
+it('a loading primary keeps its fill and announces busy', async () => {
   await render(<AppButton loading>Continue</AppButton>);
   const button = screen.getByRole('button');
   expect(button).toBeBusy();

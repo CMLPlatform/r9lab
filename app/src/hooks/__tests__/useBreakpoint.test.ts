@@ -13,7 +13,7 @@ afterEach(async () => {
   });
 });
 
-test.each([
+it.each([
   [500, false, false],
   [800, true, false],
   [1200, true, true],
@@ -27,7 +27,7 @@ test.each([
   expect(result.current).toEqual({ isMd, isLg });
 });
 
-test('native is never md/lg regardless of width', async () => {
+it('native is never md/lg regardless of width', async () => {
   mockPlatform('ios');
   Dimensions.set({
     window: { width: 1200, height: 800, scale: 1, fontScale: 1 },

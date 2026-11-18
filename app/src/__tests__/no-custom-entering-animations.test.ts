@@ -1,6 +1,6 @@
 import { globSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { expect, test } from '@jest/globals';
+import { expect, test as it } from '@jest/globals';
 
 // On web, Reanimated treats an entering animation built with `.withInitialValues()`
 // as a custom keyframe, and once it ends pins the element to `position: absolute`
@@ -8,7 +8,7 @@ import { expect, test } from '@jest/globals';
 // edit dock leaves the viewport corner. Use a stock preset (FadeInUp, FadeInDown, …).
 const CUSTOM_INITIAL_VALUES = /\.withInitialValues\(/;
 
-test('no entering animation sets custom initial values', () => {
+it('no entering animation sets custom initial values', () => {
   const root = join(__dirname, '..');
   const offenders = globSync('**/*.{ts,tsx}', { cwd: root })
     .filter((f) => !f.includes('__tests__'))

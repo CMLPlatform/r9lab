@@ -59,7 +59,9 @@
         "useImportExtensions": "off"
       },
       "style": {
-        "useComponentExportOnlyModules": "warn"
+        "useComponentExportOnlyModules": "warn",
+        // Its default level is info, which `biome check` passes while `--write` rewrites.
+        "useConsistentTestIt": "error"
       },
       "suspicious": {
         "noSkippedTests": "error"

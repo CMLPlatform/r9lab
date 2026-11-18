@@ -15,7 +15,7 @@ function makeNav(): SectionNavApi & { registerSection: jest.Mock; unregisterSect
   };
 }
 
-test('registers with the composed offset once both ancestor layouts land', async () => {
+it('registers with the composed offset once both ancestor layouts land', async () => {
   const nav = makeNav();
   const { result } = await renderHook(() => useAnchoredSectionNav(nav));
 
@@ -26,7 +26,7 @@ test('registers with the composed offset once both ancestor layouts land', async
   expect(nav.registerSection).toHaveBeenLastCalledWith('physical', 360);
 });
 
-test('heals a section that registers before the ancestor offsets are known', async () => {
+it('heals a section that registers before the ancestor offsets are known', async () => {
   const nav = makeNav();
   const { result } = await renderHook(() => useAnchoredSectionNav(nav));
 
@@ -41,7 +41,7 @@ test('heals a section that registers before the ancestor offsets are known', asy
   expect(nav.registerSection).toHaveBeenLastCalledWith('physical', 360);
 });
 
-test('unregistering drops the section from future re-anchoring', async () => {
+it('unregistering drops the section from future re-anchoring', async () => {
   const nav = makeNav();
   const { result } = await renderHook(() => useAnchoredSectionNav(nav));
 

@@ -1,4 +1,4 @@
-import { describe, expect, test } from '@jest/globals';
+import { describe, expect, test as it } from '@jest/globals';
 import { palette } from '@/theme/palette.generated';
 import { darkTheme, lightTheme } from '@/theme/themes';
 import type { AppTheme } from '@/theme/types';
@@ -38,24 +38,24 @@ describe.each<[string, AppTheme, string]>([
   ['light', lightTheme, palette.light.background],
   ['dark', darkTheme, palette.dark.background],
 ])('%s scheme', (scheme, theme, background) => {
-  test('status and link text tones meet 4.5:1 on the page background', () => {
+  it('status and link text tones meet 4.5:1 on the page background', () => {
     const { success, warning, info, offline, danger, live } = theme.tokens.status;
     for (const tone of [success, warning, info, offline, danger, live, theme.tokens.text.link]) {
       expect(contrast(tone, background)).toBeGreaterThanOrEqual(4.5);
     }
   });
-  test('solid status fills carry readable onStatus text', () => {
+  it('solid status fills carry readable onStatus text', () => {
     const { live, success, warning, info, danger } = theme.tokens.status;
     for (const fill of [live, success, warning, info, danger]) {
       expect(contrast(theme.tokens.status.onStatus, fill)).toBeGreaterThanOrEqual(4.5);
     }
   });
-  test('destructive fill carries readable destructive-foreground text', () => {
+  it('destructive fill carries readable destructive-foreground text', () => {
     expect(contrast(theme.colors.onError, theme.colors.error)).toBeGreaterThanOrEqual(4.5);
   });
   // Placeholders sit on the card fill (TextInput) or the page, and in dark ui/input on a
   // 30% tint of the input grey. Readable, yet clearly lighter than a typed value.
-  test('placeholder text meets 4.5:1 and reads lighter than entered text', () => {
+  it('placeholder text meets 4.5:1 and reads lighter than entered text', () => {
     const placeholder = theme.tokens.text.placeholder;
     const fills = [background, theme.colors.card];
     if (scheme === 'dark') fills.push(blend(theme.colors.outline, background, 0.3));
@@ -66,7 +66,7 @@ describe.each<[string, AppTheme, string]>([
       );
     }
   });
-  test('pressed primary-strong fill carries readable onPrimary text', () => {
+  it('pressed primary-strong fill carries readable onPrimary text', () => {
     expect(contrast(theme.colors.onPrimary, theme.colors.primaryStrong)).toBeGreaterThanOrEqual(
       4.5,
     );

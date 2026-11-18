@@ -1,4 +1,4 @@
-import { afterEach, expect, jest, test } from '@jest/globals';
+import { afterEach, expect, test as it, jest } from '@jest/globals';
 import { fireEvent, screen } from '@testing-library/react-native';
 import { AccessibilityInfo, StyleSheet } from 'react-native';
 import { SaveBar } from '@/components/product/detail/SaveBar';
@@ -19,7 +19,7 @@ afterEach(() => {
   jest.mocked(getImageUploadProgress).mockReturnValue(null);
 });
 
-test('flow layout fills available width, wraps content, and is not positioned', async () => {
+it('flow layout fills available width, wraps content, and is not positioned', async () => {
   await renderWithProviders(
     <SaveBar
       layout="flow"
@@ -46,7 +46,7 @@ test('flow layout fills available width, wraps content, and is not positioned', 
   expect(style.bottom).toBeUndefined();
 });
 
-test('save bar shows error count and routes to the first error', async () => {
+it('save bar shows error count and routes to the first error', async () => {
   const onErrorSummaryPress = jest.fn();
   await renderWithProviders(
     <SaveBar
@@ -69,7 +69,7 @@ test('save bar shows error count and routes to the first error', async () => {
   expect(screen.getByTestId('save-bar-status')).toHaveTextContent('3 fields need attention');
 });
 
-test('read mode renders a single Edit action', async () => {
+it('read mode renders a single Edit action', async () => {
   await renderWithProviders(
     <SaveBar
       bottomOffset={0}
@@ -86,7 +86,7 @@ test('read mode renders a single Edit action', async () => {
   expect(screen.getByText('Edit product')).toBeTruthy();
 });
 
-test('not owned by me renders nothing', async () => {
+it('not owned by me renders nothing', async () => {
   await renderWithProviders(
     <SaveBar
       bottomOffset={0}
@@ -103,7 +103,7 @@ test('not owned by me renders nothing', async () => {
   expect(screen.queryByText('Edit product')).toBeNull();
 });
 
-test('dirty edits with invalid validation and no error count block the save press', async () => {
+it('dirty edits with invalid validation and no error count block the save press', async () => {
   const onPrimaryPress = jest.fn();
   await renderWithProviders(
     <SaveBar
@@ -124,7 +124,7 @@ test('dirty edits with invalid validation and no error count block the save pres
   expect(onPrimaryPress).not.toHaveBeenCalled();
 });
 
-test('needsAttention state routes the primary button press to the error summary, not save', async () => {
+it('needsAttention state routes the primary button press to the error summary, not save', async () => {
   const onPrimaryPress = jest.fn();
   const onErrorSummaryPress = jest.fn();
   await renderWithProviders(
@@ -149,7 +149,7 @@ test('needsAttention state routes the primary button press to the error summary,
 
 // A paused save mutation shows a
 // short "queued" label and drops the spinner instead of loading forever.
-test('shows a queued label and no spinner while the save mutation is paused offline', async () => {
+it('shows a queued label and no spinner while the save mutation is paused offline', async () => {
   await renderWithProviders(
     <SaveBar
       bottomOffset={0}
@@ -169,7 +169,7 @@ test('shows a queued label and no spinner while the save mutation is paused offl
 
 // Photos upload sequentially after the entity PATCH lands, so a
 // multi-photo save gets a progress count instead of sitting behind one mute spinner.
-test('shows per-photo progress while photos upload mid-save', async () => {
+it('shows per-photo progress while photos upload mid-save', async () => {
   jest.mocked(getImageUploadProgress).mockReturnValue({ current: 2, total: 5 });
   await renderWithProviders(
     <SaveBar
@@ -189,7 +189,7 @@ test('shows per-photo progress while photos upload mid-save', async () => {
   expect(screen.getByTestId('upload-progress', { includeHiddenElements: true })).toBeTruthy();
 });
 
-test('ignores upload progress while the save is paused offline', async () => {
+it('ignores upload progress while the save is paused offline', async () => {
   jest.mocked(getImageUploadProgress).mockReturnValue({ current: 2, total: 5 });
   await renderWithProviders(
     <SaveBar
@@ -209,7 +209,7 @@ test('ignores upload progress while the save is paused offline', async () => {
   expect(screen.queryByTestId('upload-progress', { includeHiddenElements: true })).toBeNull();
 });
 
-test('shows the loading spinner while actually saving (not paused)', async () => {
+it('shows the loading spinner while actually saving (not paused)', async () => {
   await renderWithProviders(
     <SaveBar
       bottomOffset={0}
@@ -227,7 +227,7 @@ test('shows the loading spinner while actually saving (not paused)', async () =>
   expect(queryAllHostsByType('ActivityIndicator').length).toBeGreaterThan(0);
 });
 
-test('uses component labels for component pages', async () => {
+it('uses component labels for component pages', async () => {
   await renderWithProviders(
     <SaveBar
       bottomOffset={0}
@@ -246,7 +246,7 @@ test('uses component labels for component pages', async () => {
 
 // ProductFabControls routes every editMode render straight to this component
 // (`isMd || editMode`), so its edit-mode cases live here.
-test('edit mode with nothing unsaved reads Done and stays pressable even while invalid', async () => {
+it('edit mode with nothing unsaved reads Done and stays pressable even while invalid', async () => {
   const onPrimaryPress = jest.fn();
   await renderWithProviders(
     <SaveBar
@@ -267,7 +267,7 @@ test('edit mode with nothing unsaved reads Done and stays pressable even while i
   expect(onPrimaryPress).toHaveBeenCalledTimes(1);
 });
 
-test('valid dirty edits save on press', async () => {
+it('valid dirty edits save on press', async () => {
   const onPrimaryPress = jest.fn();
   const onErrorSummaryPress = jest.fn();
   await renderWithProviders(
@@ -292,7 +292,7 @@ test('valid dirty edits save on press', async () => {
 
 // A second press mid-flight would fire the mutation twice. The spinner blocks
 // this one; the queued case below has no spinner and relies on `disabled`.
-test('blocks the press while a save is already in flight', async () => {
+it('blocks the press while a save is already in flight', async () => {
   const onPrimaryPress = jest.fn();
   await renderWithProviders(
     <SaveBar
@@ -313,7 +313,7 @@ test('blocks the press while a save is already in flight', async () => {
 
 // Queued offline drops the spinner, so the button reads as pressable; only
 // `disabled` stops a second press from queueing the mutation twice.
-test('blocks the press while the save sits queued offline', async () => {
+it('blocks the press while the save sits queued offline', async () => {
   const onPrimaryPress = jest.fn();
   await renderWithProviders(
     <SaveBar
@@ -332,7 +332,7 @@ test('blocks the press while the save sits queued offline', async () => {
   expect(onPrimaryPress).not.toHaveBeenCalled();
 });
 
-test('uses singular phrasing for a single error', async () => {
+it('uses singular phrasing for a single error', async () => {
   await renderWithProviders(
     <SaveBar
       bottomOffset={0}
@@ -352,7 +352,7 @@ test('uses singular phrasing for a single error', async () => {
 
 // errorCount 0 is not "no errors"; it is an invalid form whose error summary
 // has nothing to route to, so the press is blocked rather than redirected.
-test('blocks the press when invalid with a zero error count', async () => {
+it('blocks the press when invalid with a zero error count', async () => {
   const onPrimaryPress = jest.fn();
   const onErrorSummaryPress = jest.fn();
   await renderWithProviders(
@@ -377,7 +377,7 @@ test('blocks the press when invalid with a zero error count', async () => {
 
 // Blocked with no message to show: the button still has to refuse the press,
 // and the bar must not render an empty error slot in its place.
-test('blocks the press with no inline message when the form supplies no validation error', async () => {
+it('blocks the press with no inline message when the form supplies no validation error', async () => {
   const onPrimaryPress = jest.fn();
   await renderWithProviders(
     <SaveBar
@@ -399,7 +399,7 @@ test('blocks the press with no inline message when the form supplies no validati
 
 // Flow layout stacks: the inline error takes a full row so it wraps below the
 // button instead of squeezing it. The floating layout lets it sit inline.
-test('gives the inline validation error its own row in flow layout only', async () => {
+it('gives the inline validation error its own row in flow layout only', async () => {
   const props = {
     bottomOffset: 0,
     entityRole: 'product' as const,
@@ -422,7 +422,7 @@ test('gives the inline validation error its own row in flow layout only', async 
   expect(StyleSheet.flatten(floating.getByTestId('save-bar-status').props.style)).toBeUndefined();
 });
 
-test('announces upload progress through a polite status region', async () => {
+it('announces upload progress through a polite status region', async () => {
   jest.mocked(getImageUploadProgress).mockReturnValue({ current: 1, total: 3 });
   await renderWithProviders(
     <SaveBar
@@ -442,7 +442,7 @@ test('announces upload progress through a polite status region', async () => {
   expect(region).toHaveTextContent('Uploading 1 of 3…');
 });
 
-test('announces upload progress on iOS, where live regions do nothing', async () => {
+it('announces upload progress on iOS, where live regions do nothing', async () => {
   mockPlatform('ios');
   const announce = jest
     .spyOn(AccessibilityInfo, 'announceForAccessibility')
@@ -466,7 +466,7 @@ test('announces upload progress on iOS, where live regions do nothing', async ()
   restorePlatform();
 });
 
-test('announces the attention summary on iOS, where live regions do nothing', async () => {
+it('announces the attention summary on iOS, where live regions do nothing', async () => {
   mockPlatform('ios');
   const announce = jest
     .spyOn(AccessibilityInfo, 'announceForAccessibility')
@@ -490,7 +490,7 @@ test('announces the attention summary on iOS, where live regions do nothing', as
   restorePlatform();
 });
 
-test('announces the validation message through the status region', async () => {
+it('announces the validation message through the status region', async () => {
   await renderWithProviders(
     <SaveBar
       bottomOffset={0}
@@ -508,7 +508,7 @@ test('announces the validation message through the status region', async () => {
   expect(screen.getByTestId('save-bar-status')).toHaveTextContent('Name is required');
 });
 
-test('keeps the status region mounted and empty when there is nothing to say', async () => {
+it('keeps the status region mounted and empty when there is nothing to say', async () => {
   await renderWithProviders(
     <SaveBar
       bottomOffset={0}

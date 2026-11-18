@@ -39,13 +39,13 @@ afterEach(() => {
   restorePlatform();
 });
 
-test('renders nothing below lg', async () => {
+it('renders nothing below lg', async () => {
   (useBreakpoint as jest.Mock).mockReturnValue({ isMd: true, isLg: false });
   await render(<TopNav />);
   expect(screen.queryByText('Products')).toBeNull();
 });
 
-test('renders destinations at lg', async () => {
+it('renders destinations at lg', async () => {
   (useBreakpoint as jest.Mock).mockReturnValue({ isMd: true, isLg: true });
   await render(<TopNav />);
   expect(screen.getByText('Products')).toBeOnTheScreen();
@@ -53,7 +53,7 @@ test('renders destinations at lg', async () => {
 });
 
 // Plain words, not field labels: untracked body type, never the tracked label step.
-test('sets destination labels in untracked body type', async () => {
+it('sets destination labels in untracked body type', async () => {
   (useBreakpoint as jest.Mock).mockReturnValue({ isMd: true, isLg: true });
   await render(<TopNav />);
   const label = screen.getByText('Products');
@@ -61,7 +61,7 @@ test('sets destination labels in untracked body type', async () => {
   expect(label).not.toHaveStyle({ letterSpacing: expect.any(Number) });
 });
 
-test('marks the account pill as the current page on /account', async () => {
+it('marks the account pill as the current page on /account', async () => {
   (useBreakpoint as jest.Mock).mockReturnValue({ isMd: true, isLg: true });
   (usePathname as jest.Mock).mockReturnValue('/account');
   (useAuth as jest.Mock).mockReturnValueOnce({ user: { username: 'tester' } });
@@ -70,14 +70,14 @@ test('marks the account pill as the current page on /account', async () => {
   expect(pill.props['aria-current']).toBe('page');
 });
 
-test('the sign-in pill and the brand are links, not buttons', async () => {
+it('the sign-in pill and the brand are links, not buttons', async () => {
   (useBreakpoint as jest.Mock).mockReturnValue({ isMd: true, isLg: true });
   await render(<TopNav />);
   expect(screen.getByRole('link', { name: 'Sign in' }).props['aria-current']).toBeUndefined();
   expect(screen.getByRole('link', { name: 'R9lab, go to products' })).toBeOnTheScreen();
 });
 
-test('marks the active destination from the pathname', async () => {
+it('marks the active destination from the pathname', async () => {
   (useBreakpoint as jest.Mock).mockReturnValue({ isMd: true, isLg: true });
   (usePathname as jest.Mock).mockReturnValue('/cameras');
   await render(<TopNav />);
@@ -86,7 +86,7 @@ test('marks the active destination from the pathname', async () => {
   expect(screen.getByRole('link', { name: 'Cameras' })).toBeOnTheScreen();
 });
 
-test('marks the active destination on a detail route (prefix match)', async () => {
+it('marks the active destination on a detail route (prefix match)', async () => {
   (useBreakpoint as jest.Mock).mockReturnValue({ isMd: true, isLg: true });
   (usePathname as jest.Mock).mockReturnValue('/products/123');
   await render(<TopNav />);
@@ -94,7 +94,7 @@ test('marks the active destination on a detail route (prefix match)', async () =
   expect(screen.getByLabelText('Cameras').props['aria-current']).toBeUndefined();
 });
 
-test('keeps Products active on a component record, which the products tab owns', async () => {
+it('keeps Products active on a component record, which the products tab owns', async () => {
   (useBreakpoint as jest.Mock).mockReturnValue({ isMd: true, isLg: true });
   (usePathname as jest.Mock).mockReturnValue('/components/3');
   await render(<TopNav />);
@@ -102,14 +102,14 @@ test('keeps Products active on a component record, which the products tab owns',
   expect(screen.getByLabelText('Cameras').props['aria-current']).toBeUndefined();
 });
 
-test('pressing a destination routes', async () => {
+it('pressing a destination routes', async () => {
   (useBreakpoint as jest.Mock).mockReturnValue({ isMd: true, isLg: true });
   await render(<TopNav />);
   await fireEvent.press(screen.getByText('Cameras'));
   expect(navigate).toHaveBeenCalledWith('/cameras');
 });
 
-test('destinations have a web hover affordance', async () => {
+it('destinations have a web hover affordance', async () => {
   (useBreakpoint as jest.Mock).mockReturnValue({ isMd: true, isLg: true });
   await render(<TopNav />);
   expect(screen.getByLabelText('Cameras').props.className).toEqual(
@@ -117,7 +117,7 @@ test('destinations have a web hover affordance', async () => {
   );
 });
 
-test('hides Cameras when rpi cameras are disabled', async () => {
+it('hides Cameras when rpi cameras are disabled', async () => {
   (useBreakpoint as jest.Mock).mockReturnValue({ isMd: true, isLg: true });
   mockUseRpiIntegration.mockReturnValue({ enabled: false });
   await render(<TopNav />);
@@ -125,7 +125,7 @@ test('hides Cameras when rpi cameras are disabled', async () => {
   expect(screen.queryByText('Cameras')).toBeNull();
 });
 
-test('shows Cameras when rpi cameras are enabled', async () => {
+it('shows Cameras when rpi cameras are enabled', async () => {
   (useBreakpoint as jest.Mock).mockReturnValue({ isMd: true, isLg: true });
   mockUseRpiIntegration.mockReturnValue({ enabled: true });
   await render(<TopNav />);
@@ -133,7 +133,7 @@ test('shows Cameras when rpi cameras are enabled', async () => {
   expect(screen.getByText('Cameras')).toBeOnTheScreen();
 });
 
-test.each([
+it.each([
   '/',
   '/login',
   '/onboarding',
@@ -149,7 +149,7 @@ test.each([
   expect(screen.queryByText('Products')).toBeNull();
 });
 
-test('the shortcuts button opens the overlay', async () => {
+it('the shortcuts button opens the overlay', async () => {
   // Pressing "?" is the only other way in, which leaves the overlay, and the switch
   // inside it, unreachable for anyone who does not know the convention.
   (useBreakpoint as jest.Mock).mockReturnValue({ isMd: true, isLg: true });

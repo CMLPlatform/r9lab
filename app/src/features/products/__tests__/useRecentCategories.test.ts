@@ -10,7 +10,7 @@ const cat = (id: number) =>
     allChildren: [id * 100, id * 101],
   }) as never;
 
-test('records most-recent-first, dedupes, caps at 5', async () => {
+it('records most-recent-first, dedupes, caps at 5', async () => {
   const { result } = await renderHook(() => useRecentCategories());
   await act(() => {
     for (const id of [1, 2, 3, 4, 5, 6, 2]) result.current.recordRecent(cat(id));
@@ -18,7 +18,7 @@ test('records most-recent-first, dedupes, caps at 5', async () => {
   expect(result.current.recents.map((c) => c.id)).toEqual([2, 6, 5, 4, 3]);
 });
 
-test('strips allChildren before persisting — only read by live cpvClass filtering, never by recents cards', async () => {
+it('strips allChildren before persisting — only read by live cpvClass filtering, never by recents cards', async () => {
   const { result } = await renderHook(() => useRecentCategories());
   await act(() => {
     result.current.recordRecent(cat(1));
@@ -29,7 +29,7 @@ test('strips allChildren before persisting — only read by live cpvClass filter
 // Sign-out must clear the picks in memory, not only the AsyncStorage key:
 // on a shared device the next user would see them and the next write would
 // persist them straight back.
-test('sign-out empties the live store, not just its persisted copy', async () => {
+it('sign-out empties the live store, not just its persisted copy', async () => {
   const { result } = await renderHook(() => useRecentCategories());
   await act(() => {
     result.current.recordRecent(cat(9));

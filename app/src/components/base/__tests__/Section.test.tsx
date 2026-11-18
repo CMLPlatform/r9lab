@@ -5,7 +5,7 @@ import { SectionNavContext } from '@/components/base/SectionNavContext';
 
 const child = <Text>section body</Text>;
 
-test('renders title and children when not empty', async () => {
+it('renders title and children when not empty', async () => {
   await render(
     <Section title="Physical properties" sectionKey="physical">
       {child}
@@ -15,7 +15,7 @@ test('renders title and children when not empty', async () => {
   expect(screen.getByText('section body')).toBeOnTheScreen();
 });
 
-test('view mode + empty renders nothing', async () => {
+it('view mode + empty renders nothing', async () => {
   await render(
     <Section title="Circularity" sectionKey="circularity" isEmpty>
       {child}
@@ -25,7 +25,7 @@ test('view mode + empty renders nothing', async () => {
   expect(screen.queryByText('section body')).toBeNull();
 });
 
-test('edit mode + empty shows the add row, expands in place on press', async () => {
+it('edit mode + empty shows the add row, expands in place on press', async () => {
   await render(
     <Section
       title="Circularity"
@@ -46,7 +46,7 @@ test('edit mode + empty shows the add row, expands in place on press', async () 
   expect(screen.getByText('section body')).toBeOnTheScreen();
 });
 
-test('renders titleSuffix and tooltip beside the title', async () => {
+it('renders titleSuffix and tooltip beside the title', async () => {
   await render(
     <Section
       title="Components"
@@ -61,7 +61,7 @@ test('renders titleSuffix and tooltip beside the title', async () => {
   expect(screen.getByText('(3)')).toBeOnTheScreen();
 });
 
-test('unregisters from the nav registry when it collapses to empty in view mode', async () => {
+it('unregisters from the nav registry when it collapses to empty in view mode', async () => {
   const registerSection = jest.fn();
   const unregisterSection = jest.fn();
   const nav = {

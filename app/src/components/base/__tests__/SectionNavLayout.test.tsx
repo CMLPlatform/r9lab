@@ -12,7 +12,7 @@ afterEach(() => {
   restorePlatform();
 });
 
-test('fires onPressSection with the section key', async () => {
+it('fires onPressSection with the section key', async () => {
   const onPressSection = jest.fn();
   await render(
     <SectionNavLayout
@@ -28,7 +28,7 @@ test('fires onPressSection with the section key', async () => {
   expect(onPressSection).toHaveBeenCalledWith('components');
 });
 
-test('marks the active item for accessibility', async () => {
+it('marks the active item for accessibility', async () => {
   await render(
     <SectionNavLayout
       isLg={true}
@@ -47,7 +47,7 @@ test('marks the active item for accessibility', async () => {
   expect(screen.getByRole('button', { name: 'Overview', selected: false })).toBeOnTheScreen();
 });
 
-test('has web hover, cursor, and focus-visible affordances', async () => {
+it('has web hover, cursor, and focus-visible affordances', async () => {
   mockPlatform('web');
   await render(
     <SectionNavLayout
@@ -65,7 +65,7 @@ test('has web hover, cursor, and focus-visible affordances', async () => {
   expect(className).toEqual(expect.stringContaining('focus-visible:'));
 });
 
-test('on web, a focused chip scrolls itself into view in the chip row', async () => {
+it('on web, a focused chip scrolls itself into view in the chip row', async () => {
   mockPlatform('web');
   await render(
     <SectionNavLayout
@@ -84,7 +84,7 @@ test('on web, a focused chip scrolls itself into view in the chip row', async ()
   expect(scrollIntoView).toHaveBeenCalledWith({ block: 'nearest', inline: 'nearest' });
 });
 
-test('scrolls the chip row when the active section changes', async () => {
+it('scrolls the chip row when the active section changes', async () => {
   const scrollTo = jest.spyOn(ScrollView.prototype, 'scrollTo' as never);
   const props = { isLg: false, navSections: [...sections], onPressSection: jest.fn() };
   const { rerender } = await render(
@@ -105,7 +105,7 @@ test('scrolls the chip row when the active section changes', async () => {
 });
 
 // Plain words: body in the desktop outline, caption in the phone chip row; never tracked.
-test.each([
+it.each([
   [true, 16],
   [false, 13],
 ])('sets nav labels untracked (isLg=%s → %spx)', async (isLg, fontSize) => {
