@@ -9,10 +9,7 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 **Upgrading:**
 
-- **Breaking:** the deployment identifiers move from `relab` to `r9lab`. Self-hosters: do not
-  plain-pull this release. Follow "Upgrading across the R9lab rename" in
-  `docs/src/content/docs/operations/upgrade-backup.md` (staging first, about an hour), and
-  `deploy/DEPLOY-PROD.md` 1.7 if the host also moves its paths and deploy user. What changes:
+- **Breaking:** the deployment identifiers move from `relab` to `r9lab`. What changes:
   - The Compose project is `r9lab_<env>`, so every volume and network is renamed.
   - The database and roles are `r9lab_db`, `r9lab_app`, `r9lab_migrator` and `r9lab_backup`.
   - Images are `ghcr.io/cmlplatform/r9lab-*`.
@@ -48,8 +45,6 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - The `r9lab-backup` image is built on Debian slim with only the PostgreSQL client, not the
   full `postgres:18` server image. It is about 71 MB to pull instead of 186 MB.
 - The landing page and docs Workers are named `r9lab-www-<env>` and `r9lab-docs-<env>`.
-  Self-hosters who run the Cloudflare root follow "Renaming the repository or the Workers" in
-  `infra/cloudflare/README.md`.
 - `just images-verify` checks images against `CMLPlatform/r9lab`. Only `sha-8697ebf`, published
   between the deployment rename and the repository rename, still verifies against the old
   repository name.

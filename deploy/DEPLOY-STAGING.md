@@ -25,20 +25,6 @@ telemetry on; this host cannot tell you the rule is missing.
 Staging's `rclone.conf` defines one remote, `surfdrive_staging`, a SURFdrive share link scoped to
 staging's own folder; the backup copies to `rclone:surfdrive_staging:`.
 
-### Moving the host from the relab paths
-
-Follow [DEPLOY-PROD.md](DEPLOY-PROD.md) 1.7 at the start of the rename window's step 9, with
-these differences:
-
-- Staging has no deploy user. Skip the `usermod`, `groupmod` and `sudo -u` parts.
-- Stop the stack with `just stack staging down YES`.
-- Move the checkout only if its directory is named after relab (`/opt/relab-staging` to
-  `/opt/r9lab-staging`).
-
-The moved virtualenvs still carry the old absolute paths. As the checkout owner, run
-`uv sync --frozen` in the checkout and `uv sync --all-groups --frozen` in `backend/`. Last, run
-`just stack staging up YES` from the moved checkout, then `just timers-install staging`.
-
 ______________________________________________________________________
 
 ## Part 2: Routine release
