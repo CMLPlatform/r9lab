@@ -15,8 +15,8 @@
   - ``image_touch_product`` re-scores the parent product when a product image is added,
     deleted or moved. It is a constraint trigger deferred to commit, so an upload takes the
     product row lock after its quota update has locked the owner's row. Every other
-    product writer locks the owner's row first too (``lock_product_owner``); a writer
-    that took the two in the other order would deadlock against an upload.
+    writer that locks both rows takes the owner's first too (``lock_product_owner``); a
+    writer that took the two in the other order would deadlock against an upload.
 * The functions pin ``search_path`` so a same-named object in another schema on the
   caller's path cannot stand in for a built-in operator.
 * The backfill re-scores every row in one UPDATE, which locks the product table's rows

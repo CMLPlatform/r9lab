@@ -6,10 +6,9 @@ as an index scan that stops after the page instead of sorting every product.
 
 Alone in its revision: CONCURRENTLY cannot run inside a transaction, and an autocommit
 block commits whatever ran before it. A VALID index of this name is adopted, so a process
-that died between the build and the revision stamp re-runs cleanly. A failed build leaves
-an INVALID index, which a re-run does not adopt; drop it and re-run:
-  SELECT indexrelid::regclass FROM pg_index WHERE NOT indisvalid;
-  DROP INDEX CONCURRENTLY ix_product_recommended_rank;
+that died between the build and the revision stamp re-runs cleanly. A failed build (for
+example lock_timeout while an older transaction is open) leaves an INVALID index, which a
+re-run drops and builds again.
 
 Revision ID: d8b3a6f0e1c5
 Revises: c4f1e8a2b7d3
@@ -43,6 +42,8 @@ def upgrade() -> None:
     if existing is True:
         return
     with op.get_context().autocommit_block():
+        if existing is False:
+            op.drop_index(_INDEX, table_name="product", postgresql_concurrently=True)
         op.create_index(
             _INDEX,
             "product",

@@ -80,7 +80,7 @@ async def reserve_product_upload_quota(
 async def lock_product_owner(session: AsyncSession, *, product_id: int | ScalarSelect[int]) -> None:
     """Lock the user row that owns ``product_id`` before any product or media row.
 
-    Every writer of a product tree takes the owner's row first: an upload reserves quota
+    Every writer that locks both rows takes the owner's first: an upload reserves quota
     on it and only then, at commit, re-scores the product (the deferred
     ``image_touch_product`` trigger). A delete that locked the product or a media row
     first and the owner after would deadlock against that upload. ``product_id`` may be a

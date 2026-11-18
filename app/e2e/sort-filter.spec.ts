@@ -268,6 +268,15 @@ test.describe('My Products filter', () => {
     await expect(page).toHaveURL(FILTER_MODE_MINE_URL_PATTERN, { timeout: 3_000 });
   });
 
+  test('My Products defaults to newest first, All Products to recommended', async ({ page }) => {
+    await loginAndReachProducts(page);
+    await openProductFilters(page);
+    await expect(page.getByLabel('Sort: Recommended')).toBeVisible();
+    await page.getByText('Mine', { exact: true }).click();
+    await expect(page).toHaveURL(FILTER_MODE_MINE_URL_PATTERN, { timeout: 3_000 });
+    await expect(page.getByLabel('Sort: Newest first')).toBeVisible({ timeout: 5_000 });
+  });
+
   test('switching back to All Products clears filterMode=mine', async ({ page }) => {
     await loginAndReachProducts(page);
     await openProductFilters(page);
