@@ -1,10 +1,13 @@
 """Filter classes and search helpers for data collection queries."""
 
+from collections.abc import Callable, Mapping
 from datetime import datetime  # Runtime import is required for FastAPI filter field definitions
-from typing import Any, ClassVar, Literal  # Runtime import required by fastapi-filters get_type_hints
+from typing import Annotated, Any, ClassVar, Literal  # Runtime import required by fastapi-filters get_type_hints
 
 from fastapi_filters import FilterField, FilterOperator
-from sqlalchemy import ColumnElement, Select, asc, desc, func, select
+from pydantic import Field
+from sqlalchemy import ColumnElement, Select, asc, desc, exists, func, select
+from sqlalchemy.orm import aliased
 
 from app.api.common.crud.filtering import BaseFilterSet, RelationshipFilterJoin, filter_field
 from app.api.common.sa_typing import column_expr
@@ -90,6 +93,13 @@ def get_product_facet_statement(field_name: Literal["brand", "model"]) -> Select
     )
 
 
+def _has_components_clause(has_components: bool) -> ColumnElement[bool]:  # noqa: FBT001 # Filter value, not a flag
+    """Match products with at least one component, or with none."""
+    child = aliased(Product)
+    clause = exists().where(child.parent_id == Product.id)
+    return clause if has_components else ~clause
+
+
 class ProductFilter(BaseFilterSet):
     """FilterSet for Product."""
 
@@ -109,6 +119,14 @@ class ProductFilter(BaseFilterSet):
     model: FilterField[str] = filter_field(_TEXT_OPERATORS)
     created_at: FilterField[datetime] = filter_field(_RANGE_OPERATORS)
     updated_at: FilterField[datetime] = filter_field(_RANGE_OPERATORS)
+    # Share of the missing-data checklist filled, 0..1; completeness[ge]=1 is a complete record.
+    # Bounded so NaN, which compares above every real in Postgres, cannot reach the query.
+    completeness: FilterField[Annotated[float, Field(ge=0, le=1, allow_inf_nan=False)]] = filter_field(_RANGE_OPERATORS)
+    has_components: FilterField[bool] = filter_field([FilterOperator.eq])
+
+    condition_fields: ClassVar[Mapping[str, Callable[[Any], ColumnElement[bool]]]] = {
+        "has_components": _has_components_clause
+    }
 
     @classmethod
     def search_vector_column(cls) -> ColumnElement[Any]:

@@ -25,6 +25,7 @@ function renderList({
   total = 1,
   isLoading = false,
   numColumns = 1,
+  isFiltered = false,
 }: {
   isFetchingNextPage?: boolean;
   hasNextPage?: boolean;
@@ -34,6 +35,7 @@ function renderList({
   total?: number;
   isLoading?: boolean;
   numColumns?: number;
+  isFiltered?: boolean;
 } = {}) {
   return renderWithProviders(
     <ProductsListContent
@@ -46,6 +48,7 @@ function renderList({
       total={total}
       hasNextPage={hasNextPage}
       searchQuery=""
+      isFiltered={isFiltered}
       isAuthenticated
       onScroll={undefined}
       onRefresh={onRefresh}
@@ -87,6 +90,14 @@ function refreshControl() {
   };
   return control.props;
 }
+
+describe('ProductsListContent empty state with filters', () => {
+  it('says the filters match nothing instead of inviting a first product', async () => {
+    await renderList({ products: [], total: 0, isFiltered: true });
+    expect(screen.getByText('No products match these filters.')).toBeOnTheScreen();
+    expect(screen.queryByText('No products yet. Tap the ', { exact: false })).toBeNull();
+  });
+});
 
 describe('ProductsListContent loading skeleton', () => {
   it('lays the skeleton cards out in the same column grid as the loaded list', async () => {

@@ -46,6 +46,9 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   recent, complete records come first. It is the default order of the app's all-products list;
   "My products" and public profiles stay newest first.
   ([#515](https://github.com/CMLPlatform/r9lab/issues/515))
+- Product lists filter on `has_components` (`true` or `false`) and on `completeness`
+  (`completeness[ge]=1` keeps complete records). The app's product filters gain "Has components"
+  and "Complete records" chips. ([#113](https://github.com/CMLPlatform/r9lab/issues/113))
 
 ### Changed
 

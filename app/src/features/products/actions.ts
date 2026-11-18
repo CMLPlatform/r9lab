@@ -43,10 +43,14 @@ export function createProductAction({
 
 export function useProductsActions({
   filterMode,
+  hasComponents,
+  complete,
   router,
   updateParams,
 }: {
   filterMode: ProductFilter;
+  hasComponents: boolean;
+  complete: boolean;
   router: ReturnType<typeof useRouter>;
   updateParams: (newParams: RouterSetParams) => void;
 }) {
@@ -60,6 +64,14 @@ export function useProductsActions({
     [filterMode, updateParams],
   );
   const clearMine = useCallback(() => updateParams({ filterMode: 'all' }), [updateParams]);
+  const toggleHasComponents = useCallback(
+    () => updateParams({ components: hasComponents ? undefined : '1' }),
+    [hasComponents, updateParams],
+  );
+  const toggleComplete = useCallback(
+    () => updateParams({ complete: complete ? undefined : '1' }),
+    [complete, updateParams],
+  );
   const applyDatePreset = useCallback(
     (days: string | undefined) => updateParams({ days }),
     [updateParams],
@@ -92,6 +104,8 @@ export function useProductsActions({
     applySort,
     toggleMine,
     clearMine,
+    toggleHasComponents,
+    toggleComplete,
     applyDatePreset,
     applyBrandSelection,
     clearBrands,

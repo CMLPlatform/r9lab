@@ -177,6 +177,8 @@ describe('useProductQueries', () => {
               brands: ['ikea', 'philips'],
               createdAfter,
               productTypeNames: ['Furniture'],
+              hasComponents: true,
+              complete: true,
             }),
           ),
         { wrapper },
@@ -192,6 +194,8 @@ describe('useProductQueries', () => {
           brands: ['ikea', 'philips'],
           createdAfter,
           productTypeNames: ['Furniture'],
+          hasComponents: true,
+          complete: true,
         }),
       );
     });
