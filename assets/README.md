@@ -1,30 +1,27 @@
 # Shared Brand Assets
 
-Source of truth for the shared R9lab brand assets used across the monorepo.
-
-Edit the files here, then run:
+The shared R9lab brand assets for the whole monorepo live here. Edit the files here, then run:
 
 ```bash
 just assets-sync
 ```
 
-That regenerates the consumer copies in `app/`, `docs/`, `www/`, and `backend/`. Do not hand-edit
-copied consumer files unless the sync mapping itself changes. Use:
+That regenerates the consumer copies in `app/`, `docs/`, `www/`, and `backend/`. Do not edit the
+copies by hand unless the sync mapping itself changes. To check that the committed copies still
+match the sources, run:
 
 ```bash
 just assets-check
 ```
 
-to verify that committed consumer files still match the canonical sources.
-
 The logo mark is a font-derived, vertically squished 9, generated from the sources in
 [logo-src/](logo-src/README.md). `r9lab-logo.svg` is the wide ringed wordmark; square favicons and
 app icons render from `r9lab-mark.svg`.
 
-The sync script uses ImageMagick (`magick`, or `convert` on IMv6) to generate the PNG and `.ico`
-derivatives from the SVG sources.
+The sync script uses ImageMagick (`magick`, or `convert` on IMv6) to make the PNG and `.ico` files
+from the SVG sources.
 
-Current shared assets:
+Shared assets:
 
 - `brand.css`
 - `images/bg-light.webp`
@@ -39,17 +36,18 @@ Current shared assets:
 
 Typography ownership (see [DESIGN.md](DESIGN.md) for the full design system):
 
-- The IBM Plex superfamily is the web/email typeface: Sans (`--r9lab-brand-font`, UI/body), Serif
-  (`--r9lab-brand-font-display`, display/brand), Mono (`--r9lab-brand-font-mono`, data/labels).
-- WOFF2 files are for docs/www web delivery; italic is browser-synthesized when needed.
+- The IBM Plex superfamily is the web and email typeface: Sans (`--r9lab-brand-font`, UI and body),
+  Serif (`--r9lab-brand-font-display`, display and brand), Mono (`--r9lab-brand-font-mono`, data and
+  labels).
+- WOFF2 files are for docs and www. The browser synthesizes italic when needed.
 - The Expo app uses platform system fonts (see [DESIGN.md](DESIGN.md)).
 
 Brand primitive ownership:
 
 - `brand.css` owns web font declarations and light/dark brand color anchors.
 - Synced CSS exposes brand variables as `--r9lab-brand-*` for docs and www.
-- Consumer subrepos keep layout, spacing, component styles, shadows, radii, and
-  app-specific theme behavior local.
+- Consumer subrepos keep layout, spacing, component styles, shadows, radii and app-specific theme
+  behavior to themselves.
 
 Generated consumer output groups:
 
@@ -61,6 +59,6 @@ Generated consumer output groups:
   favicon also goes to `app/public/images/favicon.svg`, which Expo's web export serves verbatim.
 - PNG outputs: generated for Expo app metadata, the www social preview logo, and docs/www Apple
   touch icons.
-- `.ico` fallback favicons: generated at the docs/www public root for legacy browser support and in
-  backend static storage for `/favicon.ico` support.
+- `.ico` fallback favicons: generated at the docs and www public root for old browsers, and in
+  backend static storage to serve `/favicon.ico`.
 - Brand icon SVGs: copied from `icons/brand/` to the docs and www icon asset folders.

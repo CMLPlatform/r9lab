@@ -37,7 +37,8 @@ column a release carries.
 
 ## Dublin Core metadata
 
-Following the [Dublin Core specifications](https://www.dublincore.org/specifications/dublin-core/):
+The release metadata follows the
+[Dublin Core specifications](https://www.dublincore.org/specifications/dublin-core/).
 
 | Element     | Value                                                                                                                                                                                                      |
 | ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |

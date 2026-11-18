@@ -16,8 +16,9 @@ during documentation. For device installation and plugin deployment, use the
 
 ## How it works
 
-The Raspberry Pi opens an outbound WebSocket connection to the backend, which relays commands
-(capture, preview, stream) through it. No public IP, port forwarding, or reverse proxy is needed.
+The Raspberry Pi opens an outbound WebSocket connection (a standing two-way link) to the backend,
+which relays commands (capture, preview, stream) through it. No public IP, port forwarding, or
+reverse proxy is needed.
 
 For endpoints, see the [API reference overview](/api-reference/).
 
@@ -67,7 +68,7 @@ access for faster preview and capture. No extra setup is needed; the relay stays
 
 From the camera detail screen you can:
 
-- View the live preview (LL-HLS) and connection status.
+- View the live preview (a low-latency video stream, LL-HLS) and connection status.
 - Edit the camera name and description.
 - Delete the camera.
 
@@ -83,5 +84,4 @@ From the camera detail screen you can:
 - Verify the Raspberry Pi is powered on and has internet access.
 - Check that the RPi plugin is running and relay credentials are configured.
 - Look at the RPi plugin logs for WebSocket connection errors.
-- If the camera was intentionally unpaired or re-paired, confirm the current relay credentials are
-  present on the Pi.
+- If you unpaired or re-paired the camera, confirm the current relay credentials are on the Pi.

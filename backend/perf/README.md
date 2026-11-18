@@ -23,34 +23,32 @@ A small `k6` suite that catches latency regressions in common backend paths and 
 | `r9cam_preview_upload` | `POST .../device/cameras/{id}/preview-thumbnail-upload` | `PERF_USER_EMAIL` and `PERF_USER_PASSWORD` set |
 
 `just docker-ci-perf-baseline` fills the gated inputs itself. It reads the first seeded product's
-`thumbnail_url` from the running stack into `PERF_MEDIA_URL`, and fails rather than silently
-skipping media coverage when the database holds no seeded images.
+`thumbnail_url` from the running stack into `PERF_MEDIA_URL`. If the database holds no seeded
+images, it fails instead of silently skipping media coverage.
 
 ## How the Suite Is Shaped
 
-Five decisions change what the numbers measure.
+Five choices decide what the numbers measure.
 
 **Scenarios run one at a time, not together.** Each stage starts after the previous one finishes
-(`PERF_STAGE_SECONDS`, then a `PERF_STAGE_GAP_SECONDS` gap). Overlapping them makes every result a
-measure of contention rather than endpoint cost: `bearer_login` spends 50-100ms per request inside
-Argon2, and CI runs a single API worker, so a concurrent login stage inflates the tail of whatever
-else is in flight. Isolated stages also vary far less between runs, which is what lets the
-thresholds below sit close to observed latency without flaking.
+(`PERF_STAGE_SECONDS`, then a `PERF_STAGE_GAP_SECONDS` gap). Overlapping them would measure
+contention, not endpoint cost: `bearer_login` spends 50-100ms per request inside Argon2, and CI runs
+a single API worker, so a concurrent login stage inflates the tail of every other request in
+flight. Isolated stages also vary far less between runs, so the thresholds below can sit close to
+observed latency without flaking.
 
 **Load is open-model.** Scenarios use `constant-arrival-rate`, so `k6` holds the request rate steady
-whatever the server does. The closed-model alternative (`constant-vus` plus `sleep`) quietly sends
-*less* load as latency grows, which masks the regressions this suite exists to catch.
-`dropped_iterations` is thresholded because an open-model run that cannot start iterations on time
-is a saturated server, not a fast one.
+whatever the server does. A closed model (`constant-vus` plus `sleep`) sends *less* load as latency
+grows, which hides the regressions this suite exists to catch. `dropped_iterations` has a
+threshold because an open-model run that cannot start iterations on time means a saturated server.
 
-**The write stages run last, uploads last of all.** `product_create_write` inserts rows, so every
-read stage is measured against a table that is not growing underneath it. `image_upload_write`
-posts through the real multipart path, so it decodes an image and writes derivatives. That is the
-slowest endpoint in the API by a wide margin. Malware scanning is not exercised, since ClamAV is
-not in use.
+**The write stages run last, uploads last of all.** `product_create_write` inserts rows, so the
+read stages run against a table that is not growing. `image_upload_write` posts through the real
+multipart path, so it decodes an image and writes derivatives. It is by far the slowest endpoint in
+the API. Malware scanning is not exercised, because the CI stack does not run ClamAV.
 
-Iterations rotate through three photo sizes, each tagged `upload_size` and thresholded separately,
-because a percentile mixed across all three hides which one moved:
+Iterations rotate through three photo sizes. Each is tagged `upload_size` and has its own
+threshold, because a percentile mixed across all three hides which one moved:
 
 | `upload_size` | dimensions  | source                                                |
 | ------------- | ----------- | ----------------------------------------------------- |
@@ -58,26 +56,26 @@ because a percentile mixed across all three hides which one moved:
 | `medium`      | 2400x1800   | tiled from the sample by `just perf-fixtures`         |
 | `large`       | 4800x3600   | tiled from the sample by `just perf-fixtures`         |
 
-One size is not enough: at 1200x900 the 1600px derivative is skipped entirely and only ~21ms of
-thumbnail work is in play, so a regression in the expensive part of the pipeline would not move the
-number. From `medium` up, every standard width applies, and the derivative work is ~110-130ms
-rather than ~20ms.
+One size is not enough. At 1200x900 the 1600px derivative is skipped and only about 21ms of
+thumbnail work runs, so a regression in the expensive part of the pipeline would not move the
+number. From `medium` up, every standard width applies, and the derivative work takes about
+110-130ms instead of about 20ms.
 
-The larger two are tiled from the committed sample rather than upscaled or generated: tiling repeats
-the source's own frequency content, so decode, resize and encode cost per pixel stay in the range a
-real photograph produces. They are gitignored and rebuilt by `just perf-fixtures`, which both perf
-recipes run first. The whole set is reproducible from one 87 KB source, and no multi-megabyte
-binaries enter the repo.
+The two larger sizes are tiled from the committed sample, not upscaled or generated. Tiling repeats
+the source's own frequency content, so decode, resize and encode cost per pixel stay in the range
+of a real photograph. They are gitignored, and `just perf-fixtures` rebuilds them. Both perf
+recipes run it first. The whole set comes from one 87 KB source, so no multi-megabyte binaries
+enter the repo.
 
 The per-size thresholds are a coarse guard. Two runs of the same commit on GitHub runners put
-`small` at 69 ms and 31 ms, so run-to-run variance is over 2x. A ceiling tight enough to catch the
-~40-50 ms regression in the derivative work would flap on that variance. They
-catch a gross regression; the resize path's own cost is better measured directly, without a network
-and a shared runner in the number.
+`small` at 69 ms and 31 ms, so run-to-run variance is over 2x. A ceiling tight enough to catch
+an increase of about 40-50 ms in the derivative work would flap on that variance. These thresholds catch only
+a gross regression. To measure the resize path itself, run it directly, without a network and a
+shared runner in the number.
 
-**The camera relay runs after every other stage.** A camera is a long-lived WebSocket that the
-device opens, and user requests reach it as frames over that socket. An HTTP latency number alone
-cannot see it, so for the relay a regression is any of these:
+**The camera relay runs after every other stage.** The device opens a long-lived WebSocket, and
+user requests reach the camera as frames over that socket. An HTTP latency number alone cannot see
+it, so for the relay a regression is any of these:
 
 - **Connection setup**: `ws_connecting` p95 in `r9cam_ws_connect`. Each iteration signs a fresh
   device assertion and opens a socket, so this measures the handshake plus the ES256 verification,
@@ -88,52 +86,51 @@ cannot see it, so for the relay a regression is any of these:
 - **Dropped or failed relay**: `http_req_failed` in those stages. A lost frame or a dead socket
   surfaces as a 503 once the relay times out.
 
-The camera is simulated in k6 itself rather than by `scripts/plugins/r9cam/webcam_fake_camera.py`,
+k6 simulates the camera itself. It does not use `scripts/plugins/r9cam/webcam_fake_camera.py`,
 which needs a webcam and predates device assertions. `setup()` registers a camera with a fresh P-256
 key, and the fake device signs the same ES256 assertion a paired Pi does, so the auth path is the
 real one. One device VU holds the relay socket open for the three relayed stages and answers their
-commands, from halfway through the gap before them to halfway through the gap after. The backend
-keeps one socket per camera, so connecting earlier lets a straggling connect-stage socket replace
-it, and closing earlier fails the last capture still in flight.
+commands. It runs from halfway through the gap before them to halfway through the gap after. The
+backend keeps one socket per camera. If the device connected earlier, a straggling connect-stage
+socket could replace it. If it closed earlier, the last capture still in flight would fail.
 
-`r9cam_preview_upload` needs no socket: it is the device-side HTTP push of a preview thumbnail.
-Concurrent camera count is not measured; the suite runs one camera. WebSocket authentication is
+`r9cam_preview_upload` needs no socket. It is the device-side HTTP push of a preview thumbnail.
+The suite runs one camera and does not measure concurrent cameras. WebSocket authentication is
 rate-limited outside `dev` and `testing`, so run the relay stages against the CI stack, not a
 deployed backend.
 
-`product_search_read` rotates its query terms so the run does not measure one repeatedly cached
-query. It is the slowest read path.
+`product_search_read` rotates its query terms, so the run does not measure one cached query. It is
+the slowest read path.
 
 **The database is not empty, and neither is any other table.** `BULK_SEED_PRODUCTS` scales the
-fixtures (5000 products by default in CI) via `scripts/seed/bulk_seed.py`. That script scales users,
-product types, materials and categories with the product count, gives a fifth of products an image,
-and gives a tenth a component subtree. Against the handful of rows the dummy seed creates, the suite
-cannot detect the regressions that actually hurt: a missing index, a linear `COUNT(*)`, an eager
-load that degrades with row count.
+fixtures (5000 products by default in CI) through `scripts/seed/bulk_seed.py`. The script scales
+users, product types, materials and categories with the product count. It gives a fifth of the
+products an image and a tenth a component subtree. Against the handful of rows the dummy seed
+creates, the suite could not detect the regressions that hurt: a missing index, a linear
+`COUNT(*)`, an eager load that degrades with row count.
 
-Rows come from `scripts/seed/factories`, the same polyfactory/faker factories the test suite uses,
-so a row a baseline measures and a fixture a test asserts against cannot drift apart. Generating the
-full set costs about 12 seconds and the seeder is idempotent, so there is no pre-built fixture dump
-to keep in sync with the schema. The generator spreads `created_at` over two years and draws
+Rows come from `scripts/seed/factories`, the polyfactory and faker factories the test suite also
+uses, so the rows a baseline measures and the fixtures a test asserts against cannot drift apart.
+Generating the full set takes about 12 seconds and the seeder is idempotent, so no pre-built dump
+needs to stay in sync with the schema. The generator spreads `created_at` over two years and draws
 high-cardinality names, brands and models, because those columns are trigram-indexed and feed
 `search_vector`. A short word list would make those indexes far more selective than production.
 
-It also runs `VACUUM ANALYZE` afterwards. Skipping it measures the database recovering from the
-fixture load rather than steady state: planner statistics still describe an almost empty table, and
-the four GIN indexes on `product` carry a full pending list. That cleanup showed up as a 6.5s p95 in
-the write scenario, against a 55ms median.
+The script then runs `VACUUM ANALYZE`. Without it, the run measures the database recovering from
+the fixture load, not steady state: planner statistics still describe an almost empty table, and
+the four GIN indexes on `product` carry a full pending list. That cleanup showed up as a 6.5s p95
+in the write scenario, against a 55ms median.
 
 ## Thresholds
 
-Regression tripwires, not capacity targets. Refresh them with `just _perf-thresholds-apply
-<headroom>` from a summary export rather than editing by hand.
+The thresholds are regression tripwires, not capacity targets. Refresh them from a summary export
+with `just _perf-thresholds-apply <headroom>`. Do not edit them by hand.
 
 The committed values carry roughly 5x headroom over an isolated run on a quiet developer host. That
-absorbs a slower shared CI runner while still catching a real regression; the previous values sat
-5-8x above *contended* numbers and would only have tripped on a catastrophic one.
+absorbs a slower shared CI runner and still catches a real regression.
 
 The `r9cam_*` thresholds come from two isolated runs of the CI stack on a developer host, not a
-GitHub runner, so treat them as provisional until the next workflow artifact refreshes them.
+GitHub runner. Treat them as provisional until the next workflow artifact refreshes them.
 
 ## Recommended Target
 
@@ -198,20 +195,20 @@ just perf-baseline
 
 ## Recommended Baseline Inputs
 
-- Use `just docker-ci-perf-baseline` so the database is migrated, dummy-seeded and topped up to a
+- Use `just docker-ci-perf-baseline`, so the database is migrated, dummy-seeded and topped up to a
   realistic row count first.
-- `live_probe` and `product_list_read` must stay runnable; the script must also pass with no media
+- `live_probe` and `product_list_read` must stay runnable. The script must also pass with no media
   URL, so `PERF_MEDIA_URL` stays optional even though the CI recipe always supplies one.
 - Use `/v1/products?size=20` as the product-read baseline.
 - Use the CI superuser from `backend/.env.test` for login measurements.
-- The `k6` image is pinned by digest. A moving `:latest` changes the measurement tool between runs,
-  which is the one variable a latency baseline must hold still.
+- The `k6` image is pinned by digest. A moving `:latest` would change the measurement tool between
+  runs, and a latency baseline must hold that fixed.
 
 ## Capacity
 
-The baseline catches regressions; it does not say how much load the deploy can take.
-`perf/k6-capacity.js` answers that separately, with none of the choices that keep the baseline
-stable: all operations overlap, the rate keeps climbing, and nothing is thresholded.
+The baseline catches regressions. It does not say how much load the deploy can take.
+`perf/k6-capacity.js` answers that, and it drops the choices that keep the baseline stable: all
+operations overlap, the rate keeps climbing, and nothing has a threshold.
 
 ```bash
 just docker-perf-capacity           # mixed workload
@@ -220,25 +217,24 @@ PERF_CAPACITY_RATES=200,300,400 just docker-perf-capacity   # pick the steps
 ```
 
 The recipe runs from the repo root under its own Compose project (`r9lab_capacity`, or
-`COMPOSE_PROJECT_NAME`), so it never touches the CI stack. It layers
-`perf/compose.capacity.yaml` over the CI stack to copy the deploy shape: four workers, a pool of
-3 + 10 overflow per worker, `max_connections=100`, a 6 GiB API memory cap and a concurrency limit
-of 100 per worker. It seeds 5000 products and 50 verified accounts, runs k6, and removes the stack
-and its volumes on exit.
+`COMPOSE_PROJECT_NAME`), so it never touches the CI stack. It layers `perf/compose.capacity.yaml`
+over the CI stack to match the deploy shape: four workers, a pool of 3 + 10 overflow per worker,
+`max_connections=100`, a 6 GiB API memory cap and a concurrency limit of 100 per worker. It seeds
+5000 products and 50 verified accounts, runs k6, and removes the stack and its volumes on exit.
 
 The arrival rate climbs in steps (`ramping-arrival-rate`, a 5 s ramp, then a 30 s hold). The script
-prints one row per hold: target and achieved rate, p50/p95/p99, and the error rate. The knee is
+prints one row per hold: target and achieved rate, p50, p95 and p99, and the error rate. The knee is
 the last row before errors or a shortfall appear. The mixed workload is 30% list, 15% search, 20%
 detail, 10% components, 10% materials, 2% login, 9% product create and 4% photo upload (the three
 upload sizes above). Logins and writes rotate across the 50 accounts. With a single account, every
-login and upload queues on one user row, and the result would measure that row lock.
+login and upload would queue on one user row, and the result would measure that row lock.
 
 ### Results, 2026-09-27
 
 Measured on a shared development host, not production hardware: Intel i9-14900KF (32 threads),
 62 GiB RAM, with other stacks idle alongside. The API is not CPU-capped, and Argon2 releases the GIL,
-so logins can use more than the four worker cores. Treat the absolute numbers as an upper bound. The
-shape and the first thing to saturate carry over to other hosts.
+so logins can use more than the four worker cores. Treat the absolute numbers as an upper bound.
+The shape of the curve and the first resource to saturate carry over to other hosts.
 
 | Mixed target/s | p50 ms | p95 ms | p99 ms | errors |
 | -------------- | ------ | ------ | ------ | ------ |
@@ -247,9 +243,8 @@ shape and the first thing to saturate carry over to other hosts.
 | 300            | 214    | 708    | 1202   | 0%     |
 | 400            | 67     | 1276   | 30058  | 42%    |
 
-After the auth dependencies started sharing the request session (one connection per
-authenticated request), the same mixed run, with other test suites running on the host at the same
-time:
+The same mixed run after the auth dependencies began to share the request session (one connection
+per authenticated request), with other test suites running on the host at the same time:
 
 | Mixed target/s | p50 ms | p95 ms | p99 ms | errors |
 | -------------- | ------ | ------ | ------ | ------ |
@@ -258,8 +253,8 @@ time:
 | 400            | 203    | 580    | 1041   | 0%     |
 | 500            | 173    | 2823   | 4691   | 34%    |
 
-The knee moves from about 300 to about 400-450 requests/s. Past it, the p99 stays in seconds
-instead of hitting the 30 s pool timeout.
+The knee moves from about 300 to about 400-450 requests/s. Past it, the p99 stays in seconds and
+does not hit the 30 s pool timeout.
 
 | Login target/s | p50 ms | p95 ms | p99 ms | errors |
 | -------------- | ------ | ------ | ------ | ------ |
@@ -270,24 +265,24 @@ instead of hitting the 30 s pool timeout.
 
 - **Mixed knee: about 400-450 requests/s** (about 300 before the shared auth session). At one
   request every 5-10 s per active person, that is roughly 2000-4500 people working at once.
-  Latency starts queueing from about 200/s.
+  Latency starts to queue from about 200/s.
 - **The connection pool saturates first, not the CPU.** At 400/s, all 52 pool connections sat
-  `idle in transaction` while API CPU fell back to about two cores, and the p99 of 30 s is the
-  SQLAlchemy pool timeout. Postgres itself peaked at about 1.5 cores. The auth dependencies then
-  opened a session of their own, so an authenticated route that also took `AsyncSessionDep` held
-  two connections. Under pool pressure, requests holding one connection waited for their second
-  until the timeout, so past the knee throughput collapsed rather than degrading. The auth
-  dependencies now share the request session.
-- **Logins: about 300/s before queueing turns into errors.** The Argon2 threadpool (40 tokens
-  per worker) was never the limit. The two limits were CPU, with the API at about 16 cores at
-  400/s, and the per-worker concurrency limit of 100, which returned the 503s. Each login also holds
-  a pool connection during the hash. On a host with fewer cores, expect roughly 25-30 logins/s per
+  `idle in transaction` while API CPU fell back to about two cores. The p99 of 30 s is the
+  SQLAlchemy pool timeout. Postgres itself peaked at about 1.5 cores. The auth dependencies used to
+  open a session of their own, so an authenticated route that also took `AsyncSessionDep` held two
+  connections. Under pool pressure, requests that held one connection waited for a second until the
+  timeout, so past the knee throughput collapsed instead of degrading. The auth dependencies now
+  share the request session.
+- **Logins: about 300/s before queueing turns into errors.** The Argon2 threadpool (40 tokens per
+  worker) was never the limit. The two limits were CPU, with the API at about 16 cores at 400/s,
+  and the per-worker concurrency limit of 100, which returned the 503s. Each login also holds a
+  pool connection during the hash. On a host with fewer cores, expect roughly 25-30 logins/s per
   free core.
 
 Before a workshop, check the per-IP rate limits against the room. The limiter keys on client IP,
 and a room on one network usually shares one public address. Then 3 logins/min, 5
-registrations/hour and 300 reads/min apply to everyone in it together. Neither this test nor the CI
-stack exercises the limits, which are off in `testing`.
+registrations/hour and 300 reads/min apply to everyone in the room together. Neither this test nor
+the CI stack exercises the limits, because they are off in `testing`.
 
 Not covered: malware scanning (the deploy scans uploads with ClamAV), Cloudflare and the tunnel in
 front of the API, the telemetry exporter, and hosts with fewer cores than the four workers need.

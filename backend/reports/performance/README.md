@@ -1,15 +1,15 @@
 # Performance Reports
 
-Store short baseline summaries and comparison notes here.
+Short baseline summaries and comparison notes go here.
 
 `just perf-baseline` writes the most recent machine-readable export to `latest-k6-summary.json`.
 
-Suggested naming:
+Name files like this:
 
 - `YYYY-MM-DD-local-baseline.md`
 - `YYYY-MM-DD-staging-baseline.md`
 
-Recommended contents:
+Each note holds:
 
 - environment (`local`, `staging`, `prod-like`)
 - commit or branch

@@ -22,7 +22,7 @@ Assets: accounts, profile/privacy settings, research records, uploaded media/fil
 
 Data is classified by the harm its disclosure or misuse would cause:
 
-- **Public research data:** product records, public catalog/reference data, public dataset metadata, and intentionally public uploaded media. These may be cached when responses are public and content-addressed assets must 404 when missing rather than falling back to the app shell.
+- **Public research data:** product records, public catalog/reference data, public dataset metadata, and intentionally public uploaded media. These may be cached when responses are public. Content-addressed assets must return 404 when missing, not fall back to the app shell.
 - **Published dataset releases:** curated, versioned snapshots deposited under an open licence with a DOI. A release is immutable and mirrored by third parties once published, so account and upload deletion remove records from the live platform without retracting anything already released. Everything entering a release is checked before deposit: pseudonymised owner identity, named attribution only for contributors who opted in, and no account, auth, or contact data.
 - **User and account data:** email addresses, usernames, profile preferences, contribution statistics, owner attribution, and account state. These are access-controlled by backend dependencies and privacy policy helpers. Viewer-dependent API responses use `no-store`, and product owner identity is redacted when profile visibility does not allow the current viewer to see it.
 - **Secrets and credentials:** passwords, auth tokens, refresh-token state, OAuth/YouTube tokens, RPi camera credentials, local camera API keys, runtime secrets, encryption keys, database passwords, and backup passwords. These must not appear in URLs, logs, browser local storage, docs examples, or analytics. Browser sessions use secure cookies; native bearer tokens use platform secure storage; local camera API keys use secure storage on native and memory-only storage on web.
@@ -81,7 +81,7 @@ Prefer exact HTTPS URLs. Use trailing-slash prefixes only for integrations with 
 
 ## Denial-of-service controls
 
-Cloudflare handles volumetric attacks, and the source-controlled edge rules cover authentication and admin calls ([Inbound edge](#inbound-edge)). The application bounds uploads, RPi camera traffic, and WebSocket connections, as below.
+Cloudflare handles volumetric attacks, and the source-controlled edge rules cover authentication and admin calls ([Inbound edge](#inbound-edge)). The application bounds uploads, RPi camera traffic, and WebSocket connections.
 
 The expensive paths are media uploads, image processing and thumbnails, malware scanning, file cleanup, backups, OpenAPI generation, YouTube API calls, and RPi camera relay and HLS traffic. The backend bounds them with JSON streaming limits, multipart upload caps, file format allowlists, user upload quotas, Redis-backed route rate limits, image worker limits, ClamAV scan timeouts, bounded outbound HTTP timeouts and retries, WebSocket authentication and frame limits, and relay commands that fast-fail for cameras without a live heartbeat.
 

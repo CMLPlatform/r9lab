@@ -16,7 +16,7 @@ When you create an account, we ask for a username, email address, and password. 
 
 If you connect Google, GitHub, or YouTube, R9lab stores the connection details encrypted. You can use “Sign out everywhere” in your profile to end active sessions on your other devices.
 
-Those three are United States companies, so connecting one, or choosing to load an external video, sends data about you outside the European Economic Area under that provider’s own terms. Nothing else leaves: the platform itself runs on servers in the Netherlands, and we send your data to no other third party.
+Google, GitHub and YouTube are United States companies. Connecting one, or choosing to load an external video, sends data about you outside the European Economic Area, under that provider’s own terms. Nothing else leaves: the platform itself runs on servers in the Netherlands, and we send your data to no other third party.
 
 ## Contributions
 
@@ -34,7 +34,7 @@ We may use research contributions after removing direct account identifiers. We 
 
 An open licence lets anyone reuse a published release, including for commercial purposes and for training machine-learning models. We cannot restrict that, and we do not try to. Account identifiers are not published as part of a release.
 
-A release replaces your account with a stable contributor code, not your username. The same code is reused across releases, on purpose: it lets researchers tell which records came from one contributor without knowing who that is, which is what keeps a machine-learning model from being tested on the same person it was trained on. It is not anonymous — we keep the key that links a code back to an account, so we can answer questions about a release and correct it. That key is never published.
+A release replaces your account with a stable contributor code, not your username. The same code is reused across releases. This lets researchers tell which records came from one contributor without knowing who that is, which keeps a machine-learning model from being tested on the same person it was trained on. The code is not anonymous. We keep the key that links a code back to an account, so we can answer questions about a release and correct it. That key is never published.
 
 A release never names you. Contributors are credited as a group, so your username does not appear in one at all. Your name stays on your profile in the app, where your profile settings control who sees it.
 
@@ -56,8 +56,8 @@ External videos are the exception, which is why they never load on their own. Ch
 
 **Backups:** Deleting your account or your uploads removes them from the live platform straight away. Copies stay in our encrypted backups until those backups expire, which takes up to 13 months. Backups we take by hand before maintenance are kept until we delete them. We use backups only to restore the service.
 
-**Your rights:** You can ask for a copy of the personal data we hold about you, have it corrected, have it deleted, have our use of it restricted, object to our use of it, or receive it in a portable form. Where you gave consent — for optional update emails, for example — you can withdraw it at any time, and withdrawing does not affect what we did before you withdrew. One limit is worth stating plainly: a published dataset release cannot be recalled, so deletion removes your records from the platform but cannot retract a release that is already out.
+**Your rights:** You can ask for a copy of the personal data we hold about you, have it corrected, have it deleted, have our use of it restricted, object to our use of it, or receive it in a portable form. Where you gave consent (for optional update emails, for example), you can withdraw it at any time. Withdrawing does not affect what we did before you withdrew. One limit: a published dataset release cannot be recalled, so deletion removes your records from the platform but cannot retract a release that is already out.
 
-**Complaints:** [autoriteitpersoonsgegevens.nl](https://www.autoriteitpersoonsgegevens.nl/en) If you think we are handling your data wrongly, please tell us first — but you also have the right to complain to the Dutch data protection authority, the Autoriteit Persoonsgegevens.
+**Complaints:** If you think we are handling your data wrongly, please tell us first. You also have the right to complain to the Dutch data protection authority, the [Autoriteit Persoonsgegevens](https://www.autoriteitpersoonsgegevens.nl/en).
 
 **Contact:** [info@r9lab.io](mailto:info@r9lab.io) for questions or data requests.

@@ -1,14 +1,11 @@
 # Deploy documentation
 
-Runbooks for operating *this* deployment, one per host. Each covers first-time host setup, the
-routine release loop, and recovery:
+One runbook per host. Each covers first-time setup, the routine release and recovery:
 
 - [DEPLOY-PROD.md](DEPLOY-PROD.md): production
 - [DEPLOY-STAGING.md](DEPLOY-STAGING.md): staging
 
-Public self-hosting documentation is the install guide in the docs subrepo
-(`docs/src/content/docs/operations/`, from `prerequisites.md` to `upgrade-backup.md`); the runbooks
-link to it rather than repeat it.
+[SETUP.md](SETUP.md) takes an empty host to a running stack; both runbooks start from it.
 
 Rehearse on staging before prod. The two hosts share `compose.deploy.yaml`, so a step that has only
 ever run on prod has never been tested.
@@ -17,19 +14,18 @@ ever run on prod has never been tested.
 architecture: its ADR 0002 records the hub-and-spoke design, and its `templates/README.md` describes
 how a project onboards. R9lab is one spoke; the R9lab-specific parts live in the runbooks.
 
-The one-time cutover runbooks were removed after staging moved on 2026-09-06 and prod on 2026-09-08.
-`git log -- deploy/CUTOVER-PROD.md` finds them.
+The one-time cutover runbooks are gone. `git log -- deploy/CUTOVER-PROD.md` finds them.
 
 ## Also here
 
 - `systemd/`: the four scheduled-job units (hourly backup, daily backup maintenance, watchdog,
   monthly restore check). Render with `just timers-render`, install with
-  `just timers-install <env>`; the committed files carry placeholders, not any real host's paths.
+  `just timers-install <env>`. The committed files carry placeholders, not any real host's paths.
 - `alloy/`: the Grafana Alloy agent config that ships container logs and host metrics to the
-  central collector. Loaded by `compose.telemetry.yml`, which the deploy recipes include when
+  central collector. `compose.telemetry.yml` loads it, and the deploy recipes include that file when
   `OTEL_EXPORTER_OTLP_ENDPOINT` is set.
 - `env/variables.toml`: the committed runtime secret inventory, names only (`just env-inventory`
-  prints it). Host-local operator inputs live in the gitignored root `.env`; the secret values live
+  prints it). Host-local operator inputs live in the gitignored root `.env`. The secret values live
   in the gitignored `secrets/<env>/`.
 - `postgres/initdb/provision.sh`: creates the database roles, sets table ownership, and installs
   the superuser-only extensions. It runs on an empty volume and again on every
