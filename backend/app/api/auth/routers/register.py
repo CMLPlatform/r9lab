@@ -26,17 +26,15 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
-_REGISTRATION_ACCEPTED_DETAIL = (
-    "If the email address is available, a verification link has been sent. Please check your inbox."
-)
+_REGISTRATION_ACCEPTED_DETAIL = "If the email address is available, we sent a verification link. Check your inbox."
 
 
 class RegistrationResponse(BaseModel):
     """Uniform registration acknowledgement.
 
-    Reveals nothing about whether the email already exists; the same
-    body is returned whether a new account was created or the address was already
-    taken, so registration cannot be used to enumerate accounts.
+    Reveals nothing about whether the email already exists. The same body comes back
+    whether a new account was created or the address was taken, so registration
+    cannot be used to list accounts.
     """
 
     detail: str = Field(default=_REGISTRATION_ACCEPTED_DETAIL)

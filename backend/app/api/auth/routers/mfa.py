@@ -41,7 +41,7 @@ async def start_totp_setup(
     current_user: CurrentActiveUserDep,
     redis: RedisDep,
 ) -> MfaTotpSetupResponse:
-    """Start authenticated TOTP enrollment for an account that opted into MFA."""
+    """Start setting up two-step verification with an authenticator app."""
     return await mfa_flow.start_totp_setup(current_user=current_user, redis=redis)
 
 
@@ -60,7 +60,7 @@ async def confirm_totp_setup(
     bearer_strategy: Annotated[Strategy, Depends(bearer_auth_backend.get_strategy)],
     cookie_strategy: Annotated[Strategy, Depends(cookie_auth_backend.get_strategy)],
 ) -> MfaTotpConfirmResponse:
-    """Confirm TOTP enrollment, return one-time recovery codes, and replace the session.
+    """Finish setting up two-step verification, return one-time recovery codes, and replace the session.
 
     Enrolment signs out every other session. A client that authenticated with a bearer
     token gets new tokens in ``tokens``; a browser session gets new cookies.
@@ -85,7 +85,7 @@ async def confirm_totp_setup(
     response_model=None,
     responses={
         400: {"description": "The password or the code is missing."},
-        401: {"description": "MFA is not on for this account."},
+        401: {"description": "Two-step verification is not on for this account."},
         403: {"description": "The password or the code is wrong."},
         429: {"description": "Too many guesses for this account. See the Retry-After header."},
     },
@@ -97,7 +97,7 @@ async def disable_totp(
     user_manager: UserManagerDep,
     redis: RedisDep,
 ) -> None:
-    """Turn off TOTP MFA after confirming the password and a current or recovery code.
+    """Turn off two-step verification after confirming the password and a current or recovery code.
 
     Accounts without a usable password (signed up with Google or GitHub) send only the code.
     """
@@ -121,7 +121,7 @@ async def regenerate_recovery_codes(
     user_manager: UserManagerDep,
     redis: RedisDep,
 ) -> MfaRecoveryCodesResponse:
-    """Reissue recovery codes after confirming a current TOTP code."""
+    """Issue new recovery codes after confirming a current authentication code."""
     return await mfa_flow.regenerate_recovery_codes(
         payload,
         current_user=current_user,
@@ -139,7 +139,7 @@ async def claim_oauth_mfa_handoff(
     payload: MfaOAuthClaimRequest,
     redis: RedisDep,
 ) -> MfaPendingResponse:
-    """Claim a one-time OAuth MFA handoff and return pending MFA state."""
+    """Claim a one-time social sign-in handoff that still needs two-step verification."""
     return await mfa_flow.claim_oauth_mfa_handoff(payload, redis=redis)
 
 
@@ -155,7 +155,7 @@ async def complete_mfa_challenge(
     bearer_strategy: Annotated[Strategy, Depends(bearer_auth_backend.get_strategy)],
     cookie_strategy: Annotated[Strategy, Depends(cookie_auth_backend.get_strategy)],
 ) -> RefreshTokenResponse | None:
-    """Complete login for a user with TOTP already enabled."""
+    """Finish signing in a user who has two-step verification on."""
     return await mfa_flow.complete_mfa_challenge(
         payload,
         response=response,

@@ -28,7 +28,7 @@ __all__ = [
 API_CONTRACT_VERSION = "1.0.0"
 API_MAJOR = "v1"
 
-API_TITLE = "R9lab \u2013 Data Collection API"  # en dash
+API_TITLE = "R9lab Data Collection API"
 API_DESCRIPTION = (
     "Data collection app for the R9lab project at the Institute of Environmental Sciences (CML), "
     "Leiden University.\n\n"

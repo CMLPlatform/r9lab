@@ -67,10 +67,10 @@ async def test_rejects_invalid_json_metadata(
 @pytest.mark.parametrize(
     ("upload_metadata", "expected_detail"),
     [
-        ("{}", "upload_metadata must include a product_id"),
-        ('{"product_id": "not-a-number"}', "product_id must be an integer"),
-        ('{"product_id": 0}', "product_id must be a positive integer"),
-        ('{"product_id": -1}', "product_id must be a positive integer"),
+        ("{}", "Add product_id (a positive integer) to upload_metadata."),
+        ('{"product_id": "not-a-number"}', "product_id in upload_metadata must be a positive integer."),
+        ('{"product_id": 0}', "product_id in upload_metadata must be a positive integer."),
+        ('{"product_id": -1}', "product_id in upload_metadata must be a positive integer."),
     ],
 )
 async def test_rejects_an_unusable_product_id(

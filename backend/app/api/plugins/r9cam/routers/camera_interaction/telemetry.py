@@ -32,7 +32,7 @@ _TELEMETRY_ENDPOINT = "/system/telemetry"
     description=(
         "Return the most recent telemetry snapshot for the camera. Backed by a Redis cache with a 120s "
         "TTL so mosaic polling does not fan out one relay round-trip per camera on every refresh. "
-        "Pass ``force_refresh=true`` to bypass the cache and re-fetch from the Pi."
+        "Pass ``force_refresh=true`` to bypass the cache and re-fetch from the Raspberry Pi camera."
     ),
 )
 async def get_camera_telemetry(

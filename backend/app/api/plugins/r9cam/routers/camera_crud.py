@@ -208,19 +208,19 @@ async def delete_user_camera(
 
 @device_router.delete(
     "/{camera_id}/self",
-    summary="Pi-initiated self-unpair",
+    summary="Unpair a camera from the camera itself",
     status_code=204,
     description=(
-        "Called by the Pi when the user triggers unpair from the local /setup page. "
-        "Authenticates via the device's assertion. Deletes the camera from the "
-        "database so the backend no longer shows it as offline."
+        "The Raspberry Pi camera calls this when the user unpairs it from the local /setup page. "
+        "It signs in with its device assertion. The backend deletes the camera, "
+        "so it stops listing it as offline."
     ),
 )
 async def self_unpair_camera(
     camera: AuthenticatedCameraDep,
     db: AsyncSessionDep,
 ) -> None:
-    """Device-initiated self-deletion. Pi calls this on local unpair."""
+    """Delete the camera at its own request, when the user unpairs it locally."""
     logger.info("Camera %s self-unpaired via device assertion", camera.id)
     remove_preview_thumbnail(get_preview_thumbnail_path(camera.id))
     await db.delete(camera)
@@ -232,7 +232,7 @@ async def self_unpair_camera(
     response_model=LocalAccessInfo,
     summary="Get local direct-connection info for a camera",
     description=(
-        "Relays GET /system/local-access to the Pi via the WebSocket connection. "
+        "Relays GET /system/local-access to the Raspberry Pi camera over the WebSocket connection. "
         "Returns the local API key and candidate IP addresses so the frontend can "
         "auto-configure Ethernet/USB-C direct access without manual key copying. "
         "Returns 503 when the camera is offline."
@@ -242,7 +242,7 @@ async def get_camera_local_access(
     db_camera: UserOwnedCameraDep,
     redis: RedisDep,
 ) -> LocalAccessInfo:
-    """Relay local access info from the Pi to the authenticated frontend user."""
+    """Relay local access info from the camera to the signed-in user."""
     response = await relay_via_websocket(
         db_camera.id,
         "GET",

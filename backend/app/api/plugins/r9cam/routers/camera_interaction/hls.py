@@ -36,8 +36,8 @@ router = PublicAPIRouter()
         "Forward an LL-HLS request to the camera over its WebSocket relay. "
         "Playlist requests return ``application/vnd.apple.mpegurl`` text; "
         "segment/part requests return binary ``video/mp4`` or ``video/iso.segment``. "
-        "The frontend simply points ``hls.js`` / ``expo-video`` at this URL and the "
-        "player walks the manifest on its own."
+        "The frontend points ``hls.js`` or ``expo-video`` at this URL, and the "
+        "player reads the manifest itself."
     ),
 )
 async def proxy_hls(

@@ -90,7 +90,7 @@ def _build_ws_url() -> str:
     "/register",
     response_model=PairingRegisterResponse,
     status_code=status.HTTP_201_CREATED,
-    summary="Register a pairing code (called by RPi)",
+    summary="Register a pairing code (called by the camera)",
     dependencies=[limiter.dependency(REGISTER_RATE_LIMIT)],
 )
 async def register_pairing_code(
@@ -195,7 +195,7 @@ async def claim_pairing_code(
 @device_router.post(
     "/poll",
     response_model=PairingPollResponse,
-    summary="Poll pairing status (called by RPi)",
+    summary="Poll pairing status (called by the camera)",
     dependencies=[limiter.dependency(POLL_RATE_LIMIT)],
 )
 async def poll_pairing_status(
