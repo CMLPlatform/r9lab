@@ -15346,6 +15346,8 @@
             "name": "completeness",
             "required": false,
             "schema": {
+              "maximum": 1,
+              "minimum": 0,
               "title": "Completeness",
               "type": "number"
             }
@@ -15355,6 +15357,8 @@
             "name": "completeness[ge]",
             "required": false,
             "schema": {
+              "maximum": 1,
+              "minimum": 0,
               "title": "Completeness[Ge]",
               "type": "number"
             }
@@ -15364,6 +15368,8 @@
             "name": "completeness[le]",
             "required": false,
             "schema": {
+              "maximum": 1,
+              "minimum": 0,
               "title": "Completeness[Le]",
               "type": "number"
             }
@@ -16111,6 +16117,8 @@
             "name": "completeness",
             "required": false,
             "schema": {
+              "maximum": 1,
+              "minimum": 0,
               "title": "Completeness",
               "type": "number"
             }
@@ -16120,6 +16128,8 @@
             "name": "completeness[ge]",
             "required": false,
             "schema": {
+              "maximum": 1,
+              "minimum": 0,
               "title": "Completeness[Ge]",
               "type": "number"
             }
@@ -16129,6 +16139,8 @@
             "name": "completeness[le]",
             "required": false,
             "schema": {
+              "maximum": 1,
+              "minimum": 0,
               "title": "Completeness[Le]",
               "type": "number"
             }
@@ -17152,6 +17164,8 @@
             "name": "completeness",
             "required": false,
             "schema": {
+              "maximum": 1,
+              "minimum": 0,
               "title": "Completeness",
               "type": "number"
             }
@@ -17161,6 +17175,8 @@
             "name": "completeness[ge]",
             "required": false,
             "schema": {
+              "maximum": 1,
+              "minimum": 0,
               "title": "Completeness[Ge]",
               "type": "number"
             }
@@ -17170,6 +17186,8 @@
             "name": "completeness[le]",
             "required": false,
             "schema": {
+              "maximum": 1,
+              "minimum": 0,
               "title": "Completeness[Le]",
               "type": "number"
             }
@@ -17844,6 +17862,8 @@
             "name": "completeness",
             "required": false,
             "schema": {
+              "maximum": 1,
+              "minimum": 0,
               "title": "Completeness",
               "type": "number"
             }
@@ -17853,6 +17873,8 @@
             "name": "completeness[ge]",
             "required": false,
             "schema": {
+              "maximum": 1,
+              "minimum": 0,
               "title": "Completeness[Ge]",
               "type": "number"
             }
@@ -17862,6 +17884,8 @@
             "name": "completeness[le]",
             "required": false,
             "schema": {
+              "maximum": 1,
+              "minimum": 0,
               "title": "Completeness[Le]",
               "type": "number"
             }
@@ -21515,6 +21539,8 @@
             "name": "completeness",
             "required": false,
             "schema": {
+              "maximum": 1,
+              "minimum": 0,
               "title": "Completeness",
               "type": "number"
             }
@@ -21524,6 +21550,8 @@
             "name": "completeness[ge]",
             "required": false,
             "schema": {
+              "maximum": 1,
+              "minimum": 0,
               "title": "Completeness[Ge]",
               "type": "number"
             }
@@ -21533,6 +21561,8 @@
             "name": "completeness[le]",
             "required": false,
             "schema": {
+              "maximum": 1,
+              "minimum": 0,
               "title": "Completeness[Le]",
               "type": "number"
             }
