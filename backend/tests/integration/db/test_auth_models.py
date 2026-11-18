@@ -3,8 +3,10 @@
 from typing import TYPE_CHECKING
 
 import pytest
+from sqlalchemy import select, text
 from sqlalchemy.exc import IntegrityError
 
+from app.api.auth.models import User
 from scripts.seed.factories.models import UserFactory
 
 if TYPE_CHECKING:
@@ -43,3 +45,15 @@ async def test_username_is_unique(db_session: AsyncSession) -> None:
             username="uniqueuser",
             hashed_password="hashed4",
         )
+
+
+async def test_users_read_and_write_without_the_retired_profile_stats_columns(db_session: AsyncSession) -> None:
+    """The next release drops these columns while this release still runs; the DROP rolls back with the test."""
+    await db_session.execute(
+        text('ALTER TABLE "user" DROP COLUMN profile_stats, DROP COLUMN profile_stats_computed_at')
+    )
+
+    user = await UserFactory.create_async(db_session, email="no-stats@example.com", hashed_password="hashed")
+    db_session.expunge_all()
+
+    assert (await db_session.execute(select(User).where(User.id == user.id))).unique().scalar_one().email == user.email

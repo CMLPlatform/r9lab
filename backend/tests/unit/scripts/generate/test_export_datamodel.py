@@ -36,7 +36,7 @@ def test_every_mapped_table_lands_in_exactly_one_module() -> None:
 def test_diagrams_carry_columns_no_one_documented_by_hand() -> None:
     """The point of generating: the columns a hand-written diagram had drifted past."""
     user_management = _partial("user-management")
-    for column in ("mfa_enabled", "terms_accepted_version", "upload_total_bytes", "profile_stats"):
+    for column in ("mfa_enabled", "terms_accepted_version", "upload_total_bytes", "mfa_recovery_codes"):
         assert column in user_management
 
     assert "recording_session" in _partial("camera-plugin").lower()
