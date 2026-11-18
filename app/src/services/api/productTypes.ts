@@ -52,7 +52,7 @@ export async function fetchProductTypesByName(names: string[]): Promise<ProductT
   url.searchParams.set('size', String(lookup.length));
   const response = await apiFetch(url, { method: 'GET' });
   if (!response.ok) {
-    await throwFromResponse(response, `Failed to fetch ${url.pathname}`);
+    await throwFromResponse(response, "Couldn't load product types. Try again.");
   }
   const data = await response.json();
   return (data.items ?? []) as ProductTypeOption[];
@@ -63,7 +63,7 @@ export async function fetchProductType(id: number): Promise<ProductTypeOption> {
   const url = `${API_URL}/product-types/${id}`;
   const response = await apiFetch(url, { method: 'GET' });
   if (!response.ok) {
-    await throwFromResponse(response, `Failed to fetch ${new URL(url).pathname}`);
+    await throwFromResponse(response, "Couldn't load the product type. Try again.");
   }
   return (await response.json()) as ProductTypeOption;
 }

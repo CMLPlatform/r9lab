@@ -80,7 +80,7 @@ export async function setupWebHlsVideo({
     // straight to the retry overlay.
     const onError = () => {
       if (!isCancelled()) {
-        markError('HLS playback failed');
+        markError('Live preview stopped. Try loading it again.');
       }
     };
     video.addEventListener('error', onError);
@@ -135,7 +135,7 @@ export async function setupWebHlsVideo({
         return;
       }
 
-      markError(data.details ?? 'HLS playback failed');
+      markError(data.details ?? 'Live preview stopped. Try loading it again.');
     });
 
     return () => {

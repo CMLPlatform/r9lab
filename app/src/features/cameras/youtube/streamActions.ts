@@ -42,7 +42,7 @@ export function useCameraStreamActions({
     (camera: CameraReadWithStatus) => {
       if (streamModeEnabled) {
         if (!isCameraReachable(camera)) {
-          feedback.toast(`${camera.name} is offline — can't stream.`);
+          feedback.toast(`${camera.name} is offline. Can't stream.`);
           return;
         }
         openStreamDialog(camera.id, camera.name, streamProductName);
@@ -53,7 +53,7 @@ export function useCameraStreamActions({
         if (isCameraReachable(camera)) {
           toggleSelected(camera.id);
         } else {
-          feedback.toast(`${camera.name} is offline — can't capture.`);
+          feedback.toast(`${camera.name} is offline. Can't capture.`);
         }
         return;
       }

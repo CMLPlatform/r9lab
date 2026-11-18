@@ -52,7 +52,9 @@ test.describe('Authentication flow', () => {
     await page.getByLabel('Password', { exact: true }).fill('wrong-password');
     await page.getByRole('button', { name: 'Sign in' }).click();
     // Bad credentials surface as an inline field error, and focus stays in the field.
-    await expect(page.getByText('Invalid email or password')).toBeVisible({
+    await expect(
+      page.getByText('Email or password is wrong. Check both, or reset your password.'),
+    ).toBeVisible({
       timeout: 10_000,
     });
     await expect(page.getByLabel('Password', { exact: true })).toBeFocused();

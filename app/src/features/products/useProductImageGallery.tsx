@@ -57,7 +57,7 @@ function useProductGalleryActions({
           onError: (error) =>
             captureState.feedback.alert({
               title: 'Capture failed',
-              message: getErrorMessage(error, 'Could not capture an image. Please try again.'),
+              message: getErrorMessage(error, "Couldn't capture an image. Try again."),
               buttons: [{ text: 'OK' }],
             }),
           onSettled: () => captureActions.setIsCapturing(false),

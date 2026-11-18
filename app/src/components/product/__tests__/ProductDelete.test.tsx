@@ -5,7 +5,7 @@ import { baseProduct as _base, renderWithProviders, setupUser } from '@/test-uti
 import type { Product } from '@/types/Product';
 
 const existingProduct: Product = { ..._base, id: 42 };
-const DELETE_CONFIRMATION_PATTERN = /You cannot undo this/;
+const DELETE_CONFIRMATION_PATTERN = /You can't undo this/;
 
 describe('ProductDelete', () => {
   const user = setupUser();
@@ -43,7 +43,7 @@ describe('ProductDelete', () => {
     expect(screen.getByText('Delete this component?')).toBeOnTheScreen();
     expect(
       screen.getByText(
-        'This deletes the component with its photos and files. You cannot undo this.',
+        "This deletes the component with its photos and files. You can't undo this.",
       ),
     ).toBeOnTheScreen();
   });
@@ -70,7 +70,7 @@ describe('ProductDelete', () => {
 
     expect(
       screen.getByText(
-        'This also deletes its 2 components, everything recorded under them, and all their photos and files. You cannot undo this.',
+        "This also deletes its 2 components, everything recorded under them, and all their photos and files. You can't undo this.",
       ),
     ).toBeOnTheScreen();
   });

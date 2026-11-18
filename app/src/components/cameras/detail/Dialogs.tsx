@@ -43,10 +43,10 @@ function ManualSetupDialog({
       </AppText>
       <View className="gap-3">
         <AppText variant="caption" className="text-muted-foreground">
-          Direct connection bypasses the WebSocket relay, cutting preview latency from ~2 s to ~0.4
-          s. Connect an Ethernet cable between the Pi and this device — the app detects it
-          automatically. Use this form only if auto-detection didn&apos;t find the Pi; the local API
-          key is on the Pi&apos;s /setup page.
+          Connect an Ethernet cable between the Raspberry Pi and this device. The app finds it
+          automatically, and the preview delay drops from about 2 s to about 0.4 s. Use this form
+          only if the app didn&apos;t find the Pi. The local API key is on the Pi&apos;s /setup
+          page.
         </AppText>
         <TextInput
           value={localUrlInput}

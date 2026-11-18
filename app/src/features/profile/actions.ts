@@ -61,7 +61,7 @@ export function useProfileActions({
         onSuccess: proceed,
         onError: () => {
           feedback.error(
-            'Failed to stop the stream. Please stop it manually before signing out.',
+            "Couldn't stop the stream. Stop it manually before signing out.",
             'Stream error',
           );
           setIsLoggingOut(false);
@@ -115,7 +115,7 @@ export function useProfileActions({
     feedback.alert({
       title: 'Sign out everywhere?',
       message:
-        'This ends your session on every device, including this one. You’ll need to sign in again.',
+        "This ends your session on every device, including this one. You'll need to sign in again.",
       buttons: [
         { text: 'Cancel', style: 'cancel' },
         {

@@ -87,7 +87,7 @@ describe('camera stream action hooks', () => {
       result.current.handleCardTap({ id: 'cam-1', name: 'Camera 1' } as never);
     });
 
-    expect(feedback.toast).toHaveBeenCalledWith("Offline Cam is offline — can't stream.");
+    expect(feedback.toast).toHaveBeenCalledWith("Offline Cam is offline. Can't stream.");
     expect(openStreamDialog).toHaveBeenCalledWith('cam-1', 'Camera 1', 'Desk Radio');
 
     await rerender({ streamModeEnabled: false, selectionMode: false });
@@ -174,7 +174,7 @@ describe('camera stream action hooks', () => {
       await result.current.handleStartStream();
     });
     expect(feedback.error).toHaveBeenCalledWith(
-      'Failed to start stream: camera exploded',
+      "Couldn't start the stream: camera exploded",
       'Stream start failed',
     );
   });

@@ -101,7 +101,7 @@ export function useMfaSetup(
     try {
       await beginEnroll();
     } catch (err) {
-      setError(getErrorMessage(err, 'Unable to start setup. Please try again.'));
+      setError(getErrorMessage(err, "Couldn't start setup. Try again."));
     } finally {
       endRequest();
     }

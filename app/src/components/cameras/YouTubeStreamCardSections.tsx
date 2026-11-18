@@ -72,7 +72,7 @@ export function YouTubeStreamCardView({
             </AppButton>
           </>
         ) : (
-          <MutedText>Not streaming — start a live stream from a product page.</MutedText>
+          <MutedText>Not streaming. Start a live stream from a product page.</MutedText>
         )}
       </View>
     </Card>

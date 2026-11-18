@@ -6,7 +6,7 @@ const CONNECTION_MESSAGE = "Can't reach R9lab. Check your connection and try aga
 /**
  * User-facing text for a failure. Network failures (fetch throws a TypeError; any TypeError
  * is treated as a connection failure), request timeouts and 5xx responses get fixed
- * plain-language copy; every other Error keeps its own message, which is deliberate
+ * plain-language copy; every other Error keeps its own message, which is
  * user-facing copy or a 4xx detail from the server.
  */
 export function getErrorMessage(error: unknown, fallback: string): string {

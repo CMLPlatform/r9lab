@@ -83,7 +83,7 @@ describe('ProductCard', () => {
     await renderWithProviders(
       <ProductCard product={{ ...baseProduct, name: '', description: undefined }} />,
     );
-    expect(screen.getByText('Unnamed Product')).toBeOnTheScreen();
+    expect(screen.getByText('Unnamed product')).toBeOnTheScreen();
   });
 
   it('renders detail line with brand and model', async () => {

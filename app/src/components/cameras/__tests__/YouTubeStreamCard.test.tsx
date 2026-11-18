@@ -106,7 +106,10 @@ describe('YouTubeStreamCard', () => {
     mutateOptions.onError(new Error('network down'));
 
     await waitFor(() => {
-      expect(mockError).toHaveBeenCalledWith('Failed to stop stream: network down', 'Stop failed');
+      expect(mockError).toHaveBeenCalledWith(
+        "Couldn't stop the stream: network down",
+        'Stop failed',
+      );
     });
   });
 });

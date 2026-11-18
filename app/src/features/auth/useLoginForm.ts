@@ -2,7 +2,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import type { useDialog } from '@/components/base/dialogContext';
-import { SUPPORT_EMAIL } from '@/constants';
+import { SUSPENDED_ACCOUNT_MESSAGE } from '@/constants';
 import { useSingleFlight } from '@/hooks/useSingleFlight';
 import { login } from '@/services/api/auth/authLogin';
 import type { MfaLoginPending } from '@/services/api/auth/authMfa';
@@ -13,7 +13,8 @@ import { getErrorMessage } from '@/utils/errors';
 
 type DialogApi = ReturnType<typeof useDialog>;
 
-export const INVALID_CREDENTIALS_MESSAGE = 'Invalid email or password';
+export const INVALID_CREDENTIALS_MESSAGE =
+  'Email or password is wrong. Check both, or reset your password.';
 
 async function attemptPasswordLogin({
   email,
@@ -48,7 +49,7 @@ async function attemptPasswordLogin({
     if (!authenticatedUser) {
       dialog.alert({
         title: "Couldn't sign in",
-        message: "Couldn't load your account. Please try again.",
+        message: "Couldn't load your account. Try again.",
       });
       return;
     }
@@ -56,7 +57,7 @@ async function attemptPasswordLogin({
     if (!authenticatedUser.isActive) {
       dialog.alert({
         title: 'Account suspended',
-        message: `Your account has been suspended. Email ${SUPPORT_EMAIL} if you think this is a mistake.`,
+        message: SUSPENDED_ACCOUNT_MESSAGE,
       });
       return;
     }
@@ -65,7 +66,7 @@ async function attemptPasswordLogin({
   } catch (error: unknown) {
     dialog.alert({
       title: "Couldn't sign in",
-      message: getErrorMessage(error, 'Unable to reach server. Please try again later.'),
+      message: getErrorMessage(error, "Can't reach R9lab. Check your connection and try again."),
     });
   }
 }

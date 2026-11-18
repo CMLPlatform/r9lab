@@ -26,8 +26,6 @@ export type ProductRole = 'product' | 'component';
 // persisted cache has no function attached, so TanStack re-attaches one by key.
 export const SAVE_PRODUCT_MUTATION_KEY = ['saveProduct'] as const;
 
-// ─── Types ─────────────────────────────────────────────────────────────────────
-
 export type ProductExtraFilters = {
   brands?: string[];
   createdAfter?: Date;
@@ -53,8 +51,6 @@ export const DEFAULT_PRODUCT_SORT = ['-recommended_rank'] as const;
 export const NEWEST_FIRST_SORT = ['-created_at'] as const;
 
 const PAGE_SIZE = 24;
-
-// ─── Query options factories ───────────────────────────────────────────────────
 
 // No placeholderData: it would carry the previous filter's whole pages array
 // (and stale total/hasNextPage) under the new filter while page 1 loads.
@@ -168,8 +164,6 @@ export const componentTreeQueryOptions = (id: number) =>
     queryFn: () => getComponentTree(id),
   });
 
-// ─── Save / delete mutations ───────────────────────────────────────────────────
-
 function invalidateAfterSave(queryClient: QueryClient, product: Product, savedId: number) {
   const isComponent = product.role === 'component';
   const savedKey = isComponent
@@ -270,7 +264,7 @@ export function onResumedSaveError(queryClient: QueryClient) {
     if (typeof product.id !== 'number') {
       resumedSaveDialog?.alert({
         title: 'Create failed',
-        message: `"${product.name}" was not created. ${getErrorMessage(error, 'Please capture it again.')}`,
+        message: `"${product.name}" was not created. ${getErrorMessage(error, 'Capture it again.')}`,
         buttons: [{ text: 'OK' }],
       });
       return;
@@ -293,20 +287,16 @@ export function onResumedSaveError(queryClient: QueryClient) {
 }
 
 // Shown on the save/create button and in the toast when the mutation pauses.
-export const QUEUED_OFFLINE_LABEL = 'Queued — sends when online';
+export const QUEUED_OFFLINE_LABEL = 'Queued. Sends when online';
 
 export function useSaveProductMutation() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    // Default networkMode 'online': the mutation pauses while offline and
-    // fires on reconnect. Callers read `isPaused` to show QUEUED_OFFLINE_LABEL.
+    // Pauses while offline and fires on reconnect; callers read `isPaused`.
     mutationKey: SAVE_PRODUCT_MUTATION_KEY,
-    // Every save PATCHes the whole record, so two in flight at once let the
-    // slower one overwrite the newer one's fields. A scope makes react-query
-    // run them FIFO, so send order is apply order and the last (most complete)
-    // snapshot wins. mutationKey alone does not serialize: the cache keys
-    // strictly on `scope.id`.
+    // Each save PATCHes the whole record, so the slower of two parallel saves would
+    // overwrite the newer one. A scope runs them in order; mutationKey alone does not.
     scope: { id: 'saveProduct' },
     mutationFn: saveProductMutationFn,
     retry: isRetryableSaveError,

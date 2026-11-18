@@ -55,7 +55,7 @@ export function useProductFiles(product: Product) {
       feedback.toast(`Added ${file.name}.`);
     },
     onError: (error: Error) => {
-      feedback.error(getErrorMessage(error, 'Could not upload the file.'), 'Upload failed');
+      feedback.error(getErrorMessage(error, "Couldn't upload the file."), 'Upload failed');
     },
   });
 
@@ -66,7 +66,7 @@ export function useProductFiles(product: Product) {
       feedback.toast('File removed.');
     },
     onError: (error: Error) => {
-      feedback.error(getErrorMessage(error, 'Try again.'), 'Could not remove file');
+      feedback.error(getErrorMessage(error, 'Try again.'), "Couldn't remove file");
     },
   });
 
@@ -94,7 +94,7 @@ export function useProductFiles(product: Product) {
         );
         continue;
       }
-      // biome-ignore lint/performance/noAwaitInLoops: sequential upload is deliberate.
+      // biome-ignore lint/performance/noAwaitInLoops: sequential, one upload at a time.
       await uploadMutation.mutateAsync(asset).catch(() => undefined);
     }
   }, [feedback, uploadMutation]);

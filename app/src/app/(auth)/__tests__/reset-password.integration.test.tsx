@@ -195,7 +195,7 @@ describe('ResetPasswordScreen submission', () => {
     await renderResetPasswordScreen();
     await submitResetPassword('correct-horse-battery-staple-v42');
 
-    expect(screen.getByText("Couldn't reset your password. Please try again.")).toBeOnTheScreen();
+    expect(screen.getByText("Couldn't reset your password. Try again.")).toBeOnTheScreen();
 
     consoleErrorSpy.mockRestore();
   });

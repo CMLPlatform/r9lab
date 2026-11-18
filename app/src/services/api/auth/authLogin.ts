@@ -16,7 +16,7 @@ import {
 } from './authSession';
 import { getUser } from './authUser';
 
-const UNREACHABLE_SERVER_MESSAGE = 'Unable to reach server. Please try again later.';
+const UNREACHABLE_SERVER_MESSAGE = "Can't reach R9lab. Check your connection and try again.";
 const DEVICE_TOKEN_HEADER = 'X-Device-Token';
 
 export type LoginResult =
@@ -70,7 +70,10 @@ export async function login(username: string, password: string): Promise<LoginRe
     }
 
     if (!response.ok) {
-      await throwFromResponse(response, 'Login failed.');
+      await throwFromResponse(
+        response,
+        'Sign-in failed. Check your email and password, then try again.',
+      );
     }
 
     const data = await response.json().catch(() => null);
@@ -84,7 +87,7 @@ export async function login(username: string, password: string): Promise<LoginRe
 
     // Native logs in with bearer tokens: no access token means no session.
     if (typeof data?.access_token !== 'string') {
-      throw new Error('Invalid login response.');
+      throw new Error('Something went wrong on our side. Try again in a moment.');
     }
 
     await persistAccessToken(data.access_token);

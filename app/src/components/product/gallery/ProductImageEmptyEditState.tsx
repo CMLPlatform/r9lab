@@ -62,7 +62,7 @@ export function ProductImageEmptyEditState({
           disabled={isCapturing || r9camsLoading}
           accessibilityRole="button"
           accessibilityLabel={
-            hasCamerasConfigured ? 'Capture from RPi camera' : 'Set up RPi camera'
+            hasCamerasConfigured ? 'Capture from Raspberry Pi camera' : 'Set up Raspberry Pi camera'
           }
           className="min-h-11 flex-1 items-center justify-center gap-1 rounded-md border border-dashed px-1 py-3"
           style={rpiCardStyle}
@@ -75,7 +75,7 @@ export function ProductImageEmptyEditState({
                 <Icon name="camera" size={24} color={palette[theme.scheme].mutedForeground} />
               )}
               <AppText variant="caption" className="text-center text-muted-foreground">
-                {hasCamerasConfigured ? 'RPi Camera' : 'Connect camera'}
+                {hasCamerasConfigured ? 'Pi camera' : 'Connect camera'}
               </AppText>
               <PressOverlay {...state} className="rounded-md" />
             </>

@@ -133,7 +133,7 @@ function useProductFieldHandlers({
       );
     } catch (err) {
       if (isEditConflict(err)) onEditConflict();
-      else dialog.toast(getErrorMessage(err, 'Could not save. Press Save to try again.'));
+      else dialog.toast(getErrorMessage(err, "Couldn't save. Press Save to try again."));
     }
   };
 
@@ -266,7 +266,7 @@ function useProductFormActions({
       }
       dialog.alert({
         title: partial ? 'Photos not uploaded' : 'Save failed',
-        message: getErrorMessage(err, 'Could not save. Please try again.'),
+        message: getErrorMessage(err, "Couldn't save. Try again."),
         buttons: [{ text: 'OK' }],
       });
     }
@@ -297,7 +297,7 @@ function useProductFormActions({
       // Otherwise react-query swallows the failure with no feedback.
       dialog.alert({
         title: 'Delete failed',
-        message: getErrorMessage(err, 'Could not delete. Please try again.'),
+        message: getErrorMessage(err, "Couldn't delete. Try again."),
         buttons: [{ text: 'OK' }],
       });
     }

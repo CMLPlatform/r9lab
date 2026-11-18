@@ -36,7 +36,8 @@ export async function captureImageFromCamera(
     headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
     body: JSON.stringify({ product_id: productId }),
   });
-  if (!resp.ok) await throwFromResponse(resp, 'Failed to capture image');
+  if (!resp.ok)
+    await throwFromResponse(resp, "Couldn't capture the image. Check the camera and try again.");
   const data = await resp.json();
   return {
     id: requireImageId(data.id),

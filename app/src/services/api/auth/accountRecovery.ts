@@ -14,13 +14,25 @@ async function postJson(path: string, body: unknown, fallbackError: string): Pro
 }
 
 export function requestPasswordReset(email: string): Promise<void> {
-  return postJson('/auth/forgot-password', { email }, 'Failed to send reset email');
+  return postJson(
+    '/auth/forgot-password',
+    { email },
+    "Couldn't send the reset email. Try again in a moment.",
+  );
 }
 
 export function resetPassword(token: string, password: string): Promise<void> {
-  return postJson('/auth/reset-password', { token, password }, 'Password reset failed');
+  return postJson(
+    '/auth/reset-password',
+    { token, password },
+    "Couldn't reset your password. Try again in a moment.",
+  );
 }
 
 export function verifyEmail(token: string): Promise<void> {
-  return postJson('/auth/verify', { token }, 'Verification failed. Please try registering again.');
+  return postJson(
+    '/auth/verify',
+    { token },
+    "That verification link didn't work. Sign in to request a new one.",
+  );
 }

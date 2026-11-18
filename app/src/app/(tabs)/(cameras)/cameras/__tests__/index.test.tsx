@@ -99,7 +99,9 @@ describe('CamerasScreen', () => {
     await renderWithProviders(<CamerasScreen />, { withDialog: true });
 
     expect(screen.getByText('No cameras yet')).toBeOnTheScreen();
-    expect(screen.getByText('Tap Add camera to register your first RPi camera.')).toBeOnTheScreen();
+    expect(
+      screen.getByText('Tap Add camera to register your first Raspberry Pi camera.'),
+    ).toBeOnTheScreen();
     expect(mockSetOptions).toHaveBeenCalled();
     expect(mockSetOptions.mock.calls[0][0]).toEqual(
       expect.objectContaining({ title: 'My cameras' }),
@@ -324,7 +326,7 @@ describe('CamerasScreen', () => {
     await fireEvent.press(screen.getByText('Capture 1'));
 
     expect(
-      screen.getByText('Capture failed — check the cameras are online and try again.'),
+      screen.getByText('Capture failed. Check the cameras are online and try again.'),
     ).toBeOnTheScreen();
   });
 
@@ -401,7 +403,7 @@ describe('CamerasScreen', () => {
     await fireEvent(screen.getByLabelText('Camera: Offline Cam'), 'longPress');
 
     await waitFor(() =>
-      expect(screen.getByText("Offline Cam is offline — can't capture.")).toBeOnTheScreen(),
+      expect(screen.getByText("Offline Cam is offline. Can't capture.")).toBeOnTheScreen(),
     );
     // Selection mode must NOT have been entered
     expect(screen.queryByText(SELECTED_PATTERN)).toBeNull();

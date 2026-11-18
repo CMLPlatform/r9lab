@@ -67,7 +67,7 @@ describe('camera capture action hooks', () => {
       result.current.handleCaptureSelected();
     });
 
-    expect(toast).toHaveBeenCalledWith("Offline Cam is offline — can't capture.");
+    expect(toast).toHaveBeenCalledWith("Offline Cam is offline. Can't capture.");
     expect(enterSelectionMode).toHaveBeenCalledWith('cam-1');
     expect(mutate).toHaveBeenCalledWith(
       { cameraIds: ['cam-1', 'cam-2'], productId: 42 },

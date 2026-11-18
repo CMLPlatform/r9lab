@@ -36,7 +36,7 @@ export function TermsAcceptanceDialog() {
           only be included if you accept the contributor terms.
         </AppText>
         <AppText variant="body" className="text-muted-foreground">
-          Nothing changes if you decline — you keep full access to R9lab, and your records stay out
+          Nothing changes if you decline. You keep full access to R9lab, and your records stay out
           of any published dataset. You can accept later from your account screen.
         </AppText>
       </View>

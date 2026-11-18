@@ -7,5 +7,6 @@ export async function acceptContributorTerms(): Promise<void> {
   const response = await fetchWithAuth(new URL(`${API_URL}/users/me/accept-terms`), {
     method: 'POST',
   });
-  if (!response.ok) await throwFromResponse(response, 'Failed to record terms acceptance');
+  if (!response.ok)
+    await throwFromResponse(response, "Couldn't record your acceptance of the terms. Try again.");
 }

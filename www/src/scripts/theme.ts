@@ -75,7 +75,7 @@ function withThemeTransition(swap: () => void) {
 
 function updateThemeToggle(control: HTMLElement, button: HTMLButtonElement, theme: ThemeName) {
   control.dataset.themeCurrent = theme;
-  button.setAttribute('aria-label', `Theme: ${theme}. Switch theme`);
+  button.setAttribute('aria-label', `Theme: ${theme}. Change theme`);
   button.setAttribute('title', `Theme: ${theme}`);
 }
 
