@@ -102,7 +102,9 @@ function EditModeOverlay({
               accessibilityRole="button"
               aria-busy={isCapturing}
               accessibilityLabel={
-                hasCamerasConfigured ? 'Capture from RPi camera' : 'Set up RPi camera'
+                hasCamerasConfigured
+                  ? 'Capture from Raspberry Pi camera'
+                  : 'Set up Raspberry Pi camera'
               }
               className="h-11 w-11 items-center justify-center rounded-md"
               style={rpiButtonStyle}

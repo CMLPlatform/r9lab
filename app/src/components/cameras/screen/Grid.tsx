@@ -109,7 +109,7 @@ export function CamerasGrid({
             No cameras yet
           </AppText>
           <MutedText className="mt-2 text-center">
-            Tap Add camera to register your first RPi camera.
+            Tap Add camera to register your first Raspberry Pi camera.
           </MutedText>
         </View>
       }

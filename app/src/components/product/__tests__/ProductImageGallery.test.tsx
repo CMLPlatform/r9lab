@@ -17,7 +17,7 @@ import type { Product } from '@/types/Product';
 // Gallery images sit in an aria-hidden wrapper (decorative); opt hidden elements in.
 const HIDDEN = { includeHiddenElements: true };
 
-const RPI_CAMERA_BUTTON_PATTERN = /RPi camera|Set up RPi camera/i;
+const RPI_CAMERA_BUTTON_PATTERN = /Pi camera/i;
 
 // ─── Module mocks ─────────────────────────────────────────────────────────────
 
@@ -285,10 +285,10 @@ describe('ProductImageGallery — RPi capture + gallery / AsyncStorage', () => {
       },
     );
 
-    // Either "Capture from RPi camera" (has cameras) or "Set up RPi camera" (no cameras)
+    // Either "Capture from Raspberry Pi camera" (has cameras) or "Set up Raspberry Pi camera" (no cameras)
     expect(
-      screen.queryByLabelText('Capture from RPi camera') ??
-        screen.queryByLabelText('Set up RPi camera'),
+      screen.queryByLabelText('Capture from Raspberry Pi camera') ??
+        screen.queryByLabelText('Set up Raspberry Pi camera'),
     ).not.toBeNull();
   });
 
@@ -306,7 +306,7 @@ describe('ProductImageGallery — RPi capture + gallery / AsyncStorage', () => {
       { withDialog: true },
     );
 
-    await fireEvent.press(screen.getByLabelText('Capture from RPi camera'));
+    await fireEvent.press(screen.getByLabelText('Capture from Raspberry Pi camera'));
 
     await waitFor(() => {
       expect(screen.getByText('Select camera')).toBeOnTheScreen();
@@ -327,7 +327,7 @@ describe('ProductImageGallery — RPi capture + gallery / AsyncStorage', () => {
       { withDialog: true },
     );
 
-    await fireEvent.press(screen.getByLabelText('Capture from RPi camera'));
+    await fireEvent.press(screen.getByLabelText('Capture from Raspberry Pi camera'));
     await waitFor(() => expect(screen.getByText('Select camera')).toBeOnTheScreen());
 
     await fireEvent.press(screen.getByText('Bench Cam'));
@@ -360,7 +360,7 @@ describe('ProductImageGallery — RPi capture + gallery / AsyncStorage', () => {
       { withDialog: true },
     );
 
-    await fireEvent.press(screen.getByLabelText('Capture from RPi camera'));
+    await fireEvent.press(screen.getByLabelText('Capture from Raspberry Pi camera'));
     await waitFor(() => expect(screen.getByText('Select camera')).toBeOnTheScreen());
     await fireEvent.press(screen.getByText('Bench Cam'));
     await waitFor(() => expect(screen.getByText('Capture')).toBeOnTheScreen());

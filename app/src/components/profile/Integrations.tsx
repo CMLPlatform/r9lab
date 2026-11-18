@@ -44,9 +44,9 @@ export function ProfileIntegrationsSection({
           <Icon name="webcam" size={22} color={theme.colors.mutedForeground} />
         </View>
         <View className="flex-1">
-          <AppText className="font-semibold">RPi Camera</AppText>
+          <AppText className="font-semibold">Raspberry Pi camera</AppText>
           <AppText variant="caption" className="mt-px text-muted-foreground">
-            Capture images with a Raspberry Pi camera during disassembly.{' '}
+            Capture images with this camera during disassembly.{' '}
             <AppText className="underline" style={styles.docsLink} onPress={openDocs}>
               Learn more
             </AppText>
@@ -56,7 +56,7 @@ export function ProfileIntegrationsSection({
           checked={rpiEnabled}
           onCheckedChange={onSetRpiEnabled}
           disabled={rpiLoading}
-          accessibilityLabel="RPi Camera"
+          accessibilityLabel="Raspberry Pi camera"
         />
       </View>
 
