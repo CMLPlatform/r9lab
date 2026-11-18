@@ -203,7 +203,7 @@ export async function completeMfaChallenge(mfaToken: string, code: string): Prom
   const response = await postMfaJson(
     '/auth/mfa/challenge',
     { mfa_token: mfaToken, code },
-    'Invalid MFA code.',
+    'That code is wrong or expired. Try again, or use a recovery code.',
   );
   await persistMfaLoginResponse(response);
 }

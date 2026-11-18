@@ -114,7 +114,7 @@ export function useOAuthAssociations({
 
     if (authorization.status === STEP_UP_REQUIRED_STATUS && !currentPassword) {
       throw new OAuthStepUpRequiredError(
-        authorization.detail || 'Current password is required to link a social login.',
+        authorization.detail || 'Enter your current password to link a social login.',
       );
     }
 

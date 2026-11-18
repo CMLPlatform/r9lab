@@ -150,7 +150,7 @@ describe('useOAuthAssociations', () => {
       .mockResolvedValueOnce({
         ok: false,
         status: 400,
-        detail: 'Current password is required to link a social login.',
+        detail: 'Enter your current password to link a social login.',
         authorizationUrl: undefined,
       })
       .mockResolvedValueOnce({
@@ -192,7 +192,7 @@ describe('useOAuthAssociations', () => {
       .mockResolvedValueOnce({
         ok: false,
         status: 400,
-        detail: 'Current password is required to link a social login.',
+        detail: 'Enter your current password to link a social login.',
         authorizationUrl: undefined,
       })
       .mockResolvedValueOnce({
@@ -260,7 +260,7 @@ describe('useOAuthAssociations', () => {
     jest.mocked(fetchOAuthAuthorizationUrl).mockResolvedValueOnce({
       ok: false,
       status: 400,
-      detail: 'Current password is required to link a social login.',
+      detail: 'Enter your current password to link a social login.',
       authorizationUrl: undefined,
     });
     const { result } = await renderHook(() =>

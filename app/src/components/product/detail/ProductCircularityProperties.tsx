@@ -24,7 +24,7 @@ const NOTE_FIELDS: readonly {
     key: 'recyclability',
     label: 'Recyclability',
     hint: 'What the parts are made of, and whether those materials can be separated and recovered.',
-    example: 'e.g. Housing likely polypropylene, unconfirmed, no resin code moulded in.',
+    example: 'e.g. Housing likely polypropylene, unconfirmed: no resin code moulded in.',
   },
   {
     key: 'disassemblability',
