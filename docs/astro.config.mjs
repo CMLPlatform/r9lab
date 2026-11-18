@@ -66,11 +66,7 @@ const SIDEBAR = [
   {
     label: 'Operations',
     items: [
-      { label: 'Prerequisites', slug: 'operations/prerequisites' },
       { label: 'Install', slug: 'operations/install' },
-      { label: 'Configure', slug: 'operations/configure' },
-      { label: 'Deploy', slug: 'operations/deploy' },
-      { label: 'Upgrade and backup', slug: 'operations/upgrade-backup' },
       { label: 'Deployment and operations', slug: 'operations/deployment' },
       { label: 'Security and hardening', slug: 'operations/security' },
     ],
@@ -123,6 +119,10 @@ export default defineConfig({
     '/user-guides/rpi-cam': '/user-guides/r9cam/',
     '/architecture/rpi-cam': '/architecture/r9cam/',
     '/api/rpi-cam': '/api/r9cam/',
+    '/operations/prerequisites': '/operations/install/',
+    '/operations/configure': '/operations/deployment/',
+    '/operations/deploy': '/operations/deployment/',
+    '/operations/upgrade-backup': '/operations/deployment/',
   },
   vite: {
     server: {

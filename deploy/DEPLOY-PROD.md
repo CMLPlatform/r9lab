@@ -1,9 +1,8 @@
 # Operating the production host
 
 This runbook covers what is specific to the CML production host: first-time setup, the routine
-release and recovery. The install guide covers the generic procedure (env files, secrets, first
-start, upgrades, timers, offsite copy, telemetry): `docs/src/content/docs/operations/`, from
-`prerequisites.md` to `upgrade-backup.md`.
+release and recovery. [SETUP.md](SETUP.md) takes an empty host to a
+running stack (tunnel, `.env`, secrets, first start); start there.
 
 Staging equivalent: [DEPLOY-STAGING.md](DEPLOY-STAGING.md). Rehearse there first.
 
@@ -31,9 +30,21 @@ Skipping this is safe for the stack: the Compose caps still apply.
 
 ### 1.1 Backup repository
 
-Follow "First backup" in the install guide's `upgrade-backup.md` (`mkdir`/`chown 65532`,
-`just backup-init prod`, `just backup prod`, `just restore-check prod`). **The repository is never
-created automatically.**
+The backup container runs as UID 65532. Create the restic directory first: the service refuses to
+start without it (`create_host_path: false`), so Docker cannot create an empty directory that looks
+like a real mount. **The repository is never created automatically**, and backup runs never create
+one. Never run `backup-init` on a host that already has backups.
+
+```bash
+mkdir -p "${BACKUP_HOST_DIR:-./backups}/restic"
+sudo chown -R 65532:65532 "${BACKUP_HOST_DIR:-./backups}"
+just backup-init prod     # creates the repository, marks the uploads volume
+just backup prod          # takes the first snapshot
+just restore-check prod   # restores it: DB into a scratch container, uploads into a scratch dir
+```
+
+The repository is encrypted with `secrets/prod/restic_password`. Never rotate it: every later
+snapshot depends on it.
 
 `backup-init` also stamps the uploads volume with `.relab-volume`, naming its environment. A backup
 then refuses to run if the marker is missing or wrong: a deleted volume returns silently empty and the
@@ -140,13 +151,16 @@ had a backup.
 would share a restic directory. It fails closed, but only one of them gets backups. Give each host a
 single environment.
 
-**Before anything destructive, take a tagged backup:** `just backup prod manual` (see "First
-backup" in the install guide for why the tag matters).
+**Before anything destructive, take a tagged backup:** `just backup prod manual`. The `manual` tag
+is exempt from retention. An untagged copy is not safe: retention keeps only the newest snapshot
+per calendar day, so it can expire the same day.
 
 ### 1.2 Scheduled jobs
 
 ```bash
+just timers-render             # inspect what will be installed
 just timers-install prod      # render, install, enable, start (prompts for sudo; not `sudo just`)
+systemctl list-timers 'r9lab-*@prod.timer'   # confirm the NEXT times are scheduled
 ```
 
 The units run as whoever runs that command. On a host with a dedicated, sudo-less deploy user
@@ -399,9 +413,11 @@ unattended. To show a changed featured product (the `FEATURED_PRODUCT_ID` variab
 GitHub Environment), run Deploy Sites by hand for `prod` on `main` and approve it. Staging rebuilds
 weekly on its own.
 
-The install guide's "Upgrade" section (`upgrade-backup.md`) covers what a failed migration does
-and the 2026-09-08 flatten. Without the `migrations` profile, the API briefly serves against the
-old schema: acceptable during a planned outage, not for a routine release.
+A failed migration does not leave the old API serving: `up` exits non-zero and names the
+migrator, and the new API is either not started or running on the unfinished schema. Fix forward or
+roll back (Part 3). The migration history was flattened into `a9c2e4f60b18` on 2026-09-08, so
+older revisions cannot be targeted. Without the `migrations` profile, the API briefly serves
+against the old schema: acceptable during a planned outage, not for a routine release.
 
 Do not run `just cloudflare-apply prod` as part of a deploy. The edge is managed separately in
 `infra/cloudflare/`. The tunnel's ingress rules live there, so a renamed Compose service needs a
@@ -422,8 +438,22 @@ there, not from the first 100% CPU reading during the release.
 overrides the image's own `USER`, so the change takes effect as soon as the checkout moves, and
 every backup fails until the matching `chown`. The safety snapshot cannot run after `down`, because
 `just backup <env> manual` runs with `--no-deps`: the timer must never start PostgreSQL as a side
-effect. The install guide's "Upgrade" section has the commands in the order that works. `up` refuses to
-start while a mount is unwritable and names the volume.
+effect. `up` refuses to start while a mount is unwritable and names the volume. In the order
+that works:
+
+```bash
+env=prod                          # or staging
+just stack "$env" tag YES <tag>
+sudo chown -R 65532:65532 "${BACKUP_HOST_DIR:-./backups}"   # a host bind: safe with the stack up
+just backup "$env" manual         # tagged, so retention cannot expire it
+just stack "$env" down YES
+# Run as uid 0 in a container, so the host needs no knowledge of where Docker keeps volumes.
+for volume in user_uploads restic_cache; do
+    docker run --rm --user 0 -v "r9lab_${env}_${volume}:/mnt" \
+        busybox chown -R 65532:65532 /mnt
+done
+just stack "$env" up YES migrations
+```
 
 **Restart every timer you stopped.** Stopping the backup and maintenance timers for a window means
 stopping the watchdog too, or it pages mid-window. A stopped watchdog cannot then tell you the

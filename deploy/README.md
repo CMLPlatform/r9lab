@@ -5,9 +5,7 @@ One runbook per host. Each covers first-time setup, the routine release and reco
 - [DEPLOY-PROD.md](DEPLOY-PROD.md): production
 - [DEPLOY-STAGING.md](DEPLOY-STAGING.md): staging
 
-Public self-hosting documentation is the install guide in the docs subrepo
-(`docs/src/content/docs/operations/`, from `prerequisites.md` to `upgrade-backup.md`). The runbooks
-link to it and do not repeat it.
+[SETUP.md](SETUP.md) takes an empty host to a running stack; both runbooks start from it.
 
 Rehearse on staging before prod. The two hosts share `compose.deploy.yaml`, so a step that has only
 ever run on prod has never been tested.
