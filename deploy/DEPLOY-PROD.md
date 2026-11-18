@@ -1,9 +1,8 @@
 # Operating the production host
 
 This runbook covers what is specific to the CML production host: first-time setup, the routine
-release and recovery. The install guide covers the generic procedure (env files, secrets, first
-start, upgrades, timers, offsite copy, telemetry): `docs/src/content/docs/operations/`, from
-`prerequisites.md` to `upgrade-backup.md`.
+release and recovery. [SETUP.md](SETUP.md) takes an empty host to a
+running stack (tunnel, `.env`, secrets, first start); start there.
 
 Staging equivalent: [DEPLOY-STAGING.md](DEPLOY-STAGING.md). Rehearse there first.
 
@@ -31,9 +30,21 @@ Skipping this is safe for the stack: the Compose caps still apply.
 
 ### 1.1 Backup repository
 
-Follow "First backup" in the install guide's `upgrade-backup.md` (`mkdir`/`chown 65532`,
-`just backup-init prod`, `just backup prod`, `just restore-check prod`). **The repository is never
-created automatically.**
+The backup container runs as UID 65532. Create the restic directory first: the service refuses to
+start without it (`create_host_path: false`), so Docker cannot create an empty directory that looks
+like a real mount. **The repository is never created automatically**, and backup runs never create
+one. Never run `backup-init` on a host that already has backups.
+
+```bash
+mkdir -p "${BACKUP_HOST_DIR:-./backups}/restic"
+sudo chown -R 65532:65532 "${BACKUP_HOST_DIR:-./backups}"
+just backup-init prod     # creates the repository, marks the uploads volume
+just backup prod          # takes the first snapshot
+just restore-check prod   # restores it: DB into a scratch container, uploads into a scratch dir
+```
+
+The repository is encrypted with `secrets/prod/restic_password`. Never rotate it: every later
+snapshot depends on it.
 
 `backup-init` also stamps the uploads volume with `.relab-volume`, naming its environment. A backup
 then refuses to run if the marker is missing or wrong: a deleted volume returns silently empty and the
@@ -140,13 +151,16 @@ had a backup.
 would share a restic directory. It fails closed, but only one of them gets backups. Give each host a
 single environment.
 
-**Before anything destructive, take a tagged backup:** `just backup prod manual` (see "First
-backup" in the install guide for why the tag matters).
+**Before anything destructive, take a tagged backup:** `just backup prod manual`. The `manual` tag
+is exempt from retention. An untagged copy is not safe: retention keeps only the newest snapshot
+per calendar day, so it can expire the same day.
 
 ### 1.2 Scheduled jobs
 
 ```bash
+just timers-render             # inspect what will be installed
 just timers-install prod      # render, install, enable, start (prompts for sudo; not `sudo just`)
+systemctl list-timers 'r9lab-*@prod.timer'   # confirm the NEXT times are scheduled
 ```
 
 The units run as whoever runs that command. On a host with a dedicated, sudo-less deploy user
@@ -358,54 +372,6 @@ so `git pull` over https needs no credential; a private repository would need a 
 deploy key in `/var/lib/r9lab/.ssh` with the remote switched to ssh. The personal key stays on the
 sudo account and never on the deploy user.
 
-### 1.7 Moving a host from the relab paths
-
-Hosts set up before the R9lab rename use `/opt/relab`, `/etc/relab/relab.env` and a `relab` deploy
-user. Move them during the rename window, at the start of its step 9: after the new stack runs and
-before `timers-install`, so the scheduled jobs are installed once, from the new path. Run the steps
-below from the sudo account.
-
-Close every shell open as `relab` first, including `sudo -iu relab` sessions in other terminals:
-`usermod` refuses while the user has any process. Run the block as one script. It stops at the first
-failure, so it never moves directories for a user that was not renamed. Each step checks that its
-old name still exists, so you can run the block again after a failure:
-
-```bash
-bash -euo pipefail <<'EOF'
-if id -u relab >/dev/null 2>&1; then
-    (cd /opt/relab && sudo -u relab just stack prod down YES)
-    sudo systemctl stop "user@$(id -u relab).service"
-    test -z "$(pgrep -u relab || true)" || { ps -o pid,etime,cmd -u relab; exit 1; }
-    sudo usermod -l r9lab -d /var/lib/r9lab -m relab
-fi
-if getent group relab >/dev/null; then sudo groupmod -n r9lab relab; fi
-if test -d /opt/relab; then sudo mv /opt/relab /opt/r9lab; fi
-sudo install -d -m 0755 /etc/r9lab
-if test -f /etc/relab/relab.env; then sudo mv /etc/relab/relab.env /etc/r9lab/r9lab.env; fi
-if test -d /etc/relab; then sudo rmdir /etc/relab; fi
-# The user's ssh config names its GitHub keys by absolute path under the old home.
-if test -f /var/lib/r9lab/.ssh/config; then
-    sudo -u r9lab sed -i 's#/var/lib/relab/#/var/lib/r9lab/#' /var/lib/r9lab/.ssh/config
-fi
-# The moved virtualenvs still carry the old absolute paths: rebuild them.
-sudo -iu r9lab sh -c 'cd /opt/r9lab && uv sync --frozen && cd backend && uv sync --all-groups --frozen'
-EOF
-```
-
-`usermod -l` keeps the UID, so other services on the host that run as the deploy user keep working.
-Anything that names the user needs the new name: sudo rules, `sudo -u` commands, a cron or systemd
-`User=` line, and any absolute path into its home (its `~/.ssh/config` above). Check with
-`sudo -iu r9lab git -C /opt/r9lab fetch origin`.
-
-If `BACKUP_HOST_DIR` in `.env` points under a renamed directory, move that directory and update the
-variable. Change only the path inside the deploy key's `command="..."` in
-`/var/lib/r9lab/.ssh/authorized_keys`, keeping its option list. Then run
-`sudo -u r9lab just stack prod up YES` from `/opt/r9lab`, so the bind mounts (secrets, the Alloy
-config, the backup directory) point at the moved files, and carry on with the window's step 9
-(`R9LAB_UNIT_USER=r9lab just timers-install prod` from `/opt/r9lab`). Check from the dev host:
-`ssh r9lab-prod status` works, `ssh r9lab-prod bogus` is refused, and the next backup, watchdog and
-restore check runs succeed.
-
 ______________________________________________________________________
 
 ## Part 2: Routine release
@@ -447,9 +413,11 @@ unattended. To show a changed featured product (the `FEATURED_PRODUCT_ID` variab
 GitHub Environment), run Deploy Sites by hand for `prod` on `main` and approve it. Staging rebuilds
 weekly on its own.
 
-The install guide's "Upgrade" section (`upgrade-backup.md`) covers what a failed migration does
-and the 2026-09-08 flatten. Without the `migrations` profile, the API briefly serves against the
-old schema: acceptable during a planned outage, not for a routine release.
+A failed migration does not leave the old API serving: `up` exits non-zero and names the
+migrator, and the new API is either not started or running on the unfinished schema. Fix forward or
+roll back (Part 3). The migration history was flattened into `a9c2e4f60b18` on 2026-09-08, so
+older revisions cannot be targeted. Without the `migrations` profile, the API briefly serves
+against the old schema: acceptable during a planned outage, not for a routine release.
 
 Do not run `just cloudflare-apply prod` as part of a deploy. The edge is managed separately in
 `infra/cloudflare/`. The tunnel's ingress rules live there, so a renamed Compose service needs a
@@ -470,17 +438,22 @@ there, not from the first 100% CPU reading during the release.
 overrides the image's own `USER`, so the change takes effect as soon as the checkout moves, and
 every backup fails until the matching `chown`. The safety snapshot cannot run after `down`, because
 `just backup <env> manual` runs with `--no-deps`: the timer must never start PostgreSQL as a side
-effect. The install guide's "Upgrade" section has the commands in the order that works. `up` refuses to
-start while a mount is unwritable and names the volume.
+effect. `up` refuses to start while a mount is unwritable and names the volume. In the order
+that works:
 
-**The R9lab rename is a one-off window.** Follow "Upgrading across the R9lab rename" in the
-install guide (`upgrade-backup.md`), staging first, and 1.7 for the host move. Publish no other
-release between merging the rename and the end of prod's window: the hosts follow `main`, and
-every release from then on publishes only `r9lab-*` images. Before each window, run
-`./bootstrap.sh r9lab <env>` on the monitoring host so alerts and dashboards know the new
-project, and remove the `relab` pairs afterwards. Prod's units run as the deploy user, so step 9
-is `R9LAB_UNIT_USER=<deploy user> just timers-install prod` from the sudo account, naming the user
-the host has at that point (1.7 renames it).
+```bash
+env=prod                          # or staging
+just stack "$env" tag YES <tag>
+sudo chown -R 65532:65532 "${BACKUP_HOST_DIR:-./backups}"   # a host bind: safe with the stack up
+just backup "$env" manual         # tagged, so retention cannot expire it
+just stack "$env" down YES
+# Run as uid 0 in a container, so the host needs no knowledge of where Docker keeps volumes.
+for volume in user_uploads restic_cache; do
+    docker run --rm --user 0 -v "r9lab_${env}_${volume}:/mnt" \
+        busybox chown -R 65532:65532 /mnt
+done
+just stack "$env" up YES migrations
+```
 
 **Restart every timer you stopped.** Stopping the backup and maintenance timers for a window means
 stopping the watchdog too, or it pages mid-window. A stopped watchdog cannot then tell you the
@@ -509,9 +482,8 @@ escapes that guarantee: see "A revision that builds an index concurrently" at th
 
 Every release stays published on GHCR under its version (unrelated to the alembic revision, which
 names the schema), so rolling back is pulling an earlier tag. The package pages on GitHub list them.
-`rollback` cannot cross the R9lab rename: an older release runs the `relab_prod` project, which
-the rename window left behind. The window has its own rollback ("Upgrading across the R9lab
-rename" in the install guide); after traffic reopens, fix forward or restore from backup.
+`rollback` cannot cross the R9lab rename: an older release runs the `relab_prod` project. Fix
+forward or restore from backup instead.
 
 ```bash
 just stack prod rollback YES <tag>                    # code only: the new schema still suits the old code

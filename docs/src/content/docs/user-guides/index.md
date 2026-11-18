@@ -15,5 +15,4 @@ the terms.
 contribute. [API interaction](api/) covers reading and writing R9lab data from scripts, notebooks,
 or integrations, and assumes you have an account.
 
-For how the platform is built or how to run your own instance, see [Architecture](/architecture/)
-and [Install and self-host](/operations/prerequisites/).
+For how the platform is built, see [Architecture](/architecture/).

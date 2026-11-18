@@ -28,6 +28,6 @@ repository root rather than here.
 
 - **Product, platform, and architecture docs:** this app.
 - **Repo onboarding:** [../README.md](../README.md) and [../.github/CONTRIBUTING.md](../.github/CONTRIBUTING.md).
-- **Installation guide:** [operations/prerequisites](src/content/docs/operations/prerequisites.md)
-  and the pages after it.
+- **Local install:** [operations/install](src/content/docs/operations/install.md). Host setup is
+  in [../deploy/](../deploy/README.md).
 - **Interactive API reference:** <https://docs.r9lab.io/api/public/>.

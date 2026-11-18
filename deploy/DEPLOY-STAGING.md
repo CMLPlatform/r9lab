@@ -7,8 +7,8 @@ ______________________________________________________________________
 
 ## Part 1: First-time host setup
 
-Same as [DEPLOY-PROD.md](DEPLOY-PROD.md) Part 1 with `staging` substituted for `prod`: the
-install guide's "First backup" and "Scheduling backups", then `just timers-install staging`.
+[SETUP.md](SETUP.md), then [DEPLOY-PROD.md](DEPLOY-PROD.md) Part 1 with `staging` substituted
+for `prod`: the first backup (1.1), then `just timers-install staging`.
 
 Then fill in `PING_WATCHDOG` in `/etc/r9lab/r9lab.env` with staging's own healthchecks.io URL.
 Do not reuse prod's: a shared check cannot tell you which host went quiet. See
@@ -24,20 +24,6 @@ telemetry on; this host cannot tell you the rule is missing.
 
 Staging's `rclone.conf` defines one remote, `surfdrive_staging`, a SURFdrive share link scoped to
 staging's own folder; the backup copies to `rclone:surfdrive_staging:`.
-
-### Moving the host from the relab paths
-
-Follow [DEPLOY-PROD.md](DEPLOY-PROD.md) 1.7 at the start of the rename window's step 9, with
-these differences:
-
-- Staging has no deploy user. Skip the `usermod`, `groupmod` and `sudo -u` parts.
-- Stop the stack with `just stack staging down YES`.
-- Move the checkout only if its directory is named after relab (`/opt/relab-staging` to
-  `/opt/r9lab-staging`).
-
-The moved virtualenvs still carry the old absolute paths. As the checkout owner, run
-`uv sync --frozen` in the checkout and `uv sync --all-groups --frozen` in `backend/`. Last, run
-`just stack staging up YES` from the moved checkout, then `just timers-install staging`.
 
 ______________________________________________________________________
 

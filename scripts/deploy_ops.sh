@@ -727,30 +727,6 @@ rollback_downgrade_alert() {
     echo "       or, once the error above is fixed, retry: just stack $env rollback YES $tag $revision" >&2
 }
 
-# A host whose data still lives in the pre-rename relab_<env> project would get a second,
-# empty r9lab_<env> stack beside it. Refuses while the old project still runs, or while
-# either data volume exists only under the old name. A new volume next to an old one
-# passes: that is the state the move itself leaves behind. The rename window moves the
-# data with `stack <env> compose`, which this does not guard.
-# TODO(drop-by 2027-01-31): remove once no host has relab_<env> volumes or containers left.
-require_renamed_project() {
-    local env="$1" old="relab_$1" new volume
-    new="$(compose_project "$env")"
-    if [[ -n "$(docker ps -q --filter "label=com.docker.compose.project=$old")" ]]; then
-        echo "error: the $old Compose project is still running; stop it before starting $new" >&2
-        echo "       move it first: install guide, \"Upgrading across the R9lab rename\" (docs/src/content/docs/operations/upgrade-backup.md)" >&2
-        exit 2
-    fi
-    for volume in database_data user_uploads; do
-        if docker volume inspect "${old}_$volume" >/dev/null 2>&1 \
-            && ! docker volume inspect "${new}_$volume" >/dev/null 2>&1; then
-            echo "error: the $env $volume is still in the $old Compose project; starting $new would create an empty stack beside it" >&2
-            echo "       move it first: install guide, \"Upgrading across the R9lab rename\" (docs/src/content/docs/operations/upgrade-backup.md)" >&2
-            exit 2
-        fi
-    done
-}
-
 stack_command() {
     local env="$1"
     local action="$2"
@@ -765,10 +741,6 @@ stack_command() {
     esac
     require_dotenv_environment "$env"
     case "$action" in
-        backup | backup-init | backup-stamp-volume | backup-maintenance) require_renamed_project "$env" ;;
-    esac
-
-    case "$action" in
         up)
             parse_profiles "$env" "migrations backups scanning" "$@"
             # Root env policy, on the host, before anything starts. The vendored
@@ -781,7 +753,6 @@ stack_command() {
             # by a systemd timer (deploy/systemd/), not a long-running container.
             add_scanning_profile_from_dotenv
             require_confirmation "start the $env stack" "just stack $env up YES [profiles...]" "FORCE=1 just stack $env up [profiles...]"
-            require_renamed_project "$env"
             # No pull: `tag` and `rollback` pulled every image IMAGE_TAG names, and a
             # re-pull here would let a tag moved on GHCR since then replace them on a
             # plain restart. Compose still pulls an image that is missing locally, such
@@ -877,7 +848,6 @@ stack_command() {
             local tag="${2:-}" revision="${3:-}"
             require_image_tag "$tag"
             require_confirmation_command "roll the $env stack back to $tag" "just stack $env rollback YES $tag" "FORCE=1 just stack $env rollback _ $tag" "${1:-}"
-            require_renamed_project "$env"
             pull_image_tag "$env" "$tag"
             if [[ -n "$revision" ]]; then
                 # Both steps use the CURRENT migrator image: only the code being rolled
@@ -909,7 +879,6 @@ stack_command() {
                 DEPLOY_CONFIRMED=true
             fi
             require_confirmation "run $env database migrations" "just stack $env migrate YES" "FORCE=1 just stack $env migrate"
-            require_renamed_project "$env"
             # `up migrator` exits 0 even when the migration fails; `run --rm` propagates
             # the migrator's exit code.
             run_deploy_compose "$env" --profile migrations run --rm migrator
