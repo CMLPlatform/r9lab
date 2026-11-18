@@ -33,10 +33,8 @@ def create_app() -> FastAPI:
 
     register_middleware(app)
 
-    # Include health check routes (liveness and readiness probes)
     app.include_router(health_router)
 
-    # Include the canonical versioned API contract.
     app.include_router(api_router, prefix="/v1")
 
     init_openapi_docs(

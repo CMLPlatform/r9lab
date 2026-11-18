@@ -5389,7 +5389,7 @@
         "type": "object"
       },
       "ProductSummary": {
-        "description": "Minimal product summary for embedding in unrelated contexts (e.g. material links).\n\nDeliberately narrower than ``ProductRead``: no owner, physical/circularity\nproperties, or other detail-view fields since no consumer needs them here.\nExtend with more fields only when an actual caller needs them.",
+        "description": "Minimal product summary for embedding in unrelated contexts (e.g. material links).\n\nNarrower than ``ProductRead``: no owner, physical/circularity\nproperties, or other detail-view fields since no consumer needs them here.\nExtend with more fields only when an actual caller needs them.",
         "properties": {
           "created_at": {
             "anyOf": [
@@ -5819,7 +5819,7 @@
         "type": "object"
       },
       "RegistrationResponse": {
-        "description": "Uniform registration acknowledgement.\n\nDeliberately reveals nothing about whether the email already exists; the same\nbody is returned whether a new account was created or the address was already\ntaken, so registration cannot be used to enumerate accounts.",
+        "description": "Uniform registration acknowledgement.\n\nReveals nothing about whether the email already exists; the same\nbody is returned whether a new account was created or the address was already\ntaken, so registration cannot be used to enumerate accounts.",
         "properties": {
           "detail": {
             "default": "If the email address is available, a verification link has been sent. Please check your inbox.",
@@ -13758,7 +13758,7 @@
     },
     "/v1/plugins/r9cam/cameras/{camera_id}/preview-thumbnail": {
       "get": {
-        "description": "Serve the owner's cached preview thumbnail.\n\nOwner-checked (``UserOwnedCameraDep`` 404s for non-owners) and served off the\nprivate preview directory rather than the public ``/uploads/images`` mount, so\na camera id alone no longer grants a stranger a recent frame. Cached only\nprivately and revalidated, never long-lived immutable like the public mount.",
+        "description": "Serve the owner's cached preview thumbnail.\n\nOwner-checked (``UserOwnedCameraDep`` 404s for non-owners) and served off the\nprivate preview directory rather than the public ``/uploads/images`` mount, so\na camera id alone does not grant access to a recent frame. Cached only\nprivately and revalidated, never long-lived immutable like the public mount.",
         "operationId": "get_camera_preview_thumbnail_v1_plugins_r9cam_cameras__camera_id__preview_thumbnail_get",
         "parameters": [
           {

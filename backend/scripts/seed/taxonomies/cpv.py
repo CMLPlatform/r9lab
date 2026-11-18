@@ -101,13 +101,11 @@ def load_cpv_rows_from_excel(
         msg = f"Excel sheet must have 'CODE' and '{language_col}' columns."
         raise ValueError(msg)
 
-    # Remove post-dash digit (on present in excel file, not part of CPV)
+    # The check digit after the dash is in the Excel file but is not part of the CPV code.
     df["external_id"] = df[cpv_code_col].astype(str).str.strip().str.split("-").str[0]
     df["name"] = df[language_col].astype(str).str.strip().str[:250]  # Truncate to 250 chars to fit DB
 
-    # Filter to only relevant sections and their children
     if relevant_sections:
-        # Get non-zero prefix for each section
         section_prefixes = [s.rstrip("0") for s in relevant_sections]
         df = df[df["external_id"].apply(lambda x: any(x.startswith(prefix) for prefix in section_prefixes))]
 
@@ -198,7 +196,7 @@ def seed_product_types(excel_path: Path = EXCEL_PATH) -> None:
         logger.info("Loaded %d CPV codes from Excel", len(rows))
 
         for row in rows:
-            # Remove trailing zeros for product type code for cosmetic reasons
+            # Trailing zeros are padding, so drop them.
             cpv_code = row["external_id"].rstrip("0")
             cpv_name = row["name"]
 

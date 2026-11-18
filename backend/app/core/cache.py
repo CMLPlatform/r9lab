@@ -96,7 +96,7 @@ def _pagination_key_part() -> str:
     """
     try:
         raw = resolve_params().to_raw_params()
-    except Exception:  # noqa: BLE001 - unpaginated endpoints raise; they simply have no page to add
+    except Exception:  # noqa: BLE001 - unpaginated endpoints raise; they have no page to add
         return ""
     return f"{getattr(raw, 'limit', None)}:{getattr(raw, 'offset', None)}"
 

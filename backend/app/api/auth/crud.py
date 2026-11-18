@@ -50,7 +50,6 @@ async def update_user_override(user_db: UserDatabaseAsync, user: User, user_upda
         raise BadRequestError(err_msg)
 
     if user_update.username is not None:
-        # Check username uniqueness
         query = select(exists().where((User.username == user_update.username) & (User.id != user.id)))
         if (await user_db.session.execute(query)).scalar_one():
             raise UserNameAlreadyExistsError(user_update.username)

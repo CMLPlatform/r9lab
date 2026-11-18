@@ -82,7 +82,6 @@ def seed_categories_from_rows(
         session.add(category)
         id_to_category[external_id] = category
 
-        # Store parent relationship for later processing
         parent_id = get_parent_id_fn(row)
         if parent_id:
             parent_relations[external_id] = parent_id
@@ -95,7 +94,6 @@ def seed_categories_from_rows(
     session.flush()
     logger.info("Flushed session - all %d categories now have IDs", count)
 
-    # Set up parent-child relationships
     logger.info("Setting up hierarchy relationships...")
     relationship_count = 0
     for external_id, parent_id in parent_relations.items():
