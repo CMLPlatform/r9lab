@@ -76,8 +76,8 @@ function TermsPrompt() {
 // Every navigator here paints its scene transparent so AppBackground shows through
 // (the flat theme background on content screens, the photo + scrim on auth routes).
 // Bottom tabs only push an inactive tab behind the active one (z-index), counting on an
-// opaque scene to cover it; on web react-native-screens is off by default, so a
-// transparent scene showed the previous tab underneath. Enabling it on web swaps in the
+// opaque scene to cover it. On web react-native-screens is off by default, so a
+// transparent scene shows the previous tab underneath. Enabling it on web swaps in the
 // Screen shim, which sets `display: none` on inactive tabs. The web stack view hides
 // its own non-focused screens regardless. Must run before any navigator renders.
 if (Platform.OS === 'web') enableScreens();

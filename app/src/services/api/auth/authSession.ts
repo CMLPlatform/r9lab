@@ -12,7 +12,7 @@ import { authRuntime } from './authRuntime';
 export const ACCESS_TOKEN_KEY = 'access_token';
 export const REFRESH_TOKEN_KEY = 'refresh_token';
 export const WEB_SESSION_FLAG = 'web_has_session';
-// Kept across sign-out on purpose: it marks this phone as one that has signed in before, so
+// Kept across sign-out: it marks this phone as one that has signed in before, so
 // strangers guessing at the account cannot spend its login budget (backend device_cookie.py).
 export const DEVICE_TOKEN_KEY = 'device_token';
 

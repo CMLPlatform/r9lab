@@ -94,7 +94,7 @@ export function useProductFiles(product: Product) {
         );
         continue;
       }
-      // biome-ignore lint/performance/noAwaitInLoops: sequential upload is deliberate.
+      // biome-ignore lint/performance/noAwaitInLoops: sequential, one upload at a time.
       await uploadMutation.mutateAsync(asset).catch(() => undefined);
     }
   }, [feedback, uploadMutation]);

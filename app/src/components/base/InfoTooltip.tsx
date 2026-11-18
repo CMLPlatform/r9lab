@@ -1,4 +1,4 @@
-// NOTE: hand-rolled on purpose; carries the mobile-web full-screen modal variant.
+// NOTE: carries the mobile-web full-screen modal variant.
 import { type JSX, useCallback, useEffect, useState } from 'react';
 import { Modal, Platform, Pressable, StyleSheet, View } from 'react-native';
 import Animated from 'react-native-reanimated';
