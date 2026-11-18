@@ -1,10 +1,6 @@
 <mj-section background-color="{{brand:--r9lab-brand-background}}" padding="20px 40px 24px">
   <mj-column>
     <mj-divider border-color="{{brand:--r9lab-brand-divider}}" border-width="1px" padding="0 0 20px" />
-    <mj-text css-class="footer-text" align="left">
-      Best regards,<br />
-      The R9lab team
-    </mj-text>
-    <mj-text css-class="footer-text" align="center" padding-top="12px"> R9lab · Circular-economy research lab </mj-text>
+    <mj-text css-class="footer-text" align="center"> R9lab · Circular-economy research lab </mj-text>
   </mj-column>
 </mj-section>
