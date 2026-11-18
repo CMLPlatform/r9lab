@@ -126,12 +126,12 @@ async def get_camera_preview_thumbnail(camera: UserOwnedCameraDep) -> FileRespon
 
     Owner-checked (``UserOwnedCameraDep`` 404s for non-owners) and served off the
     private preview directory rather than the public ``/uploads/images`` mount, so
-    a camera id alone no longer grants a stranger a recent frame. Cached only
+    a camera id alone does not grant access to a recent frame. Cached only
     privately and revalidated, never long-lived immutable like the public mount.
     """
     path = get_preview_thumbnail_path(camera.id)
     if not path.is_file():
-        raise HTTPException(status_code=404, detail="No preview thumbnail available for this camera.")
+        raise HTTPException(status_code=404, detail="No preview yet. Take a photo or wait for the next preview.")
     return FileResponse(
         path,
         media_type="image/jpeg",
@@ -268,7 +268,7 @@ async def _notify_camera_unpair(camera_id: UUID4, redis: Redis) -> None:
         await relay_via_websocket(camera_id, "DELETE", "/pairing", redis=redis)
     except HTTPException as exc:
         logger.warning(
-            "Could not notify camera %s to unpair (HTTP %d) — deleting anyway.",
+            "Could not notify camera %s to unpair (HTTP %d); deleting anyway.",
             camera_id,
             exc.status_code,
         )

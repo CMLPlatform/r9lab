@@ -87,7 +87,7 @@ async def init_redis() -> Redis:
 
     except (TimeoutError, RedisError, OSError, ConnectionError) as e:
         logger.warning("Failed to connect to Redis during initialization: %s.", e)
-        msg = "Redis is required during application startup."
+        msg = "Redis is required during application startup. Check the REDIS_* settings."
         raise RuntimeError(msg) from e
     else:
         return redis_client
@@ -154,7 +154,7 @@ async def delete_redis_key(redis_client: Redis, key: str) -> bool:
 
 async def get_redis(request: Request) -> Redis:
     """FastAPI dependency returning the shared Redis client (raises if unavailable)."""
-    # Async on purpose: this only reads request state, and a sync dependency would
+    # Async: this only reads request state, and a sync dependency would
     # make FastAPI hop to a threadpool for it on every request that resolves it.
     return require_redis(get_connection_services(request).redis)
 

@@ -21,7 +21,7 @@ class ModelNotFoundError(NotFoundError):
         model_name = get_model_label(model_type)
 
         super().__init__(
-            message=f"{model_name} {f'with id {model_id}' if model_id else ''} not found",
+            message=f"{model_name} with id {model_id} not found" if model_id else f"{model_name} not found",
         )
 
 

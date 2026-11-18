@@ -15,7 +15,10 @@ class UploadTooLargeError(PayloadTooLargeError):
 
     def __init__(self, *, upload_size_bytes: int, max_size_mb: int) -> None:
         super().__init__(
-            message=f"File size too large: {upload_size_bytes / 1024 / 1024:.2f} MB. Maximum size: {max_size_mb} MB"
+            message=(
+                f"This file is {upload_size_bytes / 1024 / 1024:.1f} MB. "
+                f"The limit is {max_size_mb} MB. Upload a smaller file."
+            )
         )
 
 

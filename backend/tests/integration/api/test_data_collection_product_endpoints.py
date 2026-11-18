@@ -655,7 +655,7 @@ async def test_owner_me_without_a_session_is_unauthorized_not_an_error(api_clien
     response = await api_client.get("/v1/products?owner=me")
 
     assert response.status_code == status.HTTP_401_UNAUTHORIZED
-    assert response.json()["detail"] == "Authentication required"
+    assert response.json()["detail"] == "Sign in to view your products."
 
 
 async def test_delete_product_with_components(

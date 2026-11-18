@@ -134,7 +134,7 @@ async def test_add_material_missing_id(mock_session: AsyncMock) -> None:
     """Test error when material ID is missing."""
     link_create = MaterialProductLinkCreateWithinProductAndMaterial(quantity=5.0)
 
-    with pytest.raises(MaterialIDRequiredError, match="Material ID is required"):
+    with pytest.raises(MaterialIDRequiredError, match="Include a material_id"):
         await add_material_to_product(mock_session, product_id=1, material_link=link_create, material_id=None)
 
 

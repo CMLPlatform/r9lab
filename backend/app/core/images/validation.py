@@ -25,10 +25,16 @@ def validate_image_dimensions(
     """
     width, height = img.size
     if width > max_dimension or height > max_dimension:
-        msg = f"Image dimensions {width}x{height} exceed the maximum allowed {max_dimension}px per side."
+        msg = (
+            f"Image dimensions {width}x{height} exceed the maximum allowed {max_dimension}px per side. "
+            "Resize the image and upload it again."
+        )
         raise ValueError(msg)
     if width * height > max_pixels:
-        msg = f"Image has {width * height} pixels, exceeding the maximum allowed {max_pixels}."
+        msg = (
+            f"Image has {width * height} pixels, exceeding the maximum allowed {max_pixels}. "
+            "Resize the image and upload it again."
+        )
         raise ValueError(msg)
 
 

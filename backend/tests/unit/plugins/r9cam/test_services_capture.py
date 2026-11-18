@@ -75,7 +75,7 @@ async def test_capture_raises_when_pi_queued_the_image(mock_session: Any) -> Non
             )
 
     assert excinfo.value.details is not None
-    assert "Please try again" in excinfo.value.details
+    assert "Try again" in excinfo.value.details
 
 
 @pytest.mark.parametrize(
@@ -134,7 +134,7 @@ async def test_capture_raises_when_image_missing_from_db(mock_session: Any) -> N
             )
 
     assert excinfo.value.details is not None
-    assert "not found" in excinfo.value.details
+    assert "has no image" in excinfo.value.details
 
 
 async def test_capture_rejects_product_not_owned_by_camera_owner(mock_session: Any) -> None:

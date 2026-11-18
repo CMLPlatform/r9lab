@@ -13,7 +13,7 @@ from app.api.common.exceptions import (
 
 # Shared by the registration error and the pre-registration /validate-email hint, so the
 # form shows the same wording before and after submit.
-UNDELIVERABLE_EMAIL_MESSAGE = "This email domain does not accept mail. Please check for typos."
+UNDELIVERABLE_EMAIL_MESSAGE = "This email domain does not accept mail. Check the address for typos."
 
 
 class AuthCRUDError(Exception):
@@ -72,7 +72,7 @@ class RefreshTokenNotFoundError(RefreshTokenError):
     """Raised when no refresh token is present in the request."""
 
     def __init__(self) -> None:
-        super().__init__("Refresh token not found")
+        super().__init__("You are signed out. Sign in again.")
 
 
 class RefreshTokenInvalidError(RefreshTokenError):
@@ -86,14 +86,14 @@ class RefreshTokenRevokedError(RefreshTokenError):
     """Raised when a refresh token has already been revoked."""
 
     def __init__(self) -> None:
-        super().__init__("Token has been revoked")
+        super().__init__("You are signed out. Sign in again.")
 
 
 class RefreshTokenUserInactiveError(RefreshTokenError):
     """Raised when the refresh token resolves to a missing or inactive user."""
 
     def __init__(self) -> None:
-        super().__init__("User not found or inactive")
+        super().__init__("You are signed out. Sign in again.")
 
 
 class MfaError(UnauthorizedError):
@@ -104,14 +104,14 @@ class MfaChallengeInvalidError(MfaError):
     """Raised when an MFA challenge or setup token is invalid, expired, or already used."""
 
     def __init__(self) -> None:
-        super().__init__("Invalid or expired MFA token")
+        super().__init__("This sign-in step expired. Sign in again.")
 
 
 class MfaCodeInvalidError(MfaError):
     """Raised when an MFA one-time code is invalid."""
 
     def __init__(self) -> None:
-        super().__init__("Invalid MFA code")
+        super().__init__("That code is wrong or expired. Try again, or use a recovery code.")
 
 
 class MfaStepUpCodeInvalidError(ForbiddenError):
@@ -122,7 +122,7 @@ class MfaStepUpCodeInvalidError(ForbiddenError):
     """
 
     def __init__(self) -> None:
-        super().__init__("Invalid MFA code")
+        super().__init__("That code is wrong or expired. Try again, or use a recovery code.")
 
 
 class RecentSignInRequiredError(ForbiddenError):
@@ -164,7 +164,7 @@ class OAuthInvalidRedirectURIError(OAuthHTTPError):
     """Raised when a frontend OAuth redirect URI is not allowlisted."""
 
     def __init__(self) -> None:
-        super().__init__("Invalid redirect_uri")
+        super().__init__("The sign-in redirect address is not allowed. Start sign-in again from the app.")
 
 
 class OAuthEmailUnavailableError(OAuthHTTPError):
@@ -207,7 +207,7 @@ class RegistrationInvalidPasswordHTTPError(RegistrationHTTPError):
 
     def __init__(self, reason: str) -> None:
         super().__init__(
-            detail=f"Password validation failed: {reason}",
+            detail=reason,
             status_code=status.HTTP_400_BAD_REQUEST,
         )
 
@@ -218,9 +218,8 @@ class RegistrationUnexpectedHTTPError(RegistrationHTTPError):
     def __init__(self) -> None:
         super().__init__(
             detail=(
-                "Registration could not be completed. If you already received a "
-                "verification email, follow its link; otherwise request a new "
-                "verification email or try again later."
+                "Registration did not complete. Use the link in your verification email "
+                "if you have one, or try again later."
             ),
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )

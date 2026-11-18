@@ -75,7 +75,7 @@ async def test_create_file_rejects_oversized_upload(mock_session: AsyncMock) -> 
         file=mock_file, description=TEST_FILE_DESC, parent_id=1, parent_type=MediaParentType.PRODUCT
     )
 
-    with pytest.raises(UploadTooLargeError, match="Maximum size: 50 MB"):
+    with pytest.raises(UploadTooLargeError, match="The limit is 50 MB"):
         await file_storage_service.create(mock_session, file_create, caps_role=UserRole.CONTRIBUTOR)
 
 
@@ -93,7 +93,7 @@ async def test_create_file_uses_configured_upload_size_limit(
         file=mock_file, description=TEST_FILE_DESC, parent_id=1, parent_type=MediaParentType.PRODUCT
     )
 
-    with pytest.raises(UploadTooLargeError, match="Maximum size: 2 MB"):
+    with pytest.raises(UploadTooLargeError, match="The limit is 2 MB"):
         await file_storage_service.create(mock_session, file_create, caps_role=UserRole.CONTRIBUTOR)
 
 
@@ -157,7 +157,7 @@ async def test_create_image_rejects_upload_over_the_uploader_role_cap(
         file=mock_file, description=TEST_IMAGE_DESC, parent_id=1, parent_type=MediaParentType.PRODUCT
     )
 
-    with pytest.raises(UploadTooLargeError, match=f"Maximum size: {limit_mb} MB"):
+    with pytest.raises(UploadTooLargeError, match=f"The limit is {limit_mb} MB"):
         await image_storage_service.create(mock_session, image_create, caps_role=caps_role)
 
 
@@ -195,7 +195,7 @@ async def test_create_image_uses_configured_upload_size_limit(
         file=mock_file, description=TEST_IMAGE_DESC, parent_id=1, parent_type=MediaParentType.PRODUCT
     )
 
-    with pytest.raises(UploadTooLargeError, match="Maximum size: 2 MB"):
+    with pytest.raises(UploadTooLargeError, match="The limit is 2 MB"):
         await image_storage_service.create(mock_session, image_create, caps_role=UserRole.CONTRIBUTOR)
 
 

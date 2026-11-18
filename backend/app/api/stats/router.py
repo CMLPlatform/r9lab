@@ -57,7 +57,7 @@ async def get_stats_series(
     effective_start, effective_end = resolve_date_range(granularity, start, end)
 
     if effective_start > effective_end:
-        raise HTTPException(status_code=422, detail="start must not be after end")
+        raise HTTPException(status_code=422, detail="start must be on or before end. Swap the two dates.")
 
     series, generated_at = await compute_series(session, granularity, effective_start, effective_end)
     return SeriesResponse(

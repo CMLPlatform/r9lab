@@ -38,7 +38,7 @@ async def test_authorize_rejects_untrusted_redirect_uri(monkeypatch: pytest.Monk
         await build_authorize_response(config, mock_request, Response(), callback_route_name="oauth:callback")
 
     assert exc_info.value.status_code == status.HTTP_400_BAD_REQUEST
-    assert exc_info.value.detail == "Invalid redirect_uri"
+    assert "sign-in redirect address is not allowed" in exc_info.value.detail
 
 
 @pytest.mark.parametrize(
@@ -91,11 +91,11 @@ async def test_authorize_rejects_non_exact_or_unsafe_redirect_uri(
     mock_request.query_params = {"redirect_uri": redirect_uri}
     mock_request.url_for.return_value = "https://api.example.com/oauth/callback"
 
-    with pytest.raises(HTTPException, match="Invalid redirect_uri") as exc_info:
+    with pytest.raises(HTTPException, match="The sign-in redirect address is not allowed") as exc_info:
         await build_authorize_response(config, mock_request, Response(), callback_route_name="oauth:callback")
 
     assert exc_info.value.status_code == status.HTTP_400_BAD_REQUEST
-    assert exc_info.value.detail == "Invalid redirect_uri"
+    assert "sign-in redirect address is not allowed" in exc_info.value.detail
 
 
 def test_success_redirect_uses_fragment_status_and_removes_access_tokens() -> None:

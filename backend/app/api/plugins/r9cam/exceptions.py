@@ -81,4 +81,4 @@ class PairingFingerprintMismatchError(ForbiddenError):
     """Raised when the fingerprint does not match the registered pairing code."""
 
     def __init__(self) -> None:
-        super().__init__("Fingerprint mismatch.")
+        super().__init__("This pairing code belongs to a different device. Generate a new one on the camera.")

@@ -75,7 +75,7 @@ async def proxy_hls(
             raise
     else:
         if last_exc is None:
-            raise HTTPException(status_code=404, detail="HLS manifest is not yet available")
+            raise HTTPException(status_code=404, detail="The stream is still starting. Retry in a few seconds.")
         raise last_exc
     return Response(
         content=relay_response.content,
