@@ -36,6 +36,7 @@ export type ProductExtraFilters = {
 
 export const PRODUCT_SORT_OPTIONS = [
   { label: 'Relevance', value: [] },
+  { label: 'Recommended', value: ['-recommended_rank'] },
   { label: 'Newest first', value: ['-created_at'] },
   { label: 'Oldest first', value: ['+created_at'] },
   { label: 'Name A→Z', value: ['+name'] },
@@ -44,7 +45,10 @@ export const PRODUCT_SORT_OPTIONS = [
   { label: 'Brand Z→A', value: ['-brand'] },
 ] as const;
 
-export const DEFAULT_PRODUCT_SORT = PRODUCT_SORT_OPTIONS[1].value; // Newest first when not searching
+// Recent, complete records first when not searching; the backend owns the weights.
+export const DEFAULT_PRODUCT_SORT = ['-recommended_rank'] as const;
+// One owner's products, where a mostly empty new record must not sink below older ones.
+export const NEWEST_FIRST_SORT = ['-created_at'] as const;
 
 const PAGE_SIZE = 24;
 
@@ -72,7 +76,7 @@ export function productsListQuery(
 export const productsInfiniteQueryOptions = (
   filter: 'all' | 'mine',
   search: string,
-  sortBy: string[] = ['-created_at'],
+  sortBy: string[] = [...DEFAULT_PRODUCT_SORT],
   extra: ProductExtraFilters = {},
 ) =>
   infiniteQueryOptions({
@@ -105,7 +109,7 @@ export const userProductsInfiniteQueryOptions = (username: string) =>
       products({
         page: pageParam,
         size: PAGE_SIZE,
-        orderBy: [...DEFAULT_PRODUCT_SORT],
+        orderBy: [...NEWEST_FIRST_SORT],
         owner: username,
       }),
     initialPageParam: 1,

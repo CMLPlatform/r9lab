@@ -76,6 +76,7 @@ let mockSelectedTypeResults: { id: number; name: string; description?: string | 
 
 jest.mock('@/features/products/queries', () => ({
   DEFAULT_PRODUCT_SORT: ['-created_at'],
+  NEWEST_FIRST_SORT: ['-created_at'],
   PRODUCT_SORT_OPTIONS: [
     { label: 'Relevance', value: [] },
     { label: 'Newest first', value: ['-created_at'] },

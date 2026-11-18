@@ -21,4 +21,14 @@ describe('normalizeProductsParams properties', () => {
       }),
     );
   });
+
+  it('defaults to recommended, newest first for my products, relevance while searching', () => {
+    expect(normalizeProductsParams({}).sortBy).toEqual(['-recommended_rank']);
+    expect(normalizeProductsParams({ q: 'kettle' }).sortBy).toEqual([]);
+    expect(normalizeProductsParams({ filterMode: 'mine' }).sortBy).toEqual(['-created_at']);
+    expect(normalizeProductsParams({ filterMode: 'mine', q: 'kettle' }).sortBy).toEqual([]);
+    expect(normalizeProductsParams({ filterMode: 'mine', sort: '+name' }).sortBy).toEqual([
+      '+name',
+    ]);
+  });
 });

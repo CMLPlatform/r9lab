@@ -96,6 +96,7 @@ Taxonomies, categories and subcategories, materials, product types, and units. T
 - circularity notes are stored on the product as nullable JSON with optional `recyclability`, `disassemblability`, and `remanufacturability` fields
 - ownership is attached to the user level
 - materials, product types, and media can be linked without making every field mandatory
+- `completeness` (0 to 1) and `recommended_rank` are derived, and database triggers keep them current on every product and image write. `completeness` is the weighted share of the app's missing-data checklist a product has filled in, with a photo counting three times any other field. `recommended_rank` is the creation time in epoch seconds plus up to 30 days in proportion to completeness. It is a sort key only, so its value means nothing on its own
 
 <DataCollection />
 

@@ -42,6 +42,13 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - The dataset release README and the `records.parquet` codebook state that record ids are
   stable across releases. They are database primary keys, so you can match a record between
   releases by its id.
+- Each product stores a completeness score, the weighted share of the app's missing-data
+  checklist it has filled in (a photo counts three times any other field). The database keeps
+  it current on every product and image write. Product lists take a new `order_by` key,
+  `recommended_rank`: the creation time plus up to 30 days in proportion to completeness, so
+  recent, complete records come first. It is the default order of the app's all-products list;
+  "My products" and public profiles stay newest first.
+  ([#515](https://github.com/CMLPlatform/r9lab/issues/515))
 
 ### Changed
 

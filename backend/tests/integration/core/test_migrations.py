@@ -167,11 +167,14 @@ def test_migrations_downgrade_upgrade(relab_alembic_config: Config, migration_he
     assert migration_helper.current_revision() == head, "upgrade did not restore head"
 
 
-def _pending_thumbnail_index_is_valid(migration_helper: MigrationHelper) -> bool | None:
-    rows = migration_helper.execute_sql(
-        "SELECT indisvalid FROM pg_index WHERE indexrelid = to_regclass('ix_image_thumbnails_pending')"
-    )
+def _index_is_valid(migration_helper: MigrationHelper, name: str) -> bool | None:
+    # name is always an index-name literal from this module.
+    rows = migration_helper.execute_sql(f"SELECT indisvalid FROM pg_index WHERE indexrelid = to_regclass('{name}')")  # noqa: S608
     return rows[0][0] if rows else None
+
+
+def _pending_thumbnail_index_is_valid(migration_helper: MigrationHelper) -> bool | None:
+    return _index_is_valid(migration_helper, "ix_image_thumbnails_pending")
 
 
 @pytest.mark.migration
@@ -239,6 +242,45 @@ def test_pending_thumbnail_index_survives_a_lost_revision_stamp(
             "the revision must stamp over an index it had already built"
         )
         assert _pending_thumbnail_index_is_valid(migration_helper) is True, "the adopted index must be left intact"
+    finally:
+        command.upgrade(relab_alembic_config, "head")
+
+
+@pytest.mark.migration
+def test_recommended_rank_index_survives_a_lost_revision_stamp(
+    relab_alembic_config: Config, migration_helper: MigrationHelper
+) -> None:
+    """The concurrent recommended_rank index re-runs over a build whose stamp was lost."""
+    try:
+        assert _index_is_valid(migration_helper, "ix_product_recommended_rank") is True, "precondition"
+        command.stamp(relab_alembic_config, "c4f1e8a2b7d3")
+        command.upgrade(relab_alembic_config, "d8b3a6f0e1c5")
+
+        assert migration_helper.current_revision() == "d8b3a6f0e1c5"
+        assert _index_is_valid(migration_helper, "ix_product_recommended_rank") is True
+    finally:
+        command.upgrade(relab_alembic_config, "head")
+
+
+@pytest.mark.migration
+def test_recommended_rank_index_rebuilds_over_a_failed_build(
+    relab_alembic_config: Config, migration_helper: MigrationHelper
+) -> None:
+    """A build that failed (lock_timeout) leaves an INVALID index; the re-run replaces it."""
+    try:
+        command.stamp(relab_alembic_config, "c4f1e8a2b7d3")
+        # Marks the index the way a failed CREATE INDEX CONCURRENTLY leaves it.
+        with migration_helper.sync_engine.begin() as connection:
+            connection.execute(
+                text(
+                    "UPDATE pg_index SET indisvalid = false WHERE indexrelid = 'ix_product_recommended_rank'::regclass"
+                )
+            )
+        assert _index_is_valid(migration_helper, "ix_product_recommended_rank") is False, "precondition"
+
+        command.upgrade(relab_alembic_config, "d8b3a6f0e1c5")
+
+        assert _index_is_valid(migration_helper, "ix_product_recommended_rank") is True
     finally:
         command.upgrade(relab_alembic_config, "head")
 

@@ -20,6 +20,7 @@ if TYPE_CHECKING:
     from collections.abc import Callable
     from uuid import UUID
 
+    from sqlalchemy import ScalarSelect
     from sqlalchemy.ext.asyncio import AsyncSession
 
     from .crud.support_types import StorageModel
@@ -74,6 +75,19 @@ async def reserve_product_upload_quota(
         return
 
     raise PayloadTooLargeError(UPLOAD_QUOTA_EXCEEDED_MESSAGE)
+
+
+async def lock_product_owner(session: AsyncSession, *, product_id: int | ScalarSelect[int]) -> None:
+    """Lock the user row that owns ``product_id`` before any product or media row.
+
+    Every writer that locks both rows takes the owner's first: an upload reserves quota
+    on it and only then, at commit, re-scores the product (the deferred
+    ``image_touch_product`` trigger). A delete that locked the product or a media row
+    first and the owner after would deadlock against that upload. ``product_id`` may be a
+    subquery; when it finds no product, nothing is locked.
+    """
+    owner_id = select(Product.owner_id).where(Product.id == product_id).scalar_subquery()
+    await session.execute(select(User.id).where(User.id == owner_id).with_for_update())
 
 
 async def release_product_upload_quota_for_media(session: AsyncSession, item: StorageModel) -> None:
