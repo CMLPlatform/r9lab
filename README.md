@@ -31,7 +31,7 @@ R9lab has four parts:
 - a FastAPI backend for structured product, media, and user data
 - an Expo / React Native app for authenticated data collection
 - an Astro site for publicly viewing project and dataset information
-- a docs site for users, architecture, and self-hosting
+- a docs site for users and architecture
 
 ## Start Here
 
@@ -39,8 +39,7 @@ Use the hosted platform at [app.r9lab.io](https://app.r9lab.io).
 
 To go deeper:
 
-- [Install and self-host](https://docs.r9lab.io/operations/prerequisites/) for running or
-  self-hosting the stack
+- [Install](https://docs.r9lab.io/operations/install/) for running the stack locally
 - [CONTRIBUTING.md](.github/CONTRIBUTING.md) for making code or docs changes
 - [docs.r9lab.io](https://docs.r9lab.io) for architecture and user-facing docs
 

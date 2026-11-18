@@ -7,8 +7,8 @@ ______________________________________________________________________
 
 ## Part 1: First-time host setup
 
-Same as [DEPLOY-PROD.md](DEPLOY-PROD.md) Part 1 with `staging` substituted for `prod`: the
-install guide's "First backup" and "Scheduling backups", then `just timers-install staging`.
+[SETUP.md](SETUP.md), then [DEPLOY-PROD.md](DEPLOY-PROD.md) Part 1 with `staging` substituted
+for `prod`: the first backup (1.1), then `just timers-install staging`.
 
 Then fill in `PING_WATCHDOG` in `/etc/r9lab/r9lab.env` with staging's own healthchecks.io URL.
 Do not reuse prod's: a shared check cannot tell you which host went quiet. See

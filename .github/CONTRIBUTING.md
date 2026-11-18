@@ -1,8 +1,8 @@
 # Contributing to R9lab
 
 R9lab is a research platform developed at CML, Leiden University. This page covers code and
-documentation changes. To run or deploy the stack, see
-[Install and self-host](https://docs.r9lab.io/operations/prerequisites/).
+documentation changes. To run the stack locally, see
+[Install](https://docs.r9lab.io/operations/install/).
 
 ## Start Here
 
