@@ -32,6 +32,8 @@ export type ProductExtraFilters = {
   brands?: string[];
   createdAfter?: Date;
   productTypeNames?: string[];
+  hasComponents?: boolean;
+  complete?: boolean;
 };
 
 export const PRODUCT_SORT_OPTIONS = [
@@ -69,6 +71,8 @@ export function productsListQuery(
     brands: extra.brands?.length ? extra.brands : undefined,
     createdAfter: extra.createdAfter,
     productTypeNames: extra.productTypeNames?.length ? extra.productTypeNames : undefined,
+    hasComponents: extra.hasComponents || undefined,
+    complete: extra.complete || undefined,
     ...(filter === 'mine' ? { owner: 'me' } : {}),
   };
 }
@@ -89,6 +93,8 @@ export const productsInfiniteQueryOptions = (
       extra.brands,
       extra.createdAfter?.toISOString(),
       extra.productTypeNames,
+      extra.hasComponents,
+      extra.complete,
     ] as const,
     queryFn: ({ pageParam }) =>
       products({

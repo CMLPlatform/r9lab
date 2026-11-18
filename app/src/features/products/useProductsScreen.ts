@@ -30,8 +30,16 @@ export function useProductsScreen() {
   const router = useRouter();
   const { user: currentUser, refetch: refetchUser } = useAuth();
   const params = useLocalSearchParams<ProductsSearchParams>();
-  const { filterMode, searchQueryURL, sortBy, activeDatePreset, activeBrands, activeProductTypes } =
-    useMemo(() => normalizeProductsParams(params), [params]);
+  const {
+    filterMode,
+    searchQueryURL,
+    sortBy,
+    activeDatePreset,
+    activeBrands,
+    activeProductTypes,
+    hasComponents,
+    complete,
+  } = useMemo(() => normalizeProductsParams(params), [params]);
   const createdAfter = useMemo(() => {
     if (!activeDatePreset) return undefined;
     const d = new Date();
@@ -57,6 +65,8 @@ export function useProductsScreen() {
     (activeDatePreset !== null ? 1 : 0) +
     (activeBrands.length > 0 ? 1 : 0) +
     (activeProductTypes.length > 0 ? 1 : 0) +
+    (hasComponents ? 1 : 0) +
+    (complete ? 1 : 0) +
     (params.sort ? 1 : 0);
   const filterUi = useProductsFilterUiState(activeFilterCount > 0);
   const header = useProductsHeaderState();
@@ -113,6 +123,8 @@ export function useProductsScreen() {
     activeBrands,
     createdAfter,
     activeProductTypes,
+    hasComponents,
+    complete,
   });
   // Same filters the list sends, for "Export results".
   const exportQuery = useMemo(
@@ -121,8 +133,19 @@ export function useProductsScreen() {
         brands: activeBrands,
         createdAfter,
         productTypeNames: activeProductTypes,
+        hasComponents,
+        complete,
       }),
-    [filterMode, searchQueryURL, sortBy, activeBrands, createdAfter, activeProductTypes],
+    [
+      filterMode,
+      searchQueryURL,
+      sortBy,
+      activeBrands,
+      createdAfter,
+      activeProductTypes,
+      hasComponents,
+      complete,
+    ],
   );
   const slowLoading = useSlowLoading(isLoading);
   const { showInfoCard, dismissInfoCard } = useProductsWelcomeCard({
@@ -130,7 +153,7 @@ export function useProductsScreen() {
     currentUser,
     refetchUser,
   });
-  const actions = useProductsActions({ filterMode, router, updateParams });
+  const actions = useProductsActions({ filterMode, hasComponents, complete, router, updateParams });
 
   return {
     screen: {
@@ -139,6 +162,8 @@ export function useProductsScreen() {
       activeDatePreset,
       activeBrands,
       activeProductTypes,
+      hasComponents,
+      complete,
       isAuthenticated,
       currentUser,
       headerBottom: header.headerBottom,
@@ -179,6 +204,8 @@ export function useProductsScreen() {
       setTypeSearch: filterUi.setTypeSearch,
       toggleMine: actions.toggleMine,
       clearMine: actions.clearMine,
+      toggleHasComponents: actions.toggleHasComponents,
+      toggleComplete: actions.toggleComplete,
       applyDatePreset: actions.applyDatePreset,
       applyBrandSelection: actions.applyBrandSelection,
       clearBrands: actions.clearBrands,

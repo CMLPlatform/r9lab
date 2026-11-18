@@ -103,9 +103,9 @@ components:
 
 ## Overview
 
-**Creative North Star: "Cyanotype & Manila — the colour of engineering documentation"**
+**Creative North Star: "Cyanotype & Manila, the colour of engineering documentation"**
 
-*Mirrors assets/DESIGN.md:8 — change it there first.*
+*Mirrors assets/DESIGN.md:8; change it there first.*
 
 The app is a field instrument. Its user is at a bench with a product in pieces, hands occupied.
 Prussian blue carries every action; manila marks the data. Surfaces are flat, edges are sharp,
@@ -123,13 +123,13 @@ fonts** instead of IBM Plex, and it keeps the **eyebrow** type variant.
 - Every token is a scheme-aware pair.
 - Motion is functional and always honours `prefers-reduced-motion`.
 
-### Why brand rules are restated here rather than referenced
+### Why brand rules are restated here
 
-`assets/DESIGN.md` is the estate-wide brand source. The five brand rules are restated here in
-full so that someone building a screen reads them. Each copy carries a
+`assets/DESIGN.md` is the monorepo-wide brand source. The five brand rules are restated here in
+full, so that someone building a screen reads them. Each copy carries a
 `Mirrors assets/DESIGN.md:NN` marker; `rg "Mirrors assets/DESIGN.md"` lists every copy. Change a
-mirrored rule in `assets/DESIGN.md` first, then update its copies. Do not consolidate them back
-into references.
+mirrored rule in `assets/DESIGN.md` first, then update its copies. Do not replace the copies with
+references.
 
 ## Colors
 
@@ -150,7 +150,7 @@ and verified by `src/theme/__tests__/palette-sync.test.ts`. Do not hand-edit eit
 
 ### Tertiary
 
-- **Manila** (`#8F6212` / `#E3B95C`): Data labels only — R-numbers, record IDs, live and status
+- **Manila** (`#8F6212` / `#E3B95C`): Data labels only: R-numbers, record IDs, live and status
   pills, strategy tags. Never an interaction colour.
 
 ### Neutral
@@ -170,11 +170,11 @@ live = manila.
 
 ### Named Rules
 
-**The Data-Label Rule.** The manila accent is a **data-label colour** — R-numbers, record IDs,
+**The Data-Label Rule.** The manila accent is a **data-label colour**: R-numbers, record IDs,
 small data labels, live/status pills, strategy tags. **Accent is for small text, never for
 mass.** It never fills a button, never drives a hover or pressed state, and never paints bars,
 big figures, or large areas. Interaction is always primary blue. *Mirrors
-assets/DESIGN.md:165-182 — change it there first.* In this app, data-label manila is spelled
+assets/DESIGN.md:167-186; change it there first.* In this app, data-label manila is spelled
 `text-manila` in a className and `tokens.text.data` in a style object or an SVG fill.
 
 **The One Tint Rule.** `tokens.surface.accent` (primary at 12%) is the single selected/tinted
@@ -219,14 +219,15 @@ system without shipping the typeface.
 
 **The System-Font Rule.** The app stays on platform system fonts (native feel, Dynamic Type
 support, zero load cost). It adopts the brand's scale and palette, not its typeface. www and docs
-use IBM Plex; do not "unify" this. The one exception is the web `data` face, IBM Plex Mono. *Mirrors assets/DESIGN.md:31-36 — change it there first.*
+use IBM Plex; do not "unify" this. The one exception is the web `data` face, IBM Plex Mono.
+*Mirrors assets/DESIGN.md:31-37; change it there first.*
 
 Dynamic Type is capped at 2x on **every** text primitive: both `AppText` and `ui/text` apply the
 cap by default. `ui/text` renders every button label plus HeroStats, ComponentRow, GoLiveDialog
 and ProductDelete.
 
 **The Eyebrow-Is-A-Datum Rule.** `eyebrow` labels a **value inside a compact tag**. It is not a
-kicker above a heading; www and docs carry none. *Mirrors assets/DESIGN.md:166-171 —
+kicker above a heading; www and docs carry none. *Mirrors assets/DESIGN.md:167-173;
 change it there first.*
 
 **The Ramp Rule.** Every text size comes from the eight variants above. An inline `fontSize:`
@@ -278,12 +279,11 @@ muted.
 **The One Tier Rule.** There is exactly one shadow. Inline surfaces get a hairline and no
 shadow; floating surfaces get `elevation.overlay`. A second elevation tier, a coloured glow, or a
 shadow stacked on an already-floating element is a defect. *Mirrors
-assets/DESIGN.md:117-126 — change it there first.*
+assets/DESIGN.md:119-128; change it there first.*
 
 ## Shapes
 
-Flat and sharp. This replaces the MD3/Paper era of pill buttons, ambient shadows, and oversized
-radii.
+Flat and sharp: no pill buttons, ambient shadows, or oversized radii.
 
 | Token            | Value  | Use                                        |
 | ---------------- | ------ | ------------------------------------------ |
@@ -297,7 +297,7 @@ All four map through `src/constants.ts:42`. Use the token, never a literal.
 ### Named Rules
 
 **The True-Pill Rule.** `radius.full` is for avatars and genuine pills only. A 44×44 icon button
-with `rounded-full` is not a pill. *Mirrors assets/DESIGN.md:112 —
+with `rounded-full` is not a pill. *Mirrors assets/DESIGN.md:114;
 change it there first.*
 
 ## Components
@@ -323,7 +323,7 @@ change it there first.*
 - **Edit-mode controls only.** A chip is a button that edits its value. Read-only values (view-mode
   brand, model, amount and type) are Spec Row facts, never a chip with nothing to do on press: a
   solid-blue segment reads as a button.
-- **Style:** Two segments — a title segment in blue on `surface.accent`, and a value segment on solid
+- **Style:** Two segments: a title segment in blue on `surface.accent`, and a value segment on solid
   primary with white ink (pressed: `primary-strong`, as the FAB). 6px radius, 44px minimum height.
 - **Error:** Danger-tinted fill **plus** a border **plus** an alert icon **plus** ", required"
   composed into the accessible name. Never colour alone.
@@ -373,7 +373,7 @@ One press language, implemented in `src/components/base/pressFeedback.ts`:
 
 Motion says where something came from or went; it never decorates. Entrances run 150–300ms
 with an ease-out, exits are plain fades shorter than their entrance, and every animation honours
-`prefers-reduced-motion`. *Mirrors assets/DESIGN.md:135-138 — change it there first.*
+`prefers-reduced-motion`. *Mirrors assets/DESIGN.md:137-141; change it there first.*
 
 - **Overlays** fade through `src/hooks/useModalPresence.ts` and take no input while closing.
 - **Rows** in a short, non-virtualized list use the shared timings in
@@ -396,7 +396,7 @@ with an ease-out, exits are plain fades shorter than their entrance, and every a
 ### Focus indicators
 
 Every interactive control takes `WEB_FOCUS_RING` from `src/constants.ts`:
-`focus-visible:outline-2 focus-visible:outline-solid focus-visible:outline-offset-2 focus-visible:outline-ring` — a 2px Prussian-blue outline, 2px clear of the control.
+`focus-visible:outline-2 focus-visible:outline-solid focus-visible:outline-offset-2 focus-visible:outline-ring`. That is a 2px Prussian-blue outline, 2px clear of the control.
 Text fields and role-carrying Pressables get the same outline from `global.css`, so never set an
 inline `outline` on them: an inline style outranks the stylesheet and the ring disappears.
 
@@ -454,8 +454,8 @@ tracked label on a tinted fill).
 - **Don't** use `rounded-full` on anything that isn't an avatar or a true pill.
 - **Don't** introduce an inline `fontSize:` without a comment explaining why no ramp step fits.
 - **Don't** reintroduce MD3 `*Container` roles (`errorContainer`, `primaryContainer`, …) or the
-  tonal `elevation.level*` surfaces. They were Paper-era residue and are gone from the theme;
-  `tokens.surface.accent` is the tinted fill.
+  tonal `elevation.level*` surfaces. They are gone from the theme; `tokens.surface.accent` is the
+  tinted fill.
 - **Don't** pair `inverseOnSurface` or `inverseMuted` with anything except `inverseSurface`;
   take all three from `useInverseSurface()`.
 - **Don't** render an empty or unconfirmed field as an error, a warning, a red state, or a

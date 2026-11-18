@@ -6,8 +6,8 @@ description: Use the R9lab API safely for scripts, notebooks, and external tooli
 For schemas, request models, and endpoint lists, see the [API reference overview](/api-reference/).
 For the internal design, see [API structure](../../architecture/api/).
 
-The public API is versioned under `/v1`. Keep the API origin separate from the versioned path in
-your client configuration and build requests such as `https://api.r9lab.io/v1/products`.
+The API lets scripts and notebooks read and write R9lab records. The public API is versioned under
+`/v1`. Keep the API origin separate from the versioned path in your client configuration and build requests such as `https://api.r9lab.io/v1/products`.
 
 ## When to use the API directly
 
@@ -55,6 +55,10 @@ The same path covers superuser tasks like `POST /v1/admin/cache/clear/{namespace
   that depth, at most 1,000 components across all levels. A larger tree fails with a `400`: lower
   `recursion_depth`, page through `/components` level by level, or export the product.
 
+The category trees (`GET /v1/categories/tree`, `GET /v1/categories/{id}/subcategories/tree`,
+`GET /v1/taxonomies/{id}/categories/tree`) are paged the same way: each page holds `size` top-level
+categories, each with its subcategories down to `recursion_depth`.
+
 ## Sorting product lists
 
 Product lists take `order_by` with one or more keys, each prefixed `+` (ascending, the default) or
@@ -64,9 +68,17 @@ default order. Treat it as a ranking heuristic: its weights can change between r
 indexed for the base-product list only, so on component lists it sorts like any other key. With a
 `search` term and no `order_by`, results come in order of relevance.
 
-The category trees (`GET /v1/categories/tree`, `GET /v1/categories/{id}/subcategories/tree`,
-`GET /v1/taxonomies/{id}/categories/tree`) are paged the same way: each page holds `size` top-level
-categories, each with its subcategories down to `recursion_depth`.
+## Filtering product lists
+
+Product lists and the export take filters as query parameters; the interactive docs list them
+all. Dates and measurements take ranges, such as `created_at[ge]=2026-01-01T00:00:00Z` or
+`weight_g[le]=500`. Two filters describe how far a record is filled in:
+
+- `has_components=true` keeps products with at least one component; `false` keeps those with
+  none.
+- `completeness` is the share of the app's missing-data checklist a record has filled, from 0
+  to 1. `completeness[ge]=1` keeps complete records; `completeness[ge]=0.5` keeps those at least
+  half done. Like `recommended_rank`, its weights can change between releases.
 
 ## Exporting products
 
@@ -96,7 +108,8 @@ reads.
 :::note[Limits]
 One export holds at most 100 base products, with at most 5,000 components between them and
 components nested at most 10 levels deep. Past any of these limits the request fails with a `400`
-response that asks you to narrow the filters. An invalid filter parameter returns a `422` instead. For the whole dataset, use the [dataset release](../../project/dataset/).
+response that asks you to narrow the filters. An invalid filter parameter returns a `422` instead. For the whole dataset, use the
+[dataset release](../../project/dataset/).
 :::
 
 ## Integration advice

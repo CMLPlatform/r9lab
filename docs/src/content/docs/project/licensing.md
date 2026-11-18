@@ -10,7 +10,7 @@ which repository you found it in.
 | ---------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------- |
 | Platform software: the code behind the backend, app, website, and this docs site         | [AGPL-3.0-or-later](https://github.com/CMLPlatform/r9lab/blob/main/LICENSE)     |
 | API specification: the OpenAPI schemas this repository generates, and their client types | [Apache-2.0](https://github.com/CMLPlatform/r9lab/blob/main/LICENSE-APACHE-2.0) |
-| Site content: the writing on the docs site and on [r9lab.io](https://r9lab.io) | [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/)                       |
+| Site content: the writing on the docs site and on [r9lab.io](https://r9lab.io)           | [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/)                       |
 | Curated dataset releases                                                                 | [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/), planned              |
 
 Code samples inside the documentation are **Apache-2.0**, not CC BY: a copied sample lands under
@@ -25,7 +25,7 @@ file that only describes an interface. An interface description is thin copyrigh
 [Directive 2009/24/EC art. 1(2)](https://eur-lex.europa.eu/eli/dir/2009/24/oj) excludes the ideas
 and principles underlying a program's interfaces from protection.
 
-Apache-2.0 rather than a public-domain dedication because the carve-out also covers generated
+We chose Apache-2.0 over a public-domain dedication because the carve-out also covers generated
 TypeScript client types. Those are software, which Creative Commons advises against covering with a
 CC licence, and Apache-2.0 carries an explicit patent grant.
 
@@ -42,8 +42,8 @@ whatever licence that project sets, currently Apache-2.0 as well. Check there be
 Curated releases are planned under CC BY 4.0. No release has been published yet; see
 [Dataset](/project/dataset/) for what a release will contain.
 
-CC 4.0 licenses the EU *sui generis* database right alongside copyright, so one instrument covers
-both the structure of the database and its contents. Attribution is the whole obligation, which
+CC 4.0 licenses the EU *sui generis* database right (a separate right that protects databases) alongside copyright, so one instrument
+covers both the structure of the database and its contents. Attribution is the whole obligation, which
 keeps a release usable for machine-learning work.
 
 ## Site content

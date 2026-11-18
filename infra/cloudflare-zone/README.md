@@ -28,41 +28,11 @@ pass `-var=cloudflare_zone_name=<zone>`; `TF_VAR_cloudflare_zone_id` must be tha
 `cloudflare_zone` data source checks the id against the name, so a mismatched pair fails the
 plan. An optional `infra/cloudflare-zone/<zone>.tfvars` is loaded when present.
 
-### First run: move the existing state
-
-State created before workspaces existed sits in the `default` workspace, in `terraform.tfstate`,
-and belongs to `cml-relab.org`. Copy it into that zone's workspace once, before the first
-plan, so the resources are not planned for recreation. The file is encrypted on disk
-(encryption is enforced), so the copy writes no plaintext:
-
-```bash
-cd infra/cloudflare-zone
-tofu workspace new cml-relab.org
-cp terraform.tfstate terraform.tfstate.d/cml-relab.org/terraform.tfstate
-cd ../.. && just cloudflare-zone-plan cml-relab.org
-```
-
-Expect **3 to change, 0 to add, 0 to destroy**: the three rulesets' descriptions now say R9lab
-instead of Relab. Anything else, or any change beyond a description, means the copy went wrong:
-stop. Otherwise apply it now (`just cloudflare-zone-apply cml-relab.org`, then with `YES`), so the
-redirect plan inside a cutover window shows the redirect ruleset and nothing else.
-
-If `just cloudflare-zone-plan cml-relab.org` already ran before this move, the recipe created the
-workspace, empty. Then run `tofu workspace select cml-relab.org` instead of `workspace new` and copy
-the file the same way.
-
-`tofu workspace new -state=<file>` does not copy state in OpenTofu 1.13, so the file is copied
-by hand.
-
-After a clean plan, move the old `terraform.tfstate` and `terraform.tfstate.backup` aside and
-keep them as a backup. The `default` workspace stays, unused: OpenTofu cannot delete it. Other
-zones start from an empty workspace.
-
 ## Redirecting the old zone
 
 The old zone's workspace sets `redirect_to_zone_name` to send every route-map hostname to the same
 name on the new zone. `redirect_environments` limits the rules to the environments being cut over,
-so each environment keeps serving from the old zone until its own window:
+so each environment keeps serving from the old zone until its own window.
 
 **Before the first window**, check that the old zone has no redirect ruleset made in the
 dashboard. This call must print `404`:
@@ -80,8 +50,7 @@ Otherwise the redirect apply fails with "already exists" inside the cutover wind
 `redirect_to_zone_name` is set: a plan that turns redirects on without naming the environments
 fails rather than redirecting prod by omission. The recipes pass `cml-relab.org.tfvars` as
 `-var-file`, which overrides `TF_VAR_*`, so a later old-zone apply run without those variables
-cannot drop the redirects. The apply steps for each environment are in
-[Moving the edge to another zone](../cloudflare/README.md#moving-the-edge-to-another-zone).
+cannot drop the redirects.
 
 ## Mail
 
@@ -154,21 +123,21 @@ cleartext, so the value must be dedicated: it buys nothing but the skip. It is s
 **staging hosts only**, and leaving the key unset drops the branch, so export it whenever you
 plan this root.
 
-Because the phase is capped at five rules, this is a **branch of the public-reads rule**, not a
-rule of its own. It therefore inherits that rule's single phase and skips **Super Bot Fight Mode
-only**: a keyed staging run still meets the same managed WAF prod does. That matters because the
-key is just a header: anyone who reads it from the rulesets API could otherwise turn the WAF off
-for every staging path, `/v1/admin/` included. Prod is unaffected either way.
+The phase is capped at five rules, so this is a **branch of the public-reads rule**, not a rule
+of its own. It skips **Super Bot Fight Mode only**: a keyed staging run still meets the same
+managed WAF as prod. The key is just a header, so a full WAF skip would let anyone who reads it
+from the rulesets API turn the WAF off for every staging path, `/v1/admin/` included. Prod is
+unaffected.
 
-The www build's fetch of `/v1/products/{id}` and its component tree is a non-browser client
-that gets challenged the same way, which makes the landing page ship its fixture. That is
-covered by `relab_public_reads_skip_bot_fight_mode` instead, which is the former stats rule
-widened to GETs under `/v1/products/` as well, public read-only data, the same reasoning. No
-build argument carries a key, which would leak into image history.
+The www build's fetch of `/v1/products/{id}` and its component tree is a non-browser client that
+Cloudflare challenges the same way, so the landing page ships its fixture.
+`relab_public_reads_skip_bot_fight_mode` covers it instead: the former stats rule, widened to GETs
+under `/v1/products/` (public read-only data, the same reasoning). No build argument carries a key,
+because it would leak into image history.
 
 ## What this zone's Cloudflare plan allows
 
-Both limits below fail at *apply* time, partway through, after other resources have already
+These limits fail at *apply* time, partway through, after other resources have already
 changed, so `tests/zone.tftest.hcl` asserts them:
 
 - **The Free tier constrains the `http_ratelimit` phase:** one rule, a 10-second counting period, a

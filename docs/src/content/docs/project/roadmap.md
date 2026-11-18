@@ -15,8 +15,8 @@ Reviewed: 2026-11
 ## Research direction
 
 The main question is how to make product data collection more scalable, collaborative, and reusable.
-R9lab focuses on open, FAIR product-level disassembly data. Automation stays
-human-verified: software can suggest, people confirm.
+R9lab focuses on open product-level disassembly data that is FAIR (findable, accessible,
+interoperable, reusable).
 
 This page covers the next year, to October 2027. It is a plan, not a promise, and it changes as the
 research needs change. The live work list is tracked in the public

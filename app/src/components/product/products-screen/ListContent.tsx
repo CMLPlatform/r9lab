@@ -42,6 +42,8 @@ type ProductsListContentProps = {
   total: number;
   hasNextPage: boolean;
   searchQuery: string;
+  /** A date, brand, type, components or completeness filter is narrowing the list. */
+  isFiltered: boolean;
   isAuthenticated: boolean;
   onScroll: FlatListProps<Product>['onScroll'];
   onRefresh: () => Promise<unknown>;
@@ -94,6 +96,7 @@ export function ProductsListContent({
   total,
   hasNextPage,
   searchQuery,
+  isFiltered,
   isAuthenticated,
   onScroll,
   onRefresh,
@@ -203,6 +206,8 @@ export function ProductsListContent({
               <AppText>Type at least {MIN_SEARCH_LENGTH} characters to search.</AppText>
             ) : searchQuery ? (
               <AppText>No products match your search.</AppText>
+            ) : isFiltered ? (
+              <AppText>No products match these filters.</AppText>
             ) : !isAuthenticated ? (
               <AppText>No products available yet. Sign in to add your own.</AppText>
             ) : filterMode === 'mine' ? (

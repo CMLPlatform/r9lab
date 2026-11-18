@@ -9,10 +9,7 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 **Upgrading:**
 
-- **Breaking:** the deployment identifiers move from `relab` to `r9lab`. Self-hosters: do not
-  plain-pull this release. Follow "Upgrading across the R9lab rename" in
-  `docs/src/content/docs/operations/upgrade-backup.md` (staging first, about an hour), and
-  `deploy/DEPLOY-PROD.md` 1.7 if the host also moves its paths and deploy user. What changes:
+- **Breaking:** the deployment identifiers move from `relab` to `r9lab`. What changes:
   - The Compose project is `r9lab_<env>`, so every volume and network is renamed.
   - The database and roles are `r9lab_db`, `r9lab_app`, `r9lab_migrator` and `r9lab_backup`.
   - Images are `ghcr.io/cmlplatform/r9lab-*`.
@@ -49,6 +46,9 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   recent, complete records come first. It is the default order of the app's all-products list;
   "My products" and public profiles stay newest first.
   ([#515](https://github.com/CMLPlatform/r9lab/issues/515))
+- Product lists filter on `has_components` (`true` or `false`) and on `completeness`
+  (`completeness[ge]=1` keeps complete records). The app's product filters gain "Has components"
+  and "Complete records" chips. ([#113](https://github.com/CMLPlatform/r9lab/issues/113))
 
 ### Changed
 
@@ -57,8 +57,6 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - The `r9lab-backup` image is built on Debian slim with only the PostgreSQL client, not the
   full `postgres:18` server image. It is about 71 MB to pull instead of 186 MB.
 - The landing page and docs Workers are named `r9lab-www-<env>` and `r9lab-docs-<env>`.
-  Self-hosters who run the Cloudflare root follow "Renaming the repository or the Workers" in
-  `infra/cloudflare/README.md`.
 - `just images-verify` checks images against `CMLPlatform/r9lab`. Only `sha-8697ebf`, published
   between the deployment rename and the repository rename, still verifies against the old
   repository name.
@@ -75,6 +73,9 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 - The legacy admin path `/v1/admin/plugins/rpi-cam` is no longer served. The device and
   user-facing legacy camera paths stay until 2027-01-31.
+- The docs site's Prerequisites, Configure, Deploy and Upgrade and backup pages. Their URLs
+  redirect to [Install](https://docs.r9lab.io/operations/install/) and
+  [Deployment and operations](https://docs.r9lab.io/operations/deployment/).
 
 ### Fixed
 
@@ -113,9 +114,9 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   text, the activity chart's readout closes on Escape while the pointer rests on it, the app's
   username screen has its own heading and offers autofill, and each sign-up step's question is a
   heading.
-- More accessibility fixes from the same check: double-tapping a photo in the app's viewer zooms
-  in on that spot, so no drag is needed to see part of it; the account screen's theme and
-  visibility choices respond to Space; a product's components are read as a list; and the
+- The same WCAG 2.2 self-assessment led to more fixes. Double-tapping a photo in the app's viewer zooms
+  in on that spot, so no drag is needed to see part of it. The account screen's theme and
+  visibility choices respond to Space. A product's components are read as a list. The
   documentation search announces its result count.
 
 ### Security
@@ -130,12 +131,11 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Logging out with a stolen, already-rotated refresh token no longer hides the theft, and a
   device holding a token revoked by "log out everywhere" no longer logs you out again.
 - Parallel password guesses from many addresses can no longer get past the per-account login
-  limit, and password login for an account stops after 100 wrong passwords in a row, as NIST
-  SP 800-63B asks; a correct password starts the count again. A browser or app that has signed
+  limit. Password login for an account stops after 100 wrong passwords in a row, as NIST
+  SP 800-63B asks. A correct password starts the count again. A browser or app that has signed
   in to the account before keeps its own count in a device cookie (for bearer clients also in
   an `X-Device-Token` header), so someone guessing at your address cannot lock you out of your
-  own devices. Login answers 429 with `Retry-After` when a
-  limit is reached.
+  own devices. Login answers 429 with `Retry-After` when a limit is reached.
 - The common-password and disposable-email checks keep working when their Redis cache is
   flushed or evicted, and the common-password list refills its cache on the next check.
 - `GET /v1/oauth/{provider}/token/authorize` refuses a `redirect_uri`: the bearer flow returns

@@ -1,8 +1,8 @@
 # Contributing to R9lab
 
 R9lab is a research platform developed at CML, Leiden University. This page covers code and
-documentation changes. To run or deploy the stack, see
-[Install and self-host](https://docs.r9lab.io/operations/prerequisites/).
+documentation changes. To run the stack locally, see
+[Install](https://docs.r9lab.io/operations/install/).
 
 ## Start Here
 
@@ -44,7 +44,7 @@ the landing site on 8013, plus PostgreSQL on `5432` and Redis on `6379`, all on 
 
 ## Docker Development
 
-Runs the full stack without configuring each subrepo. Follow
+This runs the full stack without configuring each subrepo. Follow
 [Local Docker setup](https://docs.r9lab.io/operations/install/#local-docker-setup) in the
 install guide: it covers the secret files, the optional `backend/.env.dev`, migrations, and the
 service URLs. Then:
@@ -74,7 +74,7 @@ recipes.
 ## Tooling and Configuration
 
 Every tool version is pinned exactly once, in the file the tool itself reads. CI installs what these
-files say, so a bad upstream release is a one-line rollback rather than a mystery. Renovate keeps
+files say, so rolling back a bad upstream release is a one-line change. Renovate keeps
 them current through the `repo-tooling` group.
 
 | Tool             | Pinned in                    | Read by                            |
@@ -90,7 +90,7 @@ from `package.json`.
 
 Do not duplicate exact versions in docs unless a manifest or generated file requires it.
 
-Each configuration surface has one job:
+Each configuration surface has one job.
 
 - root `justfile`: repo-wide orchestration and cross-project workflows
 - subrepo `justfile`: local commands for one project
@@ -269,7 +269,7 @@ previous one reads, its upgrade notes and the rollback section of
 downgrade to.
 
 The chain was flattened once, on 2026-09-08, into the single revision `a9c2e4f60b18`. Write new
-revisions on top of it as usual. A future flatten repeats the same recipe:
+revisions on top of it as usual. A future flatten follows the same steps.
 
 1. Keep the current head's revision id, so deployed databases stay at a revision that still
    resolves.
@@ -351,8 +351,8 @@ Fixed and Security.
 1. `just release-prep 0.4.0` branches `release/v0.4.0` from `origin/main`, bumps every version
    file, turns `Unreleased` into `## [0.4.0] - <date>` with the compare links updated, and
    prints the commits since the last tag.
-1. Write or finish that section for readers, commit, and open a PR. Its description is yours: put
-   one-time upgrade steps there and in the release notes.
+1. Write or finish that section for readers, commit, and open a PR. Put one-time upgrade steps in
+   the PR description and in the release notes.
 1. After the merge, `just release-publish 0.4.0` signs the `v0.4.0` tag with your git signing key,
    pushes it, and drafts the GitHub release from the section.
 1. Publish the draft. That starts `release.yml`, which publishes the

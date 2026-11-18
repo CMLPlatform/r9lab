@@ -15,6 +15,9 @@ export type ProductsSearchParams = {
   brands?: string;
   types?: string;
   days?: string;
+  /** '1' when set; any other value counts as off. */
+  components?: string;
+  complete?: string;
 };
 
 function defaultSort(filterMode: ProductFilter, search: string): string[] {
@@ -37,6 +40,8 @@ export function normalizeProductsParams(params: ProductsSearchParams) {
     // URL round-trip uses the same separator the API layer sends.
     activeBrands: params.brands ? params.brands.split(FILTER_CSV_SEPARATOR) : [],
     activeProductTypes: params.types ? params.types.split(FILTER_CSV_SEPARATOR) : [],
+    hasComponents: params.components === '1',
+    complete: params.complete === '1',
   };
 }
 
@@ -47,6 +52,8 @@ export function useProductsInfiniteListQuery({
   activeBrands,
   createdAfter,
   activeProductTypes,
+  hasComponents,
+  complete,
 }: {
   filterMode: ProductFilter;
   searchQueryURL: string;
@@ -54,12 +61,16 @@ export function useProductsInfiniteListQuery({
   activeBrands: string[];
   createdAfter?: Date;
   activeProductTypes: string[];
+  hasComponents: boolean;
+  complete: boolean;
 }) {
   const query = useInfiniteQuery(
     productsInfiniteQueryOptions(filterMode, searchQueryURL, sortBy, {
       brands: activeBrands,
       createdAfter,
       productTypeNames: activeProductTypes,
+      hasComponents,
+      complete,
     }),
   );
 

@@ -144,7 +144,7 @@ components:
     padding: 0.55rem 0
 ---
 
-# Design System: R9lab — Web
+# Design System: R9lab Web
 
 ## Overview
 
@@ -175,10 +175,10 @@ handing off to the header.
 - Photographs are duotoned into the palette so a wall of bench shots reads as one schedule
 - WCAG 2.2 AA, with contrast reasoning written into the token file itself
 
-**The duplicated brand rules below (accent, eyebrows, elevation, radius, the typeface split) are
-duplicated on purpose. Do not deduplicate them into a citation.** Whoever edits a component reads
-the design file next to it and does not open a second one, and `assets/DESIGN.md` sits at a path
-no design tooling looks in. Each restatement carries a `Mirrors assets/DESIGN.md:NN` marker. Run
+**The brand rules below (accent, eyebrows, elevation, radius, the typeface split) repeat
+`assets/DESIGN.md`. Do not replace them with a citation.** Whoever edits a component reads the
+design file next to it and does not open a second one, and `assets/DESIGN.md` sits at a path no
+design tooling looks in. Each copy carries a `Mirrors assets/DESIGN.md:NN` marker. Run
 `rg "Mirrors assets/DESIGN.md"` to list every copy and check it against source. Change a rule in
 `assets/DESIGN.md` first.
 
@@ -249,7 +249,7 @@ categorical chart ramp live in `src/styles/tokens.generated.css`, generated from
 highlights. It marks a *datum*, never a section. It never fills a button and never drives a
 hover or pressed state. Primary blue carries **all** interaction. And accent is for small text,
 never for mass: bars, big figures and any large element stay ink. When in doubt on something
-large, use ink. *Mirrors assets/DESIGN.md:167 — change it there first.*
+large, use ink. *Mirrors assets/DESIGN.md:167-175; change it there first.*
 
 **The Two-Border Rule.** A border that separates or frames content uses the hairline
 (`--color-page-border`). A border that is the only thing identifying a control uses the control
@@ -276,11 +276,11 @@ new raw hex at the same value.
 
 **The Expo app diverges.** `app/` stays on platform system fonts (native feel, Dynamic Type, zero
 load cost) and adopts only the *scale and palette*. Do not "unify" the app onto IBM Plex.
-*Mirrors assets/DESIGN.md:33 — change it there first.*
+*Mirrors assets/DESIGN.md:31-37; change it there first.*
 
 **Character:** one superfamily, three voices. The serif gives headings the weight of a printed
 report. The sans carries prose. The mono is the register of the lab bench: every ID, count, mass
-and measurement is set in it with `tabular-nums` so columns of figures line up. Faces are
+and measurement is set in it with `tabular-nums`, so columns of figures line up. Faces are
 self-hosted latin subsets (`/fonts/*.woff2`, `font-display: swap`), with the Sans regular
 preloaded.
 
@@ -349,7 +349,7 @@ viewport, not per step.
 restates the heading under it is chrome. Provenance lines sit *under* the title as captions, never
 above it. (The app's `eyebrow` variant stays: there it labels a value inside a compact tag, the
 Accent Rule in different clothes.)
-*Mirrors assets/DESIGN.md:169 — change it there first.*
+*Mirrors assets/DESIGN.md:167-173; change it there first.*
 
 **The Mono-Is-Measurement Rule.** Mono is reserved for things that were measured or assigned: an
 ID, a count, a mass, a date, a licence term. Prose is never set in mono to look technical.
@@ -400,14 +400,14 @@ the drafting grid under it reads through.
 surface fill, no shadow. Something that needs to look raised gets a border-colour change or a 2px
 lift: the teardown plate's hover brightens the frame to 45% primary and rises 2px. Shadow is
 reserved for one tier, `shadow-overlay`, on surfaces that float. www never reaches it.
-*Mirrors assets/DESIGN.md:121 — change it there first.*
+*Mirrors assets/DESIGN.md:119-128; change it there first.*
 
 ## Shapes
 
 Corners come from `tokens.generated.css`: **6px** for controls (buttons, the toggle group, chips,
 plate frames), **8px** for cards and panels (only the blueprint panel on www), **12px** for
 overlays (unused here), and `9999px` for true pills (unused here).
-Radius scale *Mirrors assets/DESIGN.md:111 — change it there first.*
+*Mirrors assets/DESIGN.md:109-114; change it there first.*
 Nested frames step down: a plate figure inside a 6px plate uses
 `calc(var(--radius-control) - 2px)`. The drafting callout carries that radius on one corner only,
 so it reads as printed into the frame.
@@ -547,8 +547,8 @@ product teardown as an engineering parts schedule, a document reproduced inside 
   opening never counts as layout shift. The native marker is replaced with a ▸/▾ glyph. The height
   transition rides on `interpolate-size: allow-keywords` plus `::details-content` with
   `allow-discrete`, so older browsers keep the snap.
-- **Honesty:** the panel shows the six heaviest parts and says so ("Showing the 6 heaviest of 18
-  recorded parts"). A fixture instead of live data is labelled as such and carries no invented
+- **Honesty:** the panel shows the six heaviest components and says so ("Showing the 6 heaviest of 18
+  recorded components"). A fixture instead of live data is labelled as such and carries no invented
   record number.
 
 Everything here is baked at build time and paints without JavaScript.

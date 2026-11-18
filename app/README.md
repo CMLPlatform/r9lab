@@ -14,12 +14,11 @@ The Expo dev server runs on <http://127.0.0.1:8011>.
 Run the backend too. On a physical device, or when the API is not on localhost, set
 `EXPO_PUBLIC_API_URL` in `.env.local`.
 
-To enable Google OAuth on web, set `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID` to the web client ID from
-Google Cloud Console, and register your environment's redirect URI there (for local dev,
-`http://127.0.0.1:8011/login`).
+For Google OAuth on web, set `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID` to the web client ID from Google
+Cloud Console. Register your redirect URI there too (for local dev, `http://127.0.0.1:8011/login`).
 
-Docker development ports are localhost-only. To open the app from another device on your LAN, run
-`just dev` from this subrepo instead of the Docker app service.
+Docker development ports listen on localhost only. To open the app from another device on your
+LAN, run `just dev` from this subrepo instead of the Docker app service.
 
 ## Stack
 
@@ -30,9 +29,8 @@ Docker development ports are localhost-only. To open the app from another device
 - **Client state:** React context + feature-local hooks/reducers.
 - **Forms:** React Hook Form + Zod resolvers.
 - **UI kit:** Uniwind (Tailwind v4 for React Native) + vendored react-native-reusables
-  primitives in src/components/base/.
-  Theme (colors, type scale, semantic tokens) comes from `AppThemeProvider`/`useAppTheme()`
-  (src/theme/). Do not reintroduce react-native-paper.
+  primitives in `src/components/base/`. `AppThemeProvider` and `useAppTheme()` (`src/theme/`)
+  supply the colors, type scale and semantic tokens. Do not reintroduce react-native-paper.
 - **Compiler:** React Compiler enabled via `babel-plugin-react-compiler`.
 
 ## Source Layout
@@ -55,52 +53,56 @@ src/
 └── assets/           # Fonts, images, icons.
 ```
 
-`base/` holds generic primitives (including vendored react-native-reusables under `base/ui/`);
-other component folders are domain-scoped. Feature logic lives in `src/features/`. Imports flow
-inward: features may use `base`, not the reverse.
+`base/` holds generic primitives, including vendored react-native-reusables under `base/ui/`.
+Other component folders are domain-scoped. Feature logic lives in `src/features/`. Features may
+import from `base`, never the reverse.
 
-Two features that share cache state get a neutral module instead of a mutual import.
+Two features that share cache state use a neutral module, not a mutual import.
 `features/product-entity/` holds the single-product query options and invalidation that
 `features/cameras` writes and `features/products` reads.
 
 A few `base/` components are app chrome (`TopNav`, `HeaderRightPill`, `StaticBackground`). They
-read app context and are not reusable outside this app. They keep the import direction: chrome
-renders what it is given (for example `useVisibleDestinations()` from `src/navigation/`) and does
-not import from `src/features/`.
+read app context, so other apps cannot reuse them. They follow the import rule: chrome renders what
+it is given (for example `useVisibleDestinations()` from `src/navigation/`) and never imports from
+`src/features/`.
 
 `src/components/base/ui/` is vendored react-native-reusables output. Regenerate it with the RNR
-CLI; do not hand-refactor it.
+CLI. Do not refactor it by hand.
 
 Call sites use a vendored primitive directly when it fits (`ui/input`, `ui/badge`, `ui/button`,
-`ui/text`). The hand-rolled `TextInput`, `InfoTooltip`, `Chip`, `AppDialog`, and `Menu` each carry
-behavior the primitive lacks; each has a dated `NOTE:` at the top saying which. Re-open the
-question only when the primitive gains that behavior.
+`ui/text`). The hand-rolled `TextInput`, `InfoTooltip`, `Chip`, `AppDialog`, and `Menu` each add
+behavior the primitive lacks. A dated `NOTE:` at the top of each says which. Revisit one only when
+the primitive gains that behavior.
 
 ## Routing
 
-`src/app/` is the Expo Router tree. Groups in parens (`(auth)`) do not affect the URL. Layouts
-(`_layout.tsx`) wrap their siblings. Typed routes are on, so links are type-checked against the
+`src/app/` is the Expo Router tree. Groups in parentheses (`(auth)`) do not change the URL. Layouts
+(`_layout.tsx`) wrap their siblings. Typed routes are on, so TypeScript checks links against the
 file tree.
 
 The full screen inventory, flow diagrams, and routing rules live in
 [App navigation flow](https://docs.r9lab.io/architecture/app-flow/).
 
 The three primary destinations are tabs: `(tabs)/(products)`, `(tabs)/(cameras)` and
-`(tabs)/(account)`. Each group holds its own Stack, so every tab keeps its trail. BottomNav is that
-navigator's `tabBar`. The products tab owns both the `/products` and `/components` trees; a
-cross-navigator `replace` resets every tab, so a link that leaves one tab for another must use
-`navigate`, never `replace`. The root stack keeps only what sits outside the tabs: the entry
-redirect, `(auth)`, `category-selection` and `users/[username]`.
+`(tabs)/(account)`. Each group holds its own Stack, so every tab keeps its trail. BottomNav is the
+navigator's `tabBar`. The products tab owns both the `/products` and `/components` trees.
 
-Detail screens and the account screen are anchored-scroll documents: sections self-register with
-SectionNavContext; chips (phone) / outline (lg web) navigate via useSectionNav.
+A cross-navigator `replace` resets every tab. A link that leaves one tab for another must use
+`navigate`, never `replace`.
 
-On web at lg and above, TopNav (src/components/base/TopNav.tsx) renders the persistent app bar from
-src/navigation/destinations.ts and the stack header is hidden for the screens it covers; phones
-keep the stack headers.
+The root stack keeps only what sits outside the tabs: the entry redirect, `(auth)`,
+`category-selection` and `users/[username]`.
 
-Creation is capture-first: /products/new and components/new render CaptureScreen
-(photos/name/type), POST immediately, then land on the detail screen in edit mode.
+Detail screens and the account screen are anchored-scroll documents. Each section registers itself
+with SectionNavContext. Chips (phone) or an outline (lg web) navigate between sections through
+`useSectionNav`.
+
+On web at lg and above, TopNav (`src/components/base/TopNav.tsx`) renders the persistent app bar
+from `src/navigation/destinations.ts`, and the stack header is hidden on the screens it covers.
+Phones keep the stack headers.
+
+Creation is capture-first. `/products/new` and `components/new` render CaptureScreen
+(photos, name, type), POST at once, then open the detail screen in edit mode.
 
 ## Data Flow
 
@@ -112,23 +114,23 @@ Creation is capture-first: /products/new and components/new render CaptureScreen
    `scripts/redact_api.mjs` to strip JWT examples before commit.
 1. Request helpers live in [src/services/api](src/services/api); feature hooks
    wrap them with TanStack Query, returning typed data.
-1. MSW handlers in `src/test-utils/` mock the same surface in unit/integration
-   tests so component code is identical in prod and test.
+1. MSW handlers in `src/test-utils/` mock the same surface in unit and integration
+   tests, so component code is the same in production and in test.
 
-Client-only state (wizard progress, transient UI) lives in feature-local hooks/reducers or React
-context. Server state stays in TanStack Query; do not mirror it into client state stores.
+Client-only state (wizard progress, transient UI) lives in feature-local hooks, reducers or React
+context. Server state stays in TanStack Query. Do not mirror it into client state stores.
 
 ### Picking an image size
 
 Read schemas carry `thumbnail_url` (the 200px list thumbnail) and `thumbnail_urls`, derivatives
-keyed by width (200/800/1600, minus any width at or above the original, so the map is sparse).
+keyed by width (200/800/1600, minus any width at or above the original, so the map can have gaps).
 `resolveApiMediaUrlMap` applies the same safety checks as for any other media URL.
 
 Read schemas also carry `width_px`/`height_px`, the original's size after EXIF rotation. All
 derivatives share that aspect ratio. Rows uploaded before the columns existed are null until
 `python -m scripts.maintenance.backfill_image_dimensions` measures them.
 
-With dimensions, the gallery pager hands expo-image a `source` array and lets it match the
+With dimensions, the gallery pager gives expo-image a `source` array, and expo-image matches a
 candidate to the container (a real `srcset` on web). Without them, `sourceSet` is empty and the
 explicit pick takes over. The lightbox always picks explicitly, because zoom decides the source.
 
@@ -149,7 +151,7 @@ and `largeUrl`; pager, lightbox, and prefetch read those two fields.
 
 `just codegen` regenerates `src/types/api.generated.ts` from the committed `src/types/openapi.json`
 (see [Data Flow](#data-flow)), so it needs no running backend. The generated file is the only
-supported frontend contract for the RPi camera integration; do not import or re-declare the
+supported frontend contract for the RPi camera integration. Do not import or re-declare the
 `r9cam-models` Python package in frontend code.
 
 ## Common Commands
@@ -175,34 +177,36 @@ pnpm run profile:compiler:web  # local web profiling with production/staging com
 | Integration | Jest + jest-expo | `src/**/*.integration.test.ts(x)` | Multiple components wired together, realistic nav.                |
 | E2E         | Playwright       | `e2e/`                            | Full-stack against the built web export + docker-compose backend. |
 
-`just test` runs both Jest lanes. E2E requires `just build-web` and the `compose.e2e.yaml` stack.
+`just test` runs both Jest lanes. E2E needs `just build-web` and the `compose.e2e.yaml` stack.
 
-A fresh checkout or worktree needs `pnpm install --frozen-lockfile` in `app/` before Jest or `just check`.
-To run the full-stack E2E by hand: `just _e2e-backend-up` from the root, `just build-web` in `app/`,
-`pnpm exec playwright test --project=chromium` in `app/`, then `just _e2e-backend-down`. The stack
-uses its own compose project, so it does not clash with a running dev stack.
+A fresh checkout or worktree needs `pnpm install --frozen-lockfile` in `app/` before Jest or
+`just check`.
+
+To run the full-stack E2E by hand, run `just _e2e-backend-up` from the root, then `just build-web`
+and `pnpm exec playwright test --project=chromium` in `app/`, then `just _e2e-backend-down`. The
+stack uses its own compose project, so it does not clash with a running dev stack.
 
 Jest integration tests run in-memory with `jest-expo` and React Native Testing Library. They do
 not replace device-native end-to-end coverage.
 
-**Location rule:** co-locate every Jest test in a `__tests__/` folder beside the code it covers.
-The filename suffix picks the lane: `.integration.test.*` runs in the integration lane, everything
-else in unit. The unit lane auto-mocks `expo-router` (see `config/setup.unit.ts`); integration
-tests mock it locally. Cross-cutting tests with no single home (config, security policy, theme
+**Location rule:** put every Jest test in a `__tests__/` folder beside the code it covers. The
+filename suffix picks the lane: `.integration.test.*` runs in the integration lane, everything else
+in unit. The unit lane auto-mocks `expo-router` (see `config/setup.unit.ts`). Integration tests
+mock it locally. Cross-cutting tests with no single home (config, security policy, theme
 regressions) live in `src/__tests__/`.
 
 **E2E environmental failures:** `just test-e2e` needs the `compose.e2e.yaml` stack running against
-a clean database. Before treating a failing spec as a regression, confirm the stack is up and the
-DB is freshly seeded. Do not edit specs to accommodate these:
+a clean database. Before you treat a failing spec as a regression, confirm the stack is up and the
+database is freshly seeded. Do not edit specs to work around these:
 
-- **"Mine" empty-state / seeded-product-not-on-page-1:** the e2e Postgres has accumulated test
-  data. Reset/reseed the e2e DB.
-- **OAuth sign-in specs:** `compose.e2e.yaml` does not inject Google/GitHub OAuth credentials, so
-  those flows cannot complete in CI-local runs.
+- **"Mine" empty state, or the seeded product is not on page 1:** the e2e Postgres holds leftover
+  test data. Reset and reseed the e2e database.
+- **OAuth sign-in specs:** `compose.e2e.yaml` does not inject Google or GitHub OAuth credentials,
+  so those flows cannot finish in local CI-style runs.
 
 ## Timing Jest Suites
 
-To profile slow test files, run Jest with JSON output and inspect the report:
+To find slow test files, run Jest with JSON output and read the report:
 
 ```bash
 pnpm test -- --runInBand --json --outputFile=.jest-timings.json
@@ -210,65 +214,58 @@ pnpm test -- --runInBand --json --outputFile=.jest-timings.json
 
 ## Styling And Theming
 
-Styling uses Uniwind; colors, type scale, and semantic tokens come from `AppThemeProvider` (see
+Styling uses Uniwind. Colors, type scale and semantic tokens come from `AppThemeProvider` (see
 [Stack](#stack)). Uniwind reads `global.css` through its Metro plugin. Theme variables live in
-`src/theme/brand.generated.css` as `@variant light`/`@variant dark` blocks; `Uniwind.setTheme()` in
-`src/app/_layout.tsx` switches between them.
+`src/theme/brand.generated.css` as `@variant light` and `@variant dark` blocks. `Uniwind.setTheme()`
+in `src/app/_layout.tsx` switches between them.
 
-- Import theme values from their owning module under `@/theme/` (for example `@/theme/appThemeContext`), not from `src/assets/themes/*`
-
-- Use `useAppTheme()` as the default hook for theme access
-
+- Import theme values from their owning module under `@/theme/` (for example
+  `@/theme/appThemeContext`), not from `src/assets/themes/*`.
+- Use `useAppTheme()` as the default hook for theme access.
 - Prefer semantic tokens like `theme.tokens.status.live`, `theme.tokens.text.muted`, and
-  `theme.tokens.surface.accent` over raw hex or `rgba(...)` literals
-
-- Keep static layout in `StyleSheet.create()`
-
-- For theme-dependent styles, use small colocated factories like `createStyles(theme)`
-
-- Keep `src/app/` route-only; router helpers belong under `src/utils/router/`
-
-- `src/theme/` is the only supported theme entrypoint
-
-- Shared visual primitives live under `src/components/base/`
-
-- New hard-coded color literals in app code are regressions unless they belong in the theme layer,
-  generated assets, or tests
+  `theme.tokens.surface.accent` over raw hex or `rgba(...)` literals.
+- Keep static layout in `StyleSheet.create()`.
+- For theme-dependent styles, use small colocated factories like `createStyles(theme)`.
+- Keep `src/app/` for routes only. Router helpers belong under `src/utils/router/`.
+- `src/theme/` is the only supported theme entrypoint.
+- Shared visual primitives live under `src/components/base/`.
+- A new hard-coded color literal in app code is a regression, unless it belongs in the theme layer,
+  generated assets or tests.
 
 ## React Performance Profiling
 
-Validate memoization changes in a release-like build, not only in Metro dev mode.
+Check memoization changes in a release-like build, not only in Metro dev mode.
 
 1. Run `pnpm run profile:compiler:web`. It starts Expo web with `ENVIRONMENT=production`, which
-   enables the React Compiler locally.
+   turns on the React Compiler locally.
 1. Open the app in a browser with React DevTools and record the interaction in the Profiler tab.
-1. Confirm the slow interaction in the profiler before changing memoization.
-1. Re-profile after the change. Keep manual `useMemo` / `useCallback` / `React.memo` only where
+1. Confirm the slow interaction in the profiler before you change memoization.
+1. Profile again after the change. Keep manual `useMemo`, `useCallback` or `React.memo` only where
    the compiled build still benefits.
 
 `pnpm run dev` keeps compiler transforms off for faster Metro feedback.
 
 ## Build And Deploy
 
-- **Dev (web):** `just dev`: Expo Metro on :8011.
+- **Dev (web):** `just dev` runs Expo Metro on :8011.
 - **Dev (native):** `pnpm android` / `pnpm ios`.
-- **Web build:** `just build-web` runs `expo export -p web -c` → `dist/`.
+- **Web build:** `just build-web` runs `expo export -p web -c` and writes `dist/`.
 - **Runtime:** Caddy serves `dist/` with CSP templated from `CADDY_API_ORIGIN`. Scripts load only
   from the app's own origin, with no inline script or eval; inline styles stay allowed for React
   Native Web. Product embeds come only from `https://www.youtube-nocookie.com`. See
   [Dockerfile](Dockerfile) and [Caddyfile](Caddyfile).
-- **Native releases:** not containerised; use Expo's native build flow from a developer machine.
+- **Native releases:** not containerised. Use Expo's native build flow from a developer machine.
 
 ## Lint Ownership
 
-Biome is the primary formatter/linter, including hook ordering/dependency rules, React prop
-assignment safety, and React module/export safety.
+Biome is the main formatter and linter. It covers hook ordering and dependency rules, React prop
+assignment safety, and React module and export safety.
 
 ESLint covers only what Biome does not: React hooks and compiler checks, Fast Refresh export-only
-structure via `eslint-plugin-react-refresh`, and React Native accessibility rules via
-`eslint-plugin-react-native-a11y`. When Biome ships equivalents, remove ESLint and its plugins.
+structure (`eslint-plugin-react-refresh`), and React Native accessibility rules
+(`eslint-plugin-react-native-a11y`). When Biome ships equivalents, remove ESLint and its plugins.
 
-`pnpm run lint:react` is blocking and must pass with zero warnings. It enables:
+`pnpm run lint:react` blocks merges and must pass with zero warnings. It enables these rules:
 
 - `react-hooks/preserve-manual-memoization`
 - `react-hooks/static-components`
@@ -281,10 +278,9 @@ structure via `eslint-plugin-react-refresh`, and React Native accessibility rule
 - `react-refresh/only-export-components`
 - `react-native-a11y/*` accessibility prop checks (see `eslint.config.mjs` for the enabled rules)
 
-Biome does not expose an RN-specific rule surface, so RN-specific linting stops at those
-accessibility rules.
+Biome has no React Native rules, so React Native linting stops at those accessibility rules.
 
 ## More
 
-For repo-wide frontend conventions, see
+Repo-wide frontend conventions are in
 [CONTRIBUTING.md](../.github/CONTRIBUTING.md#frontend-development).

@@ -1,11 +1,10 @@
 ---
 title: Deployment and operations
-description: The self-hosted R9lab deployment topology and its operational trade-offs.
+description: The R9lab deployment topology and its operational trade-offs.
 ---
 
 R9lab runs as a self-hosted Docker Compose stack sized for a single VPS. This page describes how
-that stack is put together. For the step-by-step procedure, see
-[Configure](/operations/configure/) and the pages after it.
+that stack is put together.
 
 ## Compose service topology
 
@@ -70,8 +69,7 @@ share; [Security and hardening](/operations/security/#inbound-edge) describes th
 
 Prod and staging have separate OpenTofu workspaces and state. Start public hostname changes in
 `infra/cloudflare/`. Do not add wildcard DNS records without a concrete operational need and a
-blast-radius review. The plan and apply procedure is step 1 of
-[Configure](/operations/configure/).
+blast-radius review.
 
 ## Network segmentation policy
 
@@ -122,8 +120,8 @@ Supported browsers must implement HTTPS, HSTS, Content Security Policy, host-pre
 - Backups are host systemd timers, not Compose services. The hourly job takes a snapshot (`r9lab-backup@.timer`). The daily job runs retention, the integrity check, and the optional offsite copy (`r9lab-backup-maintenance@.timer`), so the repository is repacked once a day, not 24 times. Losing the host still costs up to a day of data.
 - Offsite copies use `restic copy` over restic's rclone backend, to the one remote defined in `secrets/<env>/rclone.conf`.
 - A backup refuses to archive a dump or an uploads tree smaller than half the newest stored snapshot of the same tag. Otherwise an empty one could become the newest snapshot and age out the good copies. `RESTIC_MIN_DUMP_RATIO` tunes it; `0` disables it.
-- The uploads volume carries a `.relab-volume` marker naming the environment it belongs to. A backup refuses to archive it if the marker is missing or names another environment. The check is skipped when `R9LAB_ENVIRONMENT` is unset, which is the case in dev and CI. Restoring one environment's uploads into another's volume carries the source environment's marker along with it — rewrite the marker for the target afterwards, or every backup there will refuse.
-- Alembic migrations move schema state forward one transaction per revision, so a failed migration leaves the last successful revision in place and a re-run resumes from there. `just stack <env> rollback YES <tag> [<revision>]` returns to an earlier release's published images, and downgrades the schema only when no migration in the range destroyed data; otherwise restore a backup. It cannot return to a release from before the R9lab rename; see [Upgrading across the R9lab rename](/operations/upgrade-backup/#upgrading-across-the-r9lab-rename).
+- The uploads volume carries a `.relab-volume` marker naming the environment it belongs to. A backup refuses to archive it if the marker is missing or names another environment. The check is skipped when `R9LAB_ENVIRONMENT` is unset, which is the case in dev and CI. Restoring one environment's uploads into another's volume carries the source environment's marker along with it. Rewrite the marker for the target afterwards, or every backup there will refuse.
+- Alembic runs each migration revision in one transaction. A failed migration leaves the last successful revision in place, and a re-run resumes from there. `just stack <env> rollback YES <tag> [<revision>]` returns to an earlier release's published images. It downgrades the schema only when no migration in the range destroyed data. Otherwise, restore a backup. It cannot return to a release from before the R9lab rename.
 - `just restore-check <env>` restores the latest database dump into a disposable Postgres container and verifies that it can be read. It also restores the latest uploads snapshot into a scratch directory to verify it carries real data.
 
 App-owned services run with dropped Linux capabilities, `no-new-privileges`, PID and file descriptor limits, and read-only root filesystems where supported. CI checks Dockerfiles with Trivy and validates the Cloudflare edge IaC with `just cloudflare-check`.

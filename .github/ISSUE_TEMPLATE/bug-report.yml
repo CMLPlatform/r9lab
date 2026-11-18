@@ -21,7 +21,7 @@ body:
     id: description
     attributes:
       label: What happened?
-      description: A clear description of the bug and its impact.
+      description: What went wrong, and what it affects.
     validations:
       required: true
 
@@ -29,7 +29,7 @@ body:
     id: reproduction
     attributes:
       label: How to reproduce
-      description: Minimal steps that trigger the bug.
+      description: The fewest steps that trigger it.
       value: |
         1.
         2.

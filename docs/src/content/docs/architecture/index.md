@@ -14,5 +14,5 @@ flow](app-flow/) covers the mobile app's screens and redirects.
 changing login, sessions, and OAuth, or the camera pairing and streaming path. Both describe
 security-relevant behavior; treat them as the reference.
 
-To run the stack, see [Install and self-host](/operations/prerequisites/) and
-[Deployment](/operations/deployment/).
+To run the stack locally, see [Install](/operations/install/). [Deployment](/operations/deployment/)
+describes how it runs in production.
