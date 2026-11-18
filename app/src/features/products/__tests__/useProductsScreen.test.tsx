@@ -75,12 +75,13 @@ let mockTypeSearchResults: { id: number; name: string; description?: string | nu
 let mockSelectedTypeResults: { id: number; name: string; description?: string | null }[] = [];
 
 jest.mock('@/features/products/queries', () => ({
-  DEFAULT_PRODUCT_SORT: ['-created_at'],
+  DEFAULT_PRODUCT_SORT: ['-recommended_rank'],
   NEWEST_FIRST_SORT: ['-created_at'],
   PRODUCT_SORT_OPTIONS: [
     { label: 'Relevance', value: [] },
+    { label: 'Recommended', value: ['-recommended_rank'] },
     { label: 'Newest first', value: ['-created_at'] },
-    { label: 'Oldest first', value: ['created_at'] },
+    { label: 'Oldest first', value: ['+created_at'] },
   ],
   productsInfiniteQueryOptions: jest.fn(() => ({})),
   productsListQuery: jest.fn(() => ({ search: 'from-list' })),
@@ -287,7 +288,7 @@ describe('useProductsScreen', () => {
     expect(jest.mocked(productsListQuery)).toHaveBeenCalledWith(
       'all',
       '',
-      ['-created_at'],
+      ['-recommended_rank'],
       expect.objectContaining({ brands: ['acme'] }),
     );
     expect(result.current.list.exportQuery).toEqual({ search: 'from-list' });
