@@ -79,6 +79,8 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- Registration and verification emails said the link expires in 1 hour. They now state the
+  real lifetime, 1 day, and the reset email states its own.
 - Public profile statistics are counted from the owner's products and photos, so they stay
   right after a product type is renamed or products arrive through an import or a restore.
   The owner sees changes at once; other viewers within five minutes.

@@ -12,11 +12,13 @@ def test_render_email_template_includes_context_values() -> None:
         {
             "username": "Ada",
             "verification_link": "https://app.example.test/verify?token=abc",
+            "link_lifetime": "1 day",
         },
     )
 
     assert "Ada" in html
     assert "https://app.example.test/verify?token=abc" in html
+    assert "This link expires in 1 day." in html
 
 
 def test_render_email_template_rejects_missing_required_context() -> None:

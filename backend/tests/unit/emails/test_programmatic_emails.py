@@ -11,6 +11,7 @@ from fastapi import BackgroundTasks
 from app.api.auth.config import settings as auth_settings
 from app.api.auth.services.email.service import (
     generate_token_link,
+    link_lifetime_text,
     send_account_deleted_notification,
     send_email_changed_notification,
     send_oauth_link_changed_notification,
@@ -330,3 +331,31 @@ async def test_all_email_functions_support_background_tasks(
     # Verify task was queued, not sent immediately
     background_tasks.add_task.assert_called_once()
     mock_email_sending.assert_not_called()
+
+
+@pytest.mark.parametrize(
+    ("send", "ttl_seconds"),
+    [
+        (send_registration_email, auth_settings.verification_token_ttl_seconds),
+        (send_verification_email, auth_settings.verification_token_ttl_seconds),
+        (send_reset_password_email, auth_settings.reset_password_token_ttl_seconds),
+    ],
+)
+async def test_link_emails_state_the_token_lifetime(
+    send: Callable[..., Any], ttl_seconds: int, email_data: dict[str, str], mock_email_sending: AsyncMock
+) -> None:
+    """Each link email states the lifetime its token really has."""
+    await send(email_data["email"], email_data["username"], email_data["token"])
+
+    await_args = mock_email_sending.await_args
+    assert await_args is not None
+    assert f"This link expires in {link_lifetime_text(ttl_seconds)}." in await_args.args[0].html_body
+
+
+@pytest.mark.parametrize(
+    ("seconds", "text"),
+    [(3600, "1 hour"), (7200, "2 hours"), (86400, "1 day"), (172800, "2 days"), (1800, "30 minutes"), (60, "1 minute")],
+)
+def test_link_lifetime_text(seconds: int, text: str) -> None:
+    """Lifetimes read as whole days, hours or minutes."""
+    assert link_lifetime_text(seconds) == text

@@ -26,6 +26,7 @@ class RegistrationTemplateBody(TypedDict):
 
     username: str
     verification_link: str
+    link_lifetime: str
 
 
 class PasswordResetTemplateBody(TypedDict):
@@ -33,6 +34,7 @@ class PasswordResetTemplateBody(TypedDict):
 
     username: str
     reset_link: str
+    link_lifetime: str
 
 
 class VerificationTemplateBody(TypedDict):
@@ -40,6 +42,7 @@ class VerificationTemplateBody(TypedDict):
 
     username: str
     verification_link: str
+    link_lifetime: str
 
 
 class PostVerificationTemplateBody(TypedDict):
@@ -64,9 +67,9 @@ type EmailTemplateBody = (
 )
 
 TEMPLATE_REQUIRED_FIELDS: dict[EmailTemplateName, frozenset[str]] = {
-    REGISTRATION_TEMPLATE: frozenset({"username", "verification_link"}),
-    ACCOUNT_RECOVERY_TEMPLATE: frozenset({"username", "reset_link"}),
-    VERIFICATION_TEMPLATE: frozenset({"username", "verification_link"}),
+    REGISTRATION_TEMPLATE: frozenset({"username", "verification_link", "link_lifetime"}),
+    ACCOUNT_RECOVERY_TEMPLATE: frozenset({"username", "reset_link", "link_lifetime"}),
+    VERIFICATION_TEMPLATE: frozenset({"username", "verification_link", "link_lifetime"}),
     POST_VERIFICATION_TEMPLATE: frozenset({"username"}),
     OAUTH_WELCOME_TEMPLATE: frozenset({"username", "provider_label"}),
 }
