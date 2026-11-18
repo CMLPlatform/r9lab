@@ -95,7 +95,7 @@ async def update_user(
 ## DELETE ##
 @router.post(
     "/{user_id}/mfa/reset",  # user_id is bound by the get_user_or_404 dependency
-    summary="Reset a user's MFA enrollment",
+    summary="Reset a user's two-step verification",
     status_code=204,
 )
 async def reset_user_mfa(
@@ -103,7 +103,7 @@ async def reset_user_mfa(
     user_manager: UserManagerDep,
     actor: CurrentActiveSuperUserDep,
 ) -> None:
-    """Reset TOTP MFA after an administrator performs identity-proofed recovery."""
+    """Turn off a user's two-step verification after an administrator has confirmed who they are."""
     await mfa_service.clear_totp(user_manager, user)
     audit_event(actor.id, AuditAction.SUPERUSER_ACCESS, User, user.id, context=AuditContext(operation="mfa_reset"))
 

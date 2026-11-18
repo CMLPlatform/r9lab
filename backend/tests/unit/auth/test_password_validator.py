@@ -80,25 +80,25 @@ async def test_validate_password_accepts_exact_minimum_length() -> None:
 
 
 async def test_validate_password_rejects_email_in_password() -> None:
-    """The password must not contain the e-mail address as a substring."""
+    """The password must not contain the email address as a substring."""
     with pytest.raises(InvalidPasswordException) as exc:
         await validate_password(
             "prefix-alice@example.com-suffix",
             email="alice@example.com",
             skip_breach_check=True,
         )
-    assert "e-mail" in exc.value.reason
+    assert "email address" in exc.value.reason
 
 
 async def test_validate_password_rejects_email_local_part_case_insensitively() -> None:
-    """The password must not contain the e-mail local-part."""
+    """The password must not contain the email local-part."""
     with pytest.raises(InvalidPasswordException) as exc:
         await validate_password(
             "prefix-ALICEWONDER-suffix",
             email="alicewonder@example.com",
             skip_breach_check=True,
         )
-    assert "e-mail" in exc.value.reason
+    assert "email address" in exc.value.reason
 
 
 async def test_validate_password_rejects_username_in_password() -> None:

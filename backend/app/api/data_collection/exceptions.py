@@ -46,7 +46,7 @@ class MaterialIDRequiredError(BadRequestError):
     """Raised when a nested material operation requires an explicit material id."""
 
     def __init__(self) -> None:
-        super().__init__("Material ID is required for this operation")
+        super().__init__("Include a material_id in the request.")
 
 
 class ProductVersionMismatchError(PreconditionFailedError):

@@ -31,7 +31,7 @@ def _camera_not_connected() -> HTTPException:
     """Return the canonical 503 for an unreachable camera."""
     return HTTPException(
         status_code=503,
-        detail="Camera is not connected via WebSocket.",
+        detail="The camera is offline. Check its power and network, then retry.",
         headers={"Retry-After": _RELAY_RETRY_AFTER_SECONDS},
     )
 

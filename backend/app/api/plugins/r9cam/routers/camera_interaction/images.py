@@ -122,14 +122,14 @@ async def capture_image(
 @device_router.post(
     "/{camera_id}/image-upload",
     response_model=DeviceImageUploadAck,
-    summary="Internal: receive an image pushed directly from a paired Raspberry Pi",
+    summary="Internal: receive an image pushed directly from a paired Raspberry Pi camera",
     description=(
-        "Called by the Pi after a successful capture. Authenticated with a short-lived "
-        "device assertion (same credential used by the WebSocket relay). The Pi provides the "
+        "The Raspberry Pi camera calls this after a successful capture. It signs in with a short-lived "
+        "device assertion (the same credential as the WebSocket relay). The camera sends the "
         "JPEG body plus two JSON blobs: `capture_metadata` (libcamera metadata) and "
         "`upload_metadata` (opaque dict forwarded by whichever caller triggered the capture, "
         "typically `{product_id, description}`). The backend stores the image via the normal "
-        "image storage service and returns a tiny ack envelope the Pi consumes."
+        "image storage service and returns a short acknowledgement to the camera."
     ),
     status_code=201,
     dependencies=[API_UPLOAD_RATE_LIMIT_DEPENDENCY],
@@ -142,7 +142,7 @@ async def receive_camera_upload(
     capture_metadata: Annotated[str, Form(description="libcamera capture metadata as a JSON string")],
     upload_metadata: Annotated[str, Form(description="Parent association metadata as a JSON string")],
 ) -> DeviceImageUploadAck:
-    """Receive a capture pushed from the Pi and persist it."""
+    """Receive a capture pushed from the camera and persist it."""
     try:
         capture_meta = validate_r9cam_metadata_object(
             parse_required_json_object(capture_metadata, field_name="capture_metadata"),
@@ -157,13 +157,15 @@ async def receive_camera_upload(
 
     product_id = upload_meta.get("product_id")
     if product_id is None:
-        raise HTTPException(status_code=400, detail="upload_metadata must include a product_id")
+        raise HTTPException(status_code=400, detail="Add product_id (a positive integer) to upload_metadata.")
     try:
         product_id_int = int(product_id)
     except (TypeError, ValueError) as exc:
-        raise HTTPException(status_code=400, detail="product_id must be an integer") from exc
+        raise HTTPException(
+            status_code=400, detail="product_id in upload_metadata must be a positive integer."
+        ) from exc
     if product_id_int <= 0:
-        raise HTTPException(status_code=400, detail="product_id must be a positive integer")
+        raise HTTPException(status_code=400, detail="product_id in upload_metadata must be a positive integer.")
 
     await get_user_owned_object(session, Product, product_id_int, camera.owner_id)
 
@@ -204,9 +206,9 @@ async def receive_camera_upload(
 @device_router.post(
     "/{camera_id}/preview-thumbnail-upload",
     response_model=DevicePreviewThumbnailAck,
-    summary="Internal: receive a cached preview thumbnail pushed directly from a paired Raspberry Pi",
+    summary="Internal: receive a cached preview thumbnail pushed directly from a paired Raspberry Pi camera",
     description=(
-        "Called by the Pi's background thumbnail worker. Authenticated with the same short-lived "
+        "The Raspberry Pi camera's background thumbnail worker calls this. It signs in with the same short-lived "
         "device assertion used by the WebSocket relay. Stores a deterministic per-camera JPEG "
         "cache file for camera-card previews without creating an Image database row."
     ),
@@ -218,7 +220,7 @@ async def receive_preview_thumbnail_upload(
     camera: AuthenticatedCameraDep,
     file: Annotated[UploadFile, File(description="Cached preview JPEG thumbnail")],
 ) -> DevicePreviewThumbnailAck:
-    """Receive a cached preview thumbnail pushed from the Pi and persist it."""
+    """Receive a cached preview thumbnail pushed from the camera and persist it."""
     try:
         await validate_upload_size(file, settings.max_image_upload_size_mb)
         # Device previews get the lowest tier's pixel cap, not the global ceiling.

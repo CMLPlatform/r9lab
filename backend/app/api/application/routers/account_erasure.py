@@ -77,9 +77,9 @@ async def delete_user(
     summary="Delete your own account",
     status_code=204,
     responses={
-        status.HTTP_400_BAD_REQUEST: {"description": "The current password or MFA code is missing."},
+        status.HTTP_400_BAD_REQUEST: {"description": "The current password or authentication code is missing."},
         status.HTTP_403_FORBIDDEN: {
-            "description": "The current password or MFA code is invalid, or the account needs a fresh sign-in."
+            "description": "The current password or authentication code is wrong, or the account needs a fresh sign-in."
         },
         status.HTTP_409_CONFLICT: {"description": "This account cannot be deleted (the last active superuser)."},
     },
@@ -98,7 +98,7 @@ async def delete_own_account(
 
     Personal data is erased; contributed products and media stay on the platform without
     the owner's name. Requires the current password, the same step-up as an email or
-    password change, and a current MFA code when the account has MFA enabled. An account
+    password change, and a current authentication code when two-step verification is on. An account
     with neither must have signed in within the last few minutes. The former address gets
     a notification email.
     """

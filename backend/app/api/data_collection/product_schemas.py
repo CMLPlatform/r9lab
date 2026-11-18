@@ -78,7 +78,7 @@ class ProductRead(ProductReadBase):
 class ProductSummary(IntIdReadSchemaWithTimeStamp, ThumbnailFields):
     """Minimal product summary for embedding in unrelated contexts (e.g. material links).
 
-    Deliberately narrower than ``ProductRead``: no owner, physical/circularity
+    Narrower than ``ProductRead``: no owner, physical/circularity
     properties, or other detail-view fields since no consumer needs them here.
     Extend with more fields only when an actual caller needs them.
     """

@@ -1,8 +1,7 @@
 """Polyfactory model factories for tests and for realistic seed data.
 
-Shared deliberately: the fixtures a test asserts against and the rows a
-latency baseline measures should come out of one generator, or the two
-drift and each has to be trusted separately.
+Tests and seed data share these factories. The fixtures a test asserts against and
+the rows a latency baseline measures come from one generator, so the two cannot drift.
 """
 
 import os
@@ -189,7 +188,6 @@ class TaxonomyFactory(BaseModelFactory[Taxonomy]):
     @classmethod
     def domains(cls) -> set[TaxonomyDomain]:
         """Provide the default `domains` value for generated instances."""
-        # Return at least one domain
         domains = [TaxonomyDomain.MATERIALS]
         if cls.__faker__.boolean():
             domains.append(TaxonomyDomain.PRODUCTS)

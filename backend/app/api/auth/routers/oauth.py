@@ -31,7 +31,7 @@ async def remove_oauth_association(
     redis: RedisDep,
     payload: Annotated[StepUpRequest | None, Body()] = None,
 ) -> None:
-    """Remove a linked OAuth account (password and MFA step-up where the account has them)."""
+    """Remove a linked OAuth account (asks for the password and authentication code where the account has them)."""
     current_password = payload.current_password.get_secret_value() if payload and payload.current_password else None
     await oauth_accounts.remove_oauth_association(
         provider=provider,

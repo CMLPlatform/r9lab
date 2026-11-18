@@ -117,7 +117,7 @@ async def resolve_owner_id(session: AsyncSessionDep, owner: str, viewer: User | 
     """
     if owner == CURRENT_USER_OWNER:
         if viewer is None:
-            raise HTTPException(status_code=401, detail="Authentication required")
+            raise HTTPException(status_code=401, detail="Sign in to view your products.")
         return viewer.id
     lookup_username = cast("str", normalize_username(owner))
     user = (await session.execute(select(User).where(User.username == lookup_username))).unique().scalar_one_or_none()
@@ -158,7 +158,7 @@ async def get_user_products(
 ) -> Page[ProductRead] | Response:
     """Get base products collected by a specific user."""
     if user_id != current_user.id and not current_user.has_admin_access:
-        raise HTTPException(status_code=403, detail="Not authorized to view this user's products")
+        raise HTTPException(status_code=403, detail="You can only view your own products.")
 
     statement = select(Product).where(Product.owner_id == user_id, Product.parent_id.is_(None))
     payload = await _page_products(

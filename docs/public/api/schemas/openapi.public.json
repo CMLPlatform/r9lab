@@ -3739,7 +3739,7 @@
             "type": "boolean"
           },
           "mfa_token": {
-            "description": "Short-lived token for completing an MFA challenge",
+            "description": "Short-lived token for finishing two-step verification at sign-in",
             "title": "Mfa Token",
             "type": "string"
           }
@@ -5389,7 +5389,7 @@
         "type": "object"
       },
       "ProductSummary": {
-        "description": "Minimal product summary for embedding in unrelated contexts (e.g. material links).\n\nDeliberately narrower than ``ProductRead``: no owner, physical/circularity\nproperties, or other detail-view fields since no consumer needs them here.\nExtend with more fields only when an actual caller needs them.",
+        "description": "Minimal product summary for embedding in unrelated contexts (e.g. material links).\n\nNarrower than ``ProductRead``: no owner, physical/circularity\nproperties, or other detail-view fields since no consumer needs them here.\nExtend with more fields only when an actual caller needs them.",
         "properties": {
           "created_at": {
             "anyOf": [
@@ -5764,7 +5764,7 @@
         ],
         "properties": {
           "refresh_token": {
-            "description": "Refresh token obtained from login",
+            "description": "Refresh token returned when the user signed in",
             "format": "password",
             "title": "Refresh Token",
             "type": "string",
@@ -5819,10 +5819,10 @@
         "type": "object"
       },
       "RegistrationResponse": {
-        "description": "Uniform registration acknowledgement.\n\nDeliberately reveals nothing about whether the email already exists; the same\nbody is returned whether a new account was created or the address was already\ntaken, so registration cannot be used to enumerate accounts.",
+        "description": "Uniform registration acknowledgement.\n\nReveals nothing about whether the email already exists. The same body comes back\nwhether a new account was created or the address was taken, so registration\ncannot be used to list accounts.",
         "properties": {
           "detail": {
-            "default": "If the email address is available, a verification link has been sent. Please check your inbox.",
+            "default": "If the email address is available, we sent a verification link. Check your inbox.",
             "title": "Detail",
             "type": "string"
           }
@@ -6026,7 +6026,7 @@
                 "type": "null"
               }
             ],
-            "description": "Current authenticator code or a recovery code. Required when the account has MFA enabled.",
+            "description": "Current authenticator code or a recovery code. Required when the account has two-step verification on.",
             "title": "Mfa Code"
           }
         },
@@ -6564,7 +6564,7 @@
           },
           "mfa_enabled": {
             "default": false,
-            "description": "Whether TOTP MFA is enabled for this account.",
+            "description": "Whether two-step verification is on for this account.",
             "title": "Mfa Enabled",
             "type": "boolean"
           },
@@ -7210,7 +7210,7 @@
       "identifier": "Apache-2.0",
       "name": "Apache-2.0"
     },
-    "title": "R9lab \u2013 Data Collection API",
+    "title": "R9lab Data Collection API",
     "version": "1.0.0",
     "x-api-major": "v1",
     "x-api-version": "1.0.0",
@@ -7275,7 +7275,7 @@
             "description": "Too many attempts for this address or account. See the Retry-After header."
           }
         },
-        "summary": "Login with email and password for bearer-token clients",
+        "summary": "Sign in with email and password for bearer-token clients",
         "tags": [
           "auth"
         ],
@@ -7438,7 +7438,7 @@
     },
     "/v1/auth/mfa/challenge": {
       "post": {
-        "description": "Complete login for a user with TOTP already enabled.",
+        "description": "Finish signing in a user who has two-step verification on.",
         "operationId": "complete_mfa_challenge_v1_auth_mfa_challenge_post",
         "requestBody": {
           "content": {
@@ -7492,7 +7492,7 @@
     },
     "/v1/auth/mfa/oauth/claim": {
       "post": {
-        "description": "Claim a one-time OAuth MFA handoff and return pending MFA state.",
+        "description": "Claim a one-time social sign-in handoff that still needs two-step verification.",
         "operationId": "claim_oauth_mfa_handoff_v1_auth_mfa_oauth_claim_post",
         "requestBody": {
           "content": {
@@ -7538,7 +7538,7 @@
     },
     "/v1/auth/mfa/recovery-codes/regenerate": {
       "post": {
-        "description": "Reissue recovery codes after confirming a current TOTP code.",
+        "description": "Issue new recovery codes after confirming a current authentication code.",
         "operationId": "regenerate_recovery_codes_v1_auth_mfa_recovery_codes_regenerate_post",
         "requestBody": {
           "content": {
@@ -7592,7 +7592,7 @@
     },
     "/v1/auth/mfa/totp/confirm": {
       "post": {
-        "description": "Confirm TOTP enrollment, return one-time recovery codes, and replace the session.\n\nEnrolment signs out every other session. A client that authenticated with a bearer\ntoken gets new tokens in ``tokens``; a browser session gets new cookies.",
+        "description": "Finish setting up two-step verification, return one-time recovery codes, and replace the session.\n\nEnrolment signs out every other session. A client that authenticated with a bearer\ntoken gets new tokens in ``tokens``; a browser session gets new cookies.",
         "operationId": "confirm_totp_setup_v1_auth_mfa_totp_confirm_post",
         "requestBody": {
           "content": {
@@ -7646,7 +7646,7 @@
     },
     "/v1/auth/mfa/totp/disable": {
       "post": {
-        "description": "Turn off TOTP MFA after confirming the password and a current or recovery code.\n\nAccounts without a usable password (signed up with Google or GitHub) send only the code.",
+        "description": "Turn off two-step verification after confirming the password and a current or recovery code.\n\nAccounts without a usable password (signed up with Google or GitHub) send only the code.",
         "operationId": "disable_totp_v1_auth_mfa_totp_disable_post",
         "requestBody": {
           "content": {
@@ -7666,7 +7666,7 @@
             "description": "The password or the code is missing."
           },
           "401": {
-            "description": "MFA is not on for this account."
+            "description": "Two-step verification is not on for this account."
           },
           "403": {
             "description": "The password or the code is wrong."
@@ -7705,7 +7705,7 @@
     },
     "/v1/auth/mfa/totp/setup": {
       "post": {
-        "description": "Start authenticated TOTP enrollment for an account that opted into MFA.",
+        "description": "Start setting up two-step verification with an authenticator app.",
         "operationId": "start_totp_setup_v1_auth_mfa_totp_setup_post",
         "responses": {
           "200": {
@@ -7899,7 +7899,7 @@
     },
     "/v1/auth/session/login": {
       "post": {
-        "description": "Authenticate a browser client and return MFA challenge only when MFA is enabled.",
+        "description": "Sign in a browser client. Returns a two-step verification challenge only when the account has it on.",
         "operationId": "auth_session_login_v1_auth_session_login_post",
         "requestBody": {
           "content": {
@@ -7954,7 +7954,7 @@
             "description": "Too many attempts for this address or account. See the Retry-After header."
           }
         },
-        "summary": "Login with email and password for browser sessions",
+        "summary": "Sign in with email and password for browser sessions",
         "tags": [
           "auth"
         ],
@@ -13052,7 +13052,7 @@
     },
     "/v1/oauth/{provider}/associate": {
       "delete": {
-        "description": "Remove a linked OAuth account (password and MFA step-up where the account has them).",
+        "description": "Remove a linked OAuth account (asks for the password and authentication code where the account has them).",
         "operationId": "remove_oauth_association_v1_oauth__provider__associate_delete",
         "parameters": [
           {
@@ -13639,7 +13639,7 @@
     },
     "/v1/plugins/r9cam/cameras/{camera_id}/hls/{hls_path}": {
       "get": {
-        "description": "Forward an LL-HLS request to the camera over its WebSocket relay. Playlist requests return ``application/vnd.apple.mpegurl`` text; segment/part requests return binary ``video/mp4`` or ``video/iso.segment``. The frontend simply points ``hls.js`` / ``expo-video`` at this URL and the player walks the manifest on its own.",
+        "description": "Forward an LL-HLS request to the camera over its WebSocket relay. Playlist requests return ``application/vnd.apple.mpegurl`` text; segment/part requests return binary ``video/mp4`` or ``video/iso.segment``. The frontend points ``hls.js`` or ``expo-video`` at this URL, and the player reads the manifest itself.",
         "operationId": "proxy_hls_v1_plugins_r9cam_cameras__camera_id__hls__hls_path__get",
         "parameters": [
           {
@@ -13702,7 +13702,7 @@
     },
     "/v1/plugins/r9cam/cameras/{camera_id}/local-access": {
       "get": {
-        "description": "Relays GET /system/local-access to the Pi via the WebSocket connection. Returns the local API key and candidate IP addresses so the frontend can auto-configure Ethernet/USB-C direct access without manual key copying. Returns 503 when the camera is offline.",
+        "description": "Relays GET /system/local-access to the Raspberry Pi camera over the WebSocket connection. Returns the local API key and candidate IP addresses so the frontend can auto-configure Ethernet/USB-C direct access without manual key copying. Returns 503 when the camera is offline.",
         "operationId": "get_camera_local_access_v1_plugins_r9cam_cameras__camera_id__local_access_get",
         "parameters": [
           {
@@ -13758,7 +13758,7 @@
     },
     "/v1/plugins/r9cam/cameras/{camera_id}/preview-thumbnail": {
       "get": {
-        "description": "Serve the owner's cached preview thumbnail.\n\nOwner-checked (``UserOwnedCameraDep`` 404s for non-owners) and served off the\nprivate preview directory rather than the public ``/uploads/images`` mount, so\na camera id alone no longer grants a stranger a recent frame. Cached only\nprivately and revalidated, never long-lived immutable like the public mount.",
+        "description": "Serve the owner's cached preview thumbnail.\n\nOwner-checked (``UserOwnedCameraDep`` 404s for non-owners) and served off the\nprivate preview directory rather than the public ``/uploads/images`` mount, so\na camera id alone does not grant access to a recent frame. Cached only\nprivately and revalidated, never long-lived immutable like the public mount.",
         "operationId": "get_camera_preview_thumbnail_v1_plugins_r9cam_cameras__camera_id__preview_thumbnail_get",
         "parameters": [
           {
@@ -14096,7 +14096,7 @@
     },
     "/v1/plugins/r9cam/cameras/{camera_id}/telemetry": {
       "get": {
-        "description": "Return the most recent telemetry snapshot for the camera. Backed by a Redis cache with a 120s TTL so mosaic polling does not fan out one relay round-trip per camera on every refresh. Pass ``force_refresh=true`` to bypass the cache and re-fetch from the Pi.",
+        "description": "Return the most recent telemetry snapshot for the camera. Backed by a Redis cache with a 120s TTL so mosaic polling does not fan out one relay round-trip per camera on every refresh. Pass ``force_refresh=true`` to bypass the cache and re-fetch from the Raspberry Pi camera.",
         "operationId": "get_camera_telemetry_v1_plugins_r9cam_cameras__camera_id__telemetry_get",
         "parameters": [
           {
@@ -21059,7 +21059,7 @@
     },
     "/v1/users/me": {
       "delete": {
-        "description": "Delete the signed-in account, keeping its products under the anonymous system account.\n\nPersonal data is erased; contributed products and media stay on the platform without\nthe owner's name. Requires the current password, the same step-up as an email or\npassword change, and a current MFA code when the account has MFA enabled. An account\nwith neither must have signed in within the last few minutes. The former address gets\na notification email.",
+        "description": "Delete the signed-in account, keeping its products under the anonymous system account.\n\nPersonal data is erased; contributed products and media stay on the platform without\nthe owner's name. Requires the current password, the same step-up as an email or\npassword change, and a current authentication code when two-step verification is on. An account\nwith neither must have signed in within the last few minutes. The former address gets\na notification email.",
         "operationId": "delete_own_account_v1_users_me_delete",
         "requestBody": {
           "content": {
@@ -21083,10 +21083,10 @@
             "description": "Successful Response"
           },
           "400": {
-            "description": "The current password or MFA code is missing."
+            "description": "The current password or authentication code is missing."
           },
           "403": {
-            "description": "The current password or MFA code is invalid, or the account needs a fresh sign-in."
+            "description": "The current password or authentication code is wrong, or the account needs a fresh sign-in."
           },
           "409": {
             "description": "This account cannot be deleted (the last active superuser)."

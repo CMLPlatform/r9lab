@@ -1,4 +1,4 @@
-"""Pipe your webcam into the RPi camera API shape for local development.
+"""Pipe your webcam into the Raspberry Pi camera API for local development.
 
 Supports both connection modes:
 
@@ -73,7 +73,7 @@ def _ensure_camera() -> cv2.VideoCapture:
     if _CameraState.camera is None or not _CameraState.camera.isOpened():
         _CameraState.camera = cv2.VideoCapture(0)
         if not _CameraState.camera.isOpened():
-            logger.error("Could not open webcam — is one connected?")
+            logger.error("Could not open the webcam. Is one connected?")
             sys.exit(1)
         logger.info("Webcam opened (device 0)")
     return _CameraState.camera
@@ -175,10 +175,10 @@ async def _ws_main(backend_url: str, camera_id: str, api_key: str) -> None:
         try:
             logger.info("Connecting to %s ...", backend_url)
             async with websockets.connect(url, additional_headers=headers) as ws:
-                logger.info("Connected — waiting for commands")
+                logger.info("Connected; waiting for commands")
                 await _ws_loop(ws)
         except (OSError, websockets.exceptions.WebSocketException) as e:
-            logger.warning("Disconnected: %s — reconnecting in 3s", e)
+            logger.warning("Disconnected: %s; reconnecting in 3 s", e)
         release_camera()
         await asyncio.sleep(3)
 
@@ -309,10 +309,10 @@ def main() -> None:
         epilog="""
 examples:
   # HTTP mode: backend proxies to this server
-  python scripts/webcam_fake_camera.py
+  uv run python scripts/plugins/r9cam/webcam_fake_camera.py
 
   # WebSocket mode: connects to the backend relay
-  python scripts/webcam_fake_camera.py ws \\
+  uv run python scripts/plugins/r9cam/webcam_fake_camera.py ws \\
       --backend-url ws://localhost:8000/v1/plugins/r9cam/ws/connect \\
       --camera-id 550e8400-e29b-41d4-a716-446655440000 \\
       --api-key abc123

@@ -122,7 +122,7 @@ def test_allowed_hosts_derive_from_api_public_url() -> None:
 
 def test_staging_rejects_cors_regex() -> None:
     """Staging/production should reject the permissive dev CORS regex."""
-    with pytest.raises(ValidationError, match="CORS_ORIGIN_REGEX must not be set in production/staging"):
+    with pytest.raises(ValidationError, match="Remove CORS_ORIGIN_REGEX in production and staging"):
         CoreSettings(
             **_production_core_settings_kwargs(
                 environment=Environment.STAGING,
@@ -454,7 +454,7 @@ def test_production_rejects_missing_redis_secret_file(tmp_path: Path) -> None:
     kwargs["database"] = db
     kwargs["redis"] = RedisSettings()  # empty password triggers the error
 
-    with pytest.raises(ValidationError, match="REDIS_PASSWORD must not be empty"):
+    with pytest.raises(ValidationError, match="Set REDIS_PASSWORD in production and staging"):
         CoreSettings(**kwargs)
 
 

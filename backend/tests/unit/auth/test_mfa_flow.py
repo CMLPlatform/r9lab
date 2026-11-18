@@ -698,7 +698,7 @@ async def test_account_update_step_up_requires_current_password() -> None:
         )
 
     assert exc_info.value.status_code == status.HTTP_400_BAD_REQUEST
-    assert exc_info.value.detail == "Current password is required to change your email or password."
+    assert exc_info.value.detail == "Enter your current password to change your email or password."
 
 
 async def test_account_update_step_up_requires_mfa_code_when_enrolled() -> None:
@@ -711,7 +711,7 @@ async def test_account_update_step_up_requires_mfa_code_when_enrolled() -> None:
         )
 
     assert exc_info.value.status_code == status.HTTP_400_BAD_REQUEST
-    assert exc_info.value.detail == "Authentication code is required to change your email or password."
+    assert exc_info.value.detail == "Enter your authentication code to change your email or password."
     user_manager.password_helper.verify_and_update.assert_not_called()
 
 

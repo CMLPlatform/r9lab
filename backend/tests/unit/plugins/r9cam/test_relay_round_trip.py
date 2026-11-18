@@ -153,7 +153,7 @@ async def test_a_camera_dropping_mid_command_fails_the_caller_immediately(
     assert excinfo.value.status_code == 503
     assert "Retry-After" in (excinfo.value.headers or {})
     # Must be the disconnect response, not the deadline expiring on a still-pending command.
-    assert excinfo.value.detail == "Camera is not connected via WebSocket."
+    assert excinfo.value.detail == "The camera is offline. Check its power and network, then retry."
 
 
 async def test_a_command_crosses_worker_processes_to_reach_the_camera(
@@ -211,7 +211,7 @@ async def test_a_camera_no_worker_holds_fails_without_waiting_on_the_bridge(
         await relay_via_websocket(camera_id, method, path, redis=redis_client)
 
     assert excinfo.value.status_code == 503
-    assert excinfo.value.detail == "Camera is not connected via WebSocket."
+    assert excinfo.value.detail == "The camera is offline. Check its power and network, then retry."
     # The status alone cannot tell this apart from the deadline expiring, and an
     # expired deadline would mean a worker sat on it. An unqueued command proves
     # the bridge was skipped rather than attempted and abandoned.

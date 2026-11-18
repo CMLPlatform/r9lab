@@ -44,7 +44,7 @@ def verify_current_password(*, password_helper: PasswordHelperProtocol, password
         )
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Current password is invalid.",
+            detail="That password is wrong. Check it and try again.",
         )
 
 
@@ -59,12 +59,12 @@ def require_step_up_fields(user: User, *, current_password: str | None, mfa_code
     if user.has_usable_password and not current_password:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Current password is required to {action}.",
+            detail=f"Enter your current password to {action}.",
         )
     if user.mfa_enabled and not mfa_code:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Authentication code is required to {action}.",
+            detail=f"Enter your authentication code to {action}.",
         )
 
 
@@ -90,7 +90,7 @@ def require_step_up_password(
     if not current_password:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Current password is required to {action}.",
+            detail=f"Enter your current password to {action}.",
         )
     verify_current_password(password_helper=password_helper, password=current_password, user=user)
 

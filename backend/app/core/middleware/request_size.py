@@ -33,7 +33,7 @@ def _payload_too_large_response(limit_bytes: int) -> JSONResponse:
     """Build the shared API error payload for oversized requests."""
     return JSONResponse(
         status_code=413,
-        content={"detail": {"message": f"Request body too large. Maximum size: {limit_bytes} bytes"}},
+        content={"detail": {"message": f"Request body is too large. The limit is {limit_bytes} bytes."}},
     )
 
 
@@ -41,7 +41,7 @@ def _malformed_content_length_response() -> JSONResponse:
     """Build the shared API error payload for malformed Content-Length values."""
     return JSONResponse(
         status_code=400,
-        content={"detail": {"message": "Malformed Content-Length header."}},
+        content={"detail": {"message": "The Content-Length header is not a number. Fix it or remove it."}},
     )
 
 

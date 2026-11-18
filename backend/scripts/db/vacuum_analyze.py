@@ -51,7 +51,7 @@ def main() -> None:
     """Vacuum and analyse a named table set."""
     logging.basicConfig(level=logging.INFO, format="%(message)s")
     parser = argparse.ArgumentParser(prog="vacuum_analyze", description="Vacuum and analyse bulk-loaded tables.")
-    parser.add_argument("--tables", choices=list(TABLE_SETS), default=BULK)
+    parser.add_argument("--tables", choices=list(TABLE_SETS), default=BULK, help="which table set to vacuum")
     tables = TABLE_SETS[parser.parse_args().tables]
 
     async def run() -> None:

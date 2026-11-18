@@ -36,8 +36,8 @@ router = PublicAPIRouter()
         "Forward an LL-HLS request to the camera over its WebSocket relay. "
         "Playlist requests return ``application/vnd.apple.mpegurl`` text; "
         "segment/part requests return binary ``video/mp4`` or ``video/iso.segment``. "
-        "The frontend simply points ``hls.js`` / ``expo-video`` at this URL and the "
-        "player walks the manifest on its own."
+        "The frontend points ``hls.js`` or ``expo-video`` at this URL, and the "
+        "player reads the manifest itself."
     ),
 )
 async def proxy_hls(
@@ -75,7 +75,7 @@ async def proxy_hls(
             raise
     else:
         if last_exc is None:
-            raise HTTPException(status_code=404, detail="HLS manifest is not yet available")
+            raise HTTPException(status_code=404, detail="The stream is still starting. Retry in a few seconds.")
         raise last_exc
     return Response(
         content=relay_response.content,

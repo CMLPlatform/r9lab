@@ -82,7 +82,7 @@ class CoreSettings(RelabBaseSettings):
         """Fail fast, listing the valid values, when ENVIRONMENT is unset."""
         if isinstance(data, dict) and not data.get("environment"):
             valid = ", ".join(member.value for member in Environment)
-            msg = f"ENVIRONMENT must be set explicitly (one of: {valid}). No default is applied."
+            msg = f"ENVIRONMENT must be set explicitly (one of: {valid}). Set it in the environment."
             raise ValueError(msg)
         return data
 
@@ -340,7 +340,7 @@ class CoreSettings(RelabBaseSettings):
         errors: list[str] = []
 
         if self.cors_origin_regex == DEFAULT_CORS_ORIGIN_REGEX:
-            errors.append("CORS_ORIGIN_REGEX must not be set in production/staging")
+            errors.append("Remove CORS_ORIGIN_REGEX in production and staging, or set your own pattern")
         elif self.cors_origin_regex is not None and not (
             self.cors_origin_regex.startswith("^") and self.cors_origin_regex.endswith("$")
         ):
@@ -349,10 +349,10 @@ class CoreSettings(RelabBaseSettings):
         errors.extend(self.database.role_security_errors())
 
         if not self.redis.password.get_secret_value():
-            errors.append("REDIS_PASSWORD must not be empty in production")
+            errors.append("Set REDIS_PASSWORD in production and staging")
 
         if self.bootstrap_superuser_email == DEFAULT_BOOTSTRAP_SUPERUSER_EMAIL:
-            errors.append("BOOTSTRAP_SUPERUSER_EMAIL must not be the default placeholder in production")
+            errors.append("Set BOOTSTRAP_SUPERUSER_EMAIL to a real address in production and staging")
 
         if self.api_public_url.scheme != HTTPS_SCHEME:
             errors.append("API_PUBLIC_URL must use https in production/staging")

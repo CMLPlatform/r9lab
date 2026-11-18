@@ -36,7 +36,7 @@ router = APIRouter()
     name="auth:bearer.login",
     response_model=RefreshTokenResponse | MfaPendingResponse,
     responses=AUTH_ERROR_RESPONSES,
-    summary="Login with email and password for bearer-token clients",
+    summary="Sign in with email and password for bearer-token clients",
     dependencies=[limiter.dependency(LOGIN_IP_RATE_LIMIT)],
 )
 async def bearer_login(
@@ -66,7 +66,7 @@ async def bearer_login(
     name="auth:session.login",
     response_model=MfaPendingResponse | None,
     responses=AUTH_ERROR_RESPONSES,
-    summary="Login with email and password for browser sessions",
+    summary="Sign in with email and password for browser sessions",
     dependencies=[limiter.dependency(LOGIN_IP_RATE_LIMIT)],
 )
 async def session_login(
@@ -77,7 +77,7 @@ async def session_login(
     cookie_strategy: Annotated[Strategy, Depends(cookie_auth_backend.get_strategy)],
     device_token: DeviceCookie = None,
 ) -> MfaPendingResponse | None:
-    """Authenticate a browser client and return MFA challenge only when MFA is enabled."""
+    """Sign in a browser client. Returns a two-step verification challenge only when the account has it on."""
     user = await login_flow.authenticate_first_factor(
         credentials, user_manager, "session", response=response, device_token=device_token
     )

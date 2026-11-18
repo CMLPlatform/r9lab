@@ -114,7 +114,7 @@ def release_files(directory: Path) -> list[Path]:
     violations = verify(directory)
     if violations:
         for violation in violations:
-            logger.error("VERIFICATION FAILURE — %s", violation)
+            logger.error("Verification failed: %s", violation)
         msg = f"{len(violations)} verification failure(s) in {directory}; refusing to upload."
         raise SystemExit(msg)
     if (directory / REVIEW_DIR).exists():
@@ -239,7 +239,7 @@ def main() -> None:
         publish(args.deposition, sandbox=args.sandbox)
         return
     if args.dir is None:
-        msg = "--dir is required."
+        msg = "--dir is required unless you pass --publish."
         raise SystemExit(msg)
     deposit(args.dir, ReleaseMetadata(), sandbox=args.sandbox, parent=args.parent, deposition_id=args.deposition)
 

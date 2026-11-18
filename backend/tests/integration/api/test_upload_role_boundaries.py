@@ -180,7 +180,9 @@ class TestImageCapsFollowTheUploaderRole:
         response = await api_client_user.post(f"/v1/products/{product.id}/images", files=_png_file(40, 40))
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST, response.text
-        assert response.json()["detail"] == "Image has 1600 pixels, exceeding the maximum allowed 1000."
+        assert response.json()["detail"] == (
+            "Image has 1600 pixels, exceeding the maximum allowed 1000. Resize the image and upload it again."
+        )
 
     async def test_lab_user_gets_the_lab_cap(
         self, api_client_lab_user: AsyncClient, db_session: AsyncSession, db_lab_user: User

@@ -227,7 +227,7 @@ async def test_unreachable_redis_returns_503_not_409(redis_client: Redis) -> Non
             pass
 
     assert exc_info.value.status_code == 503
-    assert "Retry later" in exc_info.value.detail
+    assert "Retry in a few seconds" in exc_info.value.detail
 
 
 @pytest.mark.parametrize(

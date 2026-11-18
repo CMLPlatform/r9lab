@@ -89,7 +89,6 @@ def seed_taxonomy() -> None:
     logger.info("Starting %s %s seeding...", TAXONOMY_NAME, TAXONOMY_VERSION)
 
     with sync_session_context() as session:
-        # Get or create taxonomy
         taxonomy = get_or_create_taxonomy(
             session,
             name=TAXONOMY_NAME,
@@ -108,7 +107,6 @@ def seed_taxonomy() -> None:
             logger.info("Taxonomy already has %d categories, skipping seeding", existing_count)
             return
 
-        # Load rows from CSV
         rows = load_hs_rows_from_csv(CSV_PATH)
 
         # Seed categories

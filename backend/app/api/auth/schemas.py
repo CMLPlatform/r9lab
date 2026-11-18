@@ -166,7 +166,7 @@ class UserRead(UserBase, fastapi_users_schemas.BaseUser[uuid.UUID]):
     """Read schema for users."""
 
     oauth_accounts: list[OAuthAccountRead] = Field(default_factory=list, description="List of linked OAuth accounts.")
-    mfa_enabled: bool = Field(default=False, description="Whether TOTP MFA is enabled for this account.")
+    mfa_enabled: bool = Field(default=False, description="Whether two-step verification is on for this account.")
     has_usable_password: bool = Field(
         default=True,
         description="Whether the account has a user-set password (false for OAuth-only accounts). "
@@ -290,7 +290,7 @@ class RefreshTokenRequest(BaseModel):
 
     model_config = ConfigDict(extra="forbid", json_schema_extra={"examples": REFRESH_TOKEN_REQUEST_EXAMPLES})
 
-    refresh_token: SecretStr = Field(description="Refresh token obtained from login")
+    refresh_token: SecretStr = Field(description="Refresh token returned when the user signed in")
 
 
 class RefreshTokenResponse(BaseModel):
@@ -308,7 +308,7 @@ class MfaPendingResponse(BaseModel):
     """Response returned after the first authentication factor succeeds."""
 
     mfa_required: bool = True
-    mfa_token: str = Field(description="Short-lived token for completing an MFA challenge")
+    mfa_token: str = Field(description="Short-lived token for finishing two-step verification at sign-in")
 
 
 class MfaOAuthClaimRequest(BaseModel):
@@ -348,7 +348,9 @@ class StepUpRequest(BaseModel):
         default=None,
         min_length=6,
         max_length=20,
-        description="Current authenticator code or a recovery code. Required when the account has MFA enabled.",
+        description=(
+            "Current authenticator code or a recovery code. Required when the account has two-step verification on."
+        ),
     )
 
 

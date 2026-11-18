@@ -74,7 +74,7 @@ class CrossSiteRequestMiddleware:
                 response = build_problem_response(
                     request=request,
                     status_code=403,
-                    detail="Cross-site request refused.",
+                    detail="Cross-site request refused. Send it from the R9lab app.",
                 )
                 await response(scope, receive, send)
                 return
