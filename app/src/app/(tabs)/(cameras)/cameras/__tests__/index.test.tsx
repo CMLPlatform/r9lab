@@ -324,7 +324,7 @@ describe('CamerasScreen', () => {
     await fireEvent.press(screen.getByText('Capture 1'));
 
     expect(
-      screen.getByText('Capture failed — check the cameras are online and try again.'),
+      screen.getByText('Capture failed. Check the cameras are online and try again.'),
     ).toBeOnTheScreen();
   });
 
@@ -401,7 +401,7 @@ describe('CamerasScreen', () => {
     await fireEvent(screen.getByLabelText('Camera: Offline Cam'), 'longPress');
 
     await waitFor(() =>
-      expect(screen.getByText("Offline Cam is offline — can't capture.")).toBeOnTheScreen(),
+      expect(screen.getByText("Offline Cam is offline. Can't capture.")).toBeOnTheScreen(),
     );
     // Selection mode must NOT have been entered
     expect(screen.queryByText(SELECTED_PATTERN)).toBeNull();

@@ -4,7 +4,7 @@ import { AccessibilityInfo, Platform, View } from 'react-native';
 import Animated, { FadeInDown, FadeOutUp, ReduceMotion } from 'react-native-reanimated';
 import { AppText } from './AppText';
 
-const OFFLINE_MESSAGE = "Offline — your captures will send when you're back online";
+const OFFLINE_MESSAGE = "Offline. Your captures will send when you're back online";
 
 /** Persistent strip stating the offline contract: nothing is lost, sends resume on reconnect. */
 export function OfflineBanner() {

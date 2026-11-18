@@ -317,7 +317,7 @@ describe('CaptureScreen', () => {
       await fireEvent.changeText(screen.getByPlaceholderText(NAME_PLACEHOLDER), 'Bolt');
       await fireEvent.press(screen.getByText('Create & add another'));
 
-      expect(await screen.findByText('Bolt queued — sends when online')).toBeOnTheScreen();
+      expect(await screen.findByText('Bolt queued. Sends when online')).toBeOnTheScreen();
       expect(screen.getByPlaceholderText(NAME_PLACEHOLDER).props.value).toBe('');
       // The buttons belong to the new draft, not the queued one.
       expect(screen.getByText('Create component')).toBeOnTheScreen();

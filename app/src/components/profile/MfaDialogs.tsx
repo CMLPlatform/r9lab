@@ -110,8 +110,8 @@ export function MfaDialogs({
           style={[local.field, { borderColor: theme.colors.outline }]}
         />
         <AppText variant="caption" className="mt-2 text-muted-foreground">
-          Signed up with Google or GitHub? Use your R9lab account password — if you never set one,
-          create it with “Forgot password” on the login screen first.
+          Signed up with Google or GitHub? Use your R9lab account password. If you never set one,
+          create it with 'Forgot password' on the login screen first.
         </AppText>
 
         <View className="mt-4">
@@ -205,7 +205,7 @@ function DisableMfaDialog({
           mfa.useRecoveryCode
             ? 'one of your saved recovery codes'
             : 'a code from your authenticator app'
-        } to confirm it’s you.`}
+        } to confirm it's you.`}
       </AppText>
 
       {mfa.disableNeedsPassword ? (
@@ -311,8 +311,8 @@ function RegenerateCodesDialog({
         Generate new recovery codes
       </AppText>
       <AppText className="opacity-75 mb-4">
-        Enter a code from your authenticator app. This replaces your old codes — any you
-        haven&apos;t used will stop working.
+        Enter a code from your authenticator app. This replaces your old codes. Any you haven&apos;t
+        used will stop working.
       </AppText>
 
       <View className="mt-4">

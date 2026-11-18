@@ -200,7 +200,7 @@ async function reportQueuedCreate(
   draft: Product,
   created: Promise<number>,
 ) {
-  feedback.toast(`${name} queued — sends when online`);
+  feedback.toast(`${name} queued. Sends when online`);
   try {
     await created;
   } catch (err) {

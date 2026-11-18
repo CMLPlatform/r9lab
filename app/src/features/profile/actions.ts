@@ -115,7 +115,7 @@ export function useProfileActions({
     feedback.alert({
       title: 'Sign out everywhere?',
       message:
-        'This ends your session on every device, including this one. You’ll need to sign in again.',
+        "This ends your session on every device, including this one. You'll need to sign in again.",
       buttons: [
         { text: 'Cancel', style: 'cancel' },
         {

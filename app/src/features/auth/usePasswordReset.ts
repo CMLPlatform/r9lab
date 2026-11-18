@@ -43,7 +43,11 @@ export function useForgotPassword() {
       setSuccess(true);
     } catch (err) {
       logError('Forgot password error:', err);
-      setError(err instanceof ApiError ? err.message : 'Something went wrong. Try again later.');
+      setError(
+        err instanceof ApiError
+          ? err.message
+          : "Couldn't send the reset link. Try again in a moment.",
+      );
     }
   });
 

@@ -13,7 +13,8 @@ import { getErrorMessage } from '@/utils/errors';
 
 type DialogApi = ReturnType<typeof useDialog>;
 
-export const INVALID_CREDENTIALS_MESSAGE = 'Invalid email or password';
+export const INVALID_CREDENTIALS_MESSAGE =
+  'Email or password is wrong. Check both, or reset your password.';
 
 async function attemptPasswordLogin({
   email,
@@ -65,7 +66,7 @@ async function attemptPasswordLogin({
   } catch (error: unknown) {
     dialog.alert({
       title: "Couldn't sign in",
-      message: getErrorMessage(error, 'Unable to reach server. Please try again later.'),
+      message: getErrorMessage(error, "Can't reach R9lab. Check your connection and try again."),
     });
   }
 }

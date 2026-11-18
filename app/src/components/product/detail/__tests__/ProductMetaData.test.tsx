@@ -7,7 +7,7 @@ import type { Product } from '@/types/Product';
 const baseProduct: Product = { ..._base, id: 42 };
 const PRODUCT_ID_PATTERN = /Product ID:/;
 const CREATED_PATTERN = /Created:/;
-const LAST_UPDATED_PATTERN = /Last Updated:/;
+const LAST_UPDATED_PATTERN = /Last updated:/;
 const OWNER_PATTERN = /Owner:/;
 const ANONYMOUS_PATTERN = /Anonymous/;
 const TESTUSER_PATTERN = /testuser/;

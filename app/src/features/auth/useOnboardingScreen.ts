@@ -31,7 +31,7 @@ export function useOnboardingScreen() {
     } catch (error: unknown) {
       dialog.alert({
         title: "Couldn't save username",
-        message: getErrorMessage(error, 'It might already be taken.'),
+        message: getErrorMessage(error, 'That username may already be taken. Pick another.'),
       });
     }
   });

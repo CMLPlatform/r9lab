@@ -68,7 +68,7 @@ export function CameraConnectionCard({
                 style={{ backgroundColor: statusColor }}
               />
               <AppText variant="title" className="flex-1" style={{ color: statusColor }}>
-                Connected - Remote · ~2 s
+                Connected via relay · about 2 s
               </AppText>
             </>
           ) : (
@@ -111,9 +111,9 @@ export function CameraConnectionCard({
           {localConnection.mode === 'local'
             ? `Via Ethernet · ${localConnection.localBaseUrl ?? ''}`
             : localConnection.mode === 'probing' && isOnline
-              ? 'Camera online — checking local network for a faster direct connection'
+              ? 'Camera online. Checking the local network for a faster direct connection'
               : isOnline
-                ? 'Via WebSocket relay — connect Ethernet for ~0.4 s latency instead of ~2 s'
+                ? 'Via relay. Connect Ethernet to cut latency from about 2 s to about 0.4 s'
                 : camera.status?.connection === 'offline'
                   ? 'Waiting for camera to connect via WebSocket relay'
                   : statusLabel}

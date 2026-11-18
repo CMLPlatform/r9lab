@@ -119,7 +119,9 @@ export function useOAuthAssociations({
     }
 
     if (!(authorization.ok && authorization.authorizationUrl)) {
-      throw new Error(authorization.detail || 'Failed to reach association endpoint.');
+      throw new Error(
+        authorization.detail || "Couldn't reach the sign-in service. Try again in a moment.",
+      );
     }
 
     if (!isAllowedOAuthRedirectUrl(authorization.authorizationUrl)) {

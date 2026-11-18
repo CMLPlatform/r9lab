@@ -148,7 +148,9 @@ describe('authLogin', () => {
       json: async () => ({ token_type: 'bearer' }),
     } as never);
 
-    await expect(login('user', 'pass')).rejects.toThrow('Invalid login response.');
+    await expect(login('user', 'pass')).rejects.toThrow(
+      'Something went wrong on our side. Try again in a moment.',
+    );
 
     expect(persistAccessToken).not.toHaveBeenCalled();
   });
@@ -161,7 +163,7 @@ describe('authLogin', () => {
     fetchWithTimeout.mockRejectedValueOnce(thrown as never);
 
     await expect(login('user', 'pass')).rejects.toThrow(
-      'Unable to reach server. Please try again later.',
+      "Can't reach R9lab. Check your connection and try again.",
     );
   });
 

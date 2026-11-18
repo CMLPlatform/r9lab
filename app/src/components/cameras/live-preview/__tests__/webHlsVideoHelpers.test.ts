@@ -84,7 +84,7 @@ describe('setupWebHlsVideo', () => {
     expect(markLive).toHaveBeenCalled();
 
     video.handlers.get('error')?.();
-    expect(markError).toHaveBeenCalledWith('HLS playback failed');
+    expect(markError).toHaveBeenCalledWith('Live preview stopped. Try loading it again.');
 
     cleanup();
     expect(video.removeAttribute).toHaveBeenCalledWith('src');

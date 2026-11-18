@@ -17,7 +17,7 @@ export async function sendVerificationEmail({
   try {
     const ok = await verify(email);
     if (ok) {
-      feedback.toast('Verification email sent. Please check your inbox.');
+      feedback.toast('Verification email sent. Check your inbox.');
       return;
     }
   } catch {

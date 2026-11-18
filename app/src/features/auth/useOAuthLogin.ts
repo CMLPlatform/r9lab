@@ -37,7 +37,7 @@ function getOAuthErrorMessage(error?: string, platform: 'ios' | 'android' | 'web
     return 'Access was declined. Try again and allow access to sign in.';
   }
   if (error === 'invalid_scope') {
-    return `Invalid scope requested. Email ${SUPPORT_EMAIL} so we can fix it.`;
+    return `Sign-in with this provider isn't set up correctly. Email ${SUPPORT_EMAIL}.`;
   }
   if (error === 'server_error' || error === 'temporarily_unavailable') {
     return 'The provider is temporarily unavailable. Please try again in a moment.';

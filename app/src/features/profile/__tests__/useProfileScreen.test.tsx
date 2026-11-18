@@ -173,9 +173,7 @@ describe('useProfileScreen', () => {
     });
 
     expect(mockVerify).toHaveBeenCalledWith('tester@example.com');
-    expect(mockFeedback.toast).toHaveBeenCalledWith(
-      'Verification email sent. Please check your inbox.',
-    );
+    expect(mockFeedback.toast).toHaveBeenCalledWith('Verification email sent. Check your inbox.');
   });
 
   it('updates the recurring email preference and refetches the profile', async () => {

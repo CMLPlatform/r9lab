@@ -187,7 +187,7 @@ describe('ProfileSecuritySection management', () => {
     await renderSection(true);
 
     await fireEvent.press(
-      screen.getByLabelText('Generate new recovery codes, Replace your saved backup codes'),
+      screen.getByLabelText('Generate new recovery codes, Replace your saved recovery codes'),
     );
     await fireEvent.changeText(await screen.findByLabelText('Authentication code'), '654321');
 

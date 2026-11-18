@@ -51,8 +51,8 @@ export function useNewAccountScreen() {
 
     if (!result.success) {
       dialog.alert({
-        title: 'Registration failed',
-        message: result.error || 'Account creation failed. Please try again.',
+        title: "Couldn't create your account",
+        message: result.error || "Couldn't create your account. Try again.",
       });
       return;
     }

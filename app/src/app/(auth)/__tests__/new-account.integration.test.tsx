@@ -229,7 +229,7 @@ describe('NewAccount screen', () => {
     expect(register).toHaveBeenCalled();
     expect(mockDialogApi.alert).toHaveBeenCalledWith(
       expect.objectContaining({
-        title: 'Registration failed',
+        title: "Couldn't create your account",
         message: 'Email already in use',
       }),
     );

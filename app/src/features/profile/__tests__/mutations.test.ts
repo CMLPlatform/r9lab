@@ -140,9 +140,7 @@ describe('sendVerificationEmail', () => {
     await sendVerificationEmail({ email: 'a@b.com', feedback: feedback as never });
 
     expect(mockVerify).toHaveBeenCalledWith('a@b.com');
-    expect(feedback.toast).toHaveBeenCalledWith(
-      'Verification email sent. Please check your inbox.',
-    );
+    expect(feedback.toast).toHaveBeenCalledWith('Verification email sent. Check your inbox.');
     expect(feedback.error).not.toHaveBeenCalled();
   });
 

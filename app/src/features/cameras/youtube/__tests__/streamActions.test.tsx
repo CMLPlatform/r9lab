@@ -87,7 +87,7 @@ describe('camera stream action hooks', () => {
       result.current.handleCardTap({ id: 'cam-1', name: 'Camera 1' } as never);
     });
 
-    expect(feedback.toast).toHaveBeenCalledWith("Offline Cam is offline — can't stream.");
+    expect(feedback.toast).toHaveBeenCalledWith("Offline Cam is offline. Can't stream.");
     expect(openStreamDialog).toHaveBeenCalledWith('cam-1', 'Camera 1', 'Desk Radio');
 
     await rerender({ streamModeEnabled: false, selectionMode: false });

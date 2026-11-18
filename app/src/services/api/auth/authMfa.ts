@@ -73,7 +73,7 @@ function mapTotpSetup(data: unknown): TotpSetup {
     typeof payload.secret !== 'string' ||
     typeof payload.otpauth_uri !== 'string'
   ) {
-    throw new Error('Invalid MFA setup response.');
+    throw new Error('Something went wrong on our side. Try again in a moment.');
   }
   return {
     setupToken: payload.setup_token,
@@ -107,7 +107,7 @@ async function persistMfaLoginResponse(response: Response): Promise<void> {
   // Only the browser transport authenticates with cookies, so a bodyless 204 is
   // a valid session there. On native it means no bearer token was issued.
   if (response.status === 204) {
-    if (!isWeb()) throw new Error('Invalid MFA login response.');
+    if (!isWeb()) throw new Error('Something went wrong on our side. Try again in a moment.');
     markWebSessionActive();
     return;
   }
@@ -119,7 +119,7 @@ async function persistMfaLoginResponse(response: Response): Promise<void> {
     }
     return;
   }
-  throw new Error('Invalid MFA login response.');
+  throw new Error('Something went wrong on our side. Try again in a moment.');
 }
 
 export async function startTotpSetup(): Promise<TotpSetup> {
@@ -137,7 +137,7 @@ export async function claimOAuthMfaHandoff(mfaHandoff: string): Promise<MfaLogin
   );
   const pending = parseMfaPendingPayload(await response.json().catch(() => null));
   if (!pending) {
-    throw new Error('Invalid MFA handoff response.');
+    throw new Error('Something went wrong on our side. Try again in a moment.');
   }
   return pending;
 }

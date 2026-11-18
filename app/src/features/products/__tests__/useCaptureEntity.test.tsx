@@ -366,7 +366,7 @@ describe('useCaptureEntity', () => {
           idempotencyKey: expect.any(String),
         }),
       );
-      expect(mockToast).toHaveBeenCalledWith('Bolt queued — sends when online');
+      expect(mockToast).toHaveBeenCalledWith('Bolt queued. Sends when online');
       expect(result.current.name).toBe('');
       expect(result.current.images).toEqual([]);
       expect(result.current.amount).toBe(1);

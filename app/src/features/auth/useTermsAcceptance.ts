@@ -49,7 +49,7 @@ export function useTermsAcceptance() {
       // Refetch rather than patch locally: the server owns the version it recorded.
       await refetch(true);
       feedback.toast(
-        'Thank you — your contributions can be included in curated datasets once they are published.',
+        'Thanks. Your contributions can be included in curated datasets once they are published.',
       );
     } catch (error) {
       feedback.error(

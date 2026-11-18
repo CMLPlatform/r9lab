@@ -13,7 +13,7 @@ export function ContributorTermsAction() {
     <ProfileAction
       icon="info"
       title="Contributor terms"
-      subtitle="Not accepted — your records stay out of any published dataset"
+      subtitle="Not accepted. Your records stay out of any published dataset"
       onPress={reopen}
     />
   );

@@ -30,7 +30,7 @@ export async function register(
     });
 
     if (!response.ok) {
-      await throwFromResponse(response, 'Registration failed. Please try again.');
+      await throwFromResponse(response, "Couldn't create your account. Try again.");
     }
     return { success: true };
   } catch (error) {
@@ -38,7 +38,7 @@ export async function register(
     if (error instanceof ApiError) {
       return {
         success: false,
-        error: getErrorMessage(error, 'Registration failed. Please try again.'),
+        error: getErrorMessage(error, "Couldn't create your account. Try again."),
       };
     }
     return { success: false, error: 'Network error. Please check your connection and try again.' };
