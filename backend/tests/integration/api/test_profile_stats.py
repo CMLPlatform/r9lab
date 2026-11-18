@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.auth.models import User
+from app.api.auth.preferences import ProfileVisibility
 from app.api.data_collection.crud.profile_stats import compute_profile_stats
 from app.api.data_collection.models.product import Product
 from app.api.file_storage.models import Image, MediaParentType
@@ -179,3 +180,47 @@ async def test_public_profile_caches_for_others_but_not_for_the_owner(
         assert (await api_client.get(path)).json()["product_count"] == before
     with override_authenticated_user(test_app, db_superuser, superuser=True):
         assert (await api_client.get(path)).json()["product_count"] == before + 1
+
+
+async def test_public_profile_counts_drop_after_deletes(
+    db_session: AsyncSession,
+    api_client_superuser: AsyncClient,
+    db_superuser: User,
+) -> None:
+    """Deleting an image or a product lowers the owner's counts on the next read."""
+    path = f"/v1/profiles/{db_superuser.username}"
+    created = await api_client_superuser.post("/v1/products", json={"name": "Kettle"})
+    assert created.status_code == 201
+    product_id = created.json()["id"]
+    image = Image(
+        filename="k.png", file="k.png", upload_size_bytes=1, parent_type=MediaParentType.PRODUCT, parent_id=product_id
+    )
+    db_session.add(image)
+    await db_session.flush()
+    assert (await api_client_superuser.get(path)).json()["image_count"] == 1
+
+    deleted = await api_client_superuser.delete(f"/v1/products/{product_id}/images/{image.id}")
+    assert deleted.status_code == 204
+    assert (await api_client_superuser.get(path)).json()["image_count"] == 0
+
+    assert (await api_client_superuser.delete(f"/v1/products/{product_id}")).status_code == 204
+    assert (await api_client_superuser.get(path)).json()["product_count"] == 0
+
+
+async def test_public_profile_checks_visibility_before_the_cache(
+    db_session: AsyncSession,
+    api_client: AsyncClient,
+    test_app: FastAPI,
+    db_user: User,
+    db_superuser: User,
+) -> None:
+    """A profile made private stops showing at once, even with its stats still cached."""
+    path = f"/v1/profiles/{db_superuser.username}"
+    with override_authenticated_user(test_app, db_user):
+        assert (await api_client.get(path)).status_code == 200
+
+    db_superuser.preferences = {**db_superuser.preferences, "profile_visibility": ProfileVisibility.PRIVATE.value}
+    await db_session.flush()
+
+    with override_authenticated_user(test_app, db_user):
+        assert (await api_client.get(path)).status_code == 404
