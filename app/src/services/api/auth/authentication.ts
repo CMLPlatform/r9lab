@@ -41,7 +41,7 @@ export async function register(
         error: getErrorMessage(error, "Couldn't create your account. Try again."),
       };
     }
-    return { success: false, error: 'Network error. Please check your connection and try again.' };
+    return { success: false, error: 'Network error. Check your connection and try again.' };
   }
 }
 
@@ -67,7 +67,7 @@ export async function updateUser(updates: Partial<User>): Promise<User | undefin
     });
 
     if (!response.ok) {
-      await throwFromResponse(response, 'Failed to update user profile');
+      await throwFromResponse(response, "Couldn't update your profile. Try again.");
     }
 
     return await getUser(true);
@@ -93,7 +93,7 @@ export async function unlinkOAuth(
     });
 
     if (!response.ok) {
-      await throwFromResponse(response, `Failed to unlink ${provider} account`);
+      await throwFromResponse(response, `Couldn't unlink your ${provider} account. Try again.`);
     }
 
     authRuntime.user = undefined;
@@ -114,7 +114,7 @@ export async function deleteAccount(currentPassword?: string, mfaCode?: string):
     body: JSON.stringify({ current_password: currentPassword, mfa_code: mfaCode }),
   });
   if (!response.ok) {
-    await throwFromResponse(response, 'Failed to delete account');
+    await throwFromResponse(response, "Couldn't delete your account. Try again.");
   }
   // The server already revoked every session; drop the local copies too.
   await clearCachedAuthState();

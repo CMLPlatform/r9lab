@@ -10,7 +10,7 @@ export async function fetchTopCategories(limit = 10): Promise<ApiCategoryStat[]>
   url.searchParams.set('limit', String(limit));
   const response = await apiFetch(url, { method: 'GET' });
   if (!response.ok) {
-    await throwFromResponse(response, 'Failed to load common types');
+    await throwFromResponse(response, "Couldn't load the common product types. Try again.");
   }
   const data = await response.json();
   return (data.categories ?? []) as ApiCategoryStat[];

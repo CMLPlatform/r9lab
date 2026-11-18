@@ -167,7 +167,7 @@ function toComponent(
 async function fetchOne<T extends ProductMapperPayload>(url: URL): Promise<T | null> {
   const response = await apiFetch(url, { method: 'GET' });
   if (response.status === 404) return null;
-  if (!response.ok) await throwFromResponse(response, 'Failed to fetch product');
+  if (!response.ok) await throwFromResponse(response, "Couldn't load the product. Try again.");
   return (await response.json()) as T;
 }
 
@@ -215,7 +215,7 @@ export async function getComponentTree(id: number): Promise<Product[] | null> {
   url.searchParams.append('recursion_depth', String(MAX_COMPONENT_DEPTH));
   const response = await apiFetch(url, { method: 'GET' });
   if (response.status === 400) return null;
-  if (!response.ok) await throwFromResponse(response, 'Failed to fetch components');
+  if (!response.ok) await throwFromResponse(response, "Couldn't load the components. Try again.");
   const data = (await response.json()) as ApiComponentTreeItem[];
   // NOTE: no viewer lookup, so `ownedBy` is never 'me'; callers read the measurements only.
   return data.map((component) => toComponent(component));
@@ -385,7 +385,7 @@ export async function products(query: ProductsQuery = {}): Promise<PaginatedResp
 
   // No session: the signed-out view of "my products" is an empty page.
   if (authenticated && response.status === 401) return emptyPage;
-  if (!response.ok) await throwFromResponse(response, 'Failed to fetch products');
+  if (!response.ok) await throwFromResponse(response, "Couldn't load products. Try again.");
 
   return parseProductsResponse(await response.json(), await meIdPromise);
 }
@@ -399,5 +399,5 @@ export async function addProductVideo(
     headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
     body: JSON.stringify(video),
   });
-  if (!resp.ok) await throwFromResponse(resp, 'Failed to add video');
+  if (!resp.ok) await throwFromResponse(resp, "Couldn't add the video. Try again.");
 }

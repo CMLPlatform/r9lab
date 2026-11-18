@@ -174,7 +174,7 @@ describe('camera stream action hooks', () => {
       await result.current.handleStartStream();
     });
     expect(feedback.error).toHaveBeenCalledWith(
-      'Failed to start stream: camera exploded',
+      "Couldn't start the stream: camera exploded",
       'Stream start failed',
     );
   });

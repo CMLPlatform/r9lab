@@ -38,7 +38,7 @@ describe('streamingFeedback', () => {
     showStreamStartFailed(feedback, new Error('boom'));
 
     expect(feedback.error).toHaveBeenCalledWith(
-      'Failed to start stream: boom',
+      "Couldn't start the stream: boom",
       'Stream start failed',
     );
   });

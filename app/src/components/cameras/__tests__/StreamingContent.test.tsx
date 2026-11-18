@@ -133,7 +133,7 @@ describe('StreamingContent', () => {
     await fireEvent.press(screen.getByText('Stop stream'));
 
     expect(mockFeedback.error).toHaveBeenCalledWith(
-      'Failed to stop stream: stop failed hard',
+      "Couldn't stop the stream: stop failed hard",
       'Stop failed',
     );
     expect(mockSetActiveStream).not.toHaveBeenCalled();

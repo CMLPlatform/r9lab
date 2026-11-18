@@ -516,7 +516,7 @@ describe('Authentication API Service', () => {
       secureStoreMock.getItemAsync.mockResolvedValue('test-token');
       fetchMock().mockResolvedValueOnce(mockResponse(500, {}, false) as Response);
 
-      await expect(auth.updateUser({})).rejects.toThrow('Failed to update user profile');
+      await expect(auth.updateUser({})).rejects.toThrow("Couldn't update your profile. Try again.");
     });
 
     it('throws with detail object message', async () => {
@@ -739,7 +739,9 @@ describe('Authentication API Service', () => {
       secureStoreMock.getItemAsync.mockResolvedValue('test-token');
       fetchMock().mockResolvedValueOnce(mockResponse(500, {}, false) as Response);
 
-      await expect(auth.unlinkOAuth('github')).rejects.toThrow('Failed to unlink github account');
+      await expect(auth.unlinkOAuth('github')).rejects.toThrow(
+        "Couldn't unlink your github account. Try again.",
+      );
     });
 
     it('sends the password and MFA code as the step-up body', async () => {

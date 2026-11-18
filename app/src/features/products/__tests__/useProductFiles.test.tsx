@@ -170,7 +170,7 @@ describe('useProductFiles', () => {
     });
 
     await waitFor(() =>
-      expect(mockError).toHaveBeenCalledWith('Not your record.', 'Could not remove file'),
+      expect(mockError).toHaveBeenCalledWith('Not your record.', "Couldn't remove file"),
     );
   });
 

@@ -110,7 +110,7 @@ export async function openOAuthBrowserSession(
 
   const timeoutPromise = new Promise<never>((_, reject) => {
     timeoutId = setTimeout(
-      () => reject(new Error('OAuth browser session timed out. Please try again.')),
+      () => reject(new Error('OAuth browser session timed out. Try again.')),
       timeoutMs,
     );
   });

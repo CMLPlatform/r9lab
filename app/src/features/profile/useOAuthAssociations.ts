@@ -168,7 +168,7 @@ export function useOAuthAssociations({
         'Linking a YouTube account changes how you can sign in, so confirm your password.',
         (error) =>
           feedback.error(
-            `Failed to start YouTube authorization: ${getErrorMessage(error, 'Try again.')}`,
+            `Couldn't start YouTube authorization: ${getErrorMessage(error, 'Try again.')}`,
             'Authorization failed',
           ),
         mfaEnabled,
@@ -197,7 +197,7 @@ export function useOAuthAssociations({
       'Linking a social login changes how you can sign in, so confirm your password.',
       (error) =>
         feedback.error(
-          `Failed to start link flow: ${getErrorMessage(error, 'Try again.')}`,
+          `Couldn't start linking: ${getErrorMessage(error, 'Try again.')}`,
           'Link failed',
         ),
       mfaEnabled,

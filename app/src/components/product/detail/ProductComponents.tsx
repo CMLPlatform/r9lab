@@ -63,7 +63,7 @@ export default function ProductComponents({ product, editMode, canEdit }: Props)
         onError: (err) =>
           dialog.alert({
             title: 'Duplicate failed',
-            message: getErrorMessage(err, 'Could not duplicate. Please try again.'),
+            message: getErrorMessage(err, "Couldn't duplicate. Try again."),
             buttons: [{ text: 'OK' }],
           }),
       },

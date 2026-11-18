@@ -101,13 +101,13 @@ describe('confirmOAuthUnlink', () => {
     await confirmOAuthUnlink(args);
 
     expect(args.feedback.error).toHaveBeenCalledWith(
-      expect.stringContaining('Failed to disconnect'),
+      expect.stringContaining("Couldn't disconnect"),
       'Disconnect failed',
     );
     expect(args.refetch).not.toHaveBeenCalled();
   });
 
-  // A failure in the YouTube cascade must not be reported as "Failed to
+  // A failure in the YouTube cascade must not be reported as "Couldn't
   // disconnect": the server has already unlinked.
   it('does not claim the disconnect failed when only the YouTube cascade fails', async () => {
     const args = makeArgs({
@@ -210,7 +210,7 @@ describe('updateProfileUsername', () => {
     });
 
     expect(feedback.error).toHaveBeenCalledWith(
-      'Failed to update username: Username already taken',
+      "Couldn't update your username: Username already taken",
       'Update failed',
     );
   });
@@ -225,7 +225,7 @@ describe('updateProfileUsername', () => {
     });
 
     expect(feedback.error).toHaveBeenCalledWith(
-      'Failed to update username: Try again.',
+      "Couldn't update your username: Try again.",
       'Update failed',
     );
   });
@@ -287,7 +287,7 @@ describe('updateProfilePreferenceField', () => {
     });
 
     expect(feedback.error).toHaveBeenCalledWith(
-      'Failed to update visibility: boom',
+      "Couldn't update your visibility: boom",
       'Visibility update failed',
     );
   });

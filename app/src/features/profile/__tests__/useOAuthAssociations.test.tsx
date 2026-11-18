@@ -218,7 +218,7 @@ describe('useOAuthAssociations', () => {
     });
 
     expect(mockFeedback.error).toHaveBeenCalledWith(
-      'Failed to start link flow: Incorrect password.',
+      "Couldn't start linking: Incorrect password.",
       'Link failed',
     );
   });
@@ -308,7 +308,7 @@ describe('useOAuthAssociations', () => {
     });
 
     expect(mockFeedback.error).toHaveBeenCalledWith(
-      'Failed to start link flow: Association endpoint unavailable',
+      "Couldn't start linking: Association endpoint unavailable",
       'Link failed',
     );
   });

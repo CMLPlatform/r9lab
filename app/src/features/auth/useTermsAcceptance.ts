@@ -52,10 +52,7 @@ export function useTermsAcceptance() {
         'Thanks. Your contributions can be included in curated datasets once they are published.',
       );
     } catch (error) {
-      feedback.error(
-        getErrorMessage(error, 'Please try again.'),
-        'Could not record your acceptance',
-      );
+      feedback.error(getErrorMessage(error, 'Try again.'), "Couldn't record your acceptance");
     } finally {
       setIsAccepting(false);
     }

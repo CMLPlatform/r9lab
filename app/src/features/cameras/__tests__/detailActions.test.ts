@@ -137,7 +137,7 @@ describe('camera detail actions', () => {
     expect(replace).toHaveBeenCalledWith('/cameras');
     expect(alert).toHaveBeenCalledWith({
       title: 'Delete failed',
-      message: 'Something went wrong. Please try again.',
+      message: 'Something went wrong. Try again.',
       buttons: [{ text: 'OK' }],
     });
   });

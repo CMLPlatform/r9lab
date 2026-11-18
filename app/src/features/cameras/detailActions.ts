@@ -50,7 +50,7 @@ function showActionError(
 ) {
   feedback.alert({
     title,
-    message: getErrorMessage(error, 'Something went wrong. Please try again.'),
+    message: getErrorMessage(error, 'Something went wrong. Try again.'),
     buttons: [{ text: 'OK' }],
   });
 }

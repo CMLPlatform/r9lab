@@ -11,7 +11,7 @@ export async function fetchCameras(
   if (includeStatus || includeTelemetry) url.searchParams.set('include_status', 'true');
   if (includeTelemetry) url.searchParams.set('include_telemetry', 'true');
   const resp = await fetchWithAuth(url, { method: 'GET', headers: { Accept: 'application/json' } });
-  if (!resp.ok) await throwFromResponse(resp, 'Failed to fetch cameras');
+  if (!resp.ok) await throwFromResponse(resp, "Couldn't load your cameras. Try again.");
   const data = (await resp.json()) as CameraReadWithStatus[];
   return data.map((camera) => normalizeCameraReadWithStatus(camera));
 }
@@ -25,7 +25,7 @@ export async function fetchCamera(
   if (includeStatus || includeTelemetry) url.searchParams.set('include_status', 'true');
   if (includeTelemetry) url.searchParams.set('include_telemetry', 'true');
   const resp = await fetchWithAuth(url, { method: 'GET', headers: { Accept: 'application/json' } });
-  if (!resp.ok) await throwFromResponse(resp, 'Failed to fetch camera');
+  if (!resp.ok) await throwFromResponse(resp, "Couldn't load the camera. Try again.");
   const data = (await resp.json()) as CameraReadWithStatus;
   return normalizeCameraReadWithStatus(data);
 }
@@ -35,7 +35,7 @@ export async function fetchCameraTelemetry(cameraId: string): Promise<CameraTele
     method: 'GET',
     headers: { Accept: 'application/json' },
   });
-  if (!resp.ok) await throwFromResponse(resp, 'Failed to fetch camera telemetry');
+  if (!resp.ok) await throwFromResponse(resp, "Couldn't load the camera status. Try again.");
   return resp.json() as Promise<CameraTelemetry>;
 }
 
@@ -45,7 +45,7 @@ export async function updateCamera(id: string, data: CameraUpdate): Promise<Came
     headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
     body: JSON.stringify(data),
   });
-  if (!resp.ok) await throwFromResponse(resp, 'Failed to update camera');
+  if (!resp.ok) await throwFromResponse(resp, "Couldn't update the camera. Try again.");
   return resp.json() as Promise<CameraRead>;
 }
 
@@ -54,5 +54,5 @@ export async function deleteCamera(id: string): Promise<void> {
     method: 'DELETE',
     headers: { Accept: 'application/json' },
   });
-  if (!resp.ok) await throwFromResponse(resp, 'Failed to delete camera');
+  if (!resp.ok) await throwFromResponse(resp, "Couldn't delete the camera. Try again.");
 }

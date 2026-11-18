@@ -35,7 +35,7 @@ jest.mock('@tanstack/react-query', () => ({
 }));
 
 jest.mock('@/features/products/queries', () => ({
-  QUEUED_OFFLINE_LABEL: 'Queued — sends when online',
+  QUEUED_OFFLINE_LABEL: 'Queued. Sends when online',
   useSaveProductMutation: jest.fn(),
   useDeleteProductMutation: jest.fn(),
 }));
@@ -488,7 +488,7 @@ describe('useProductForm', () => {
 
     expect(result.current.isPaused).toBe(true);
     expect(mockToast).toHaveBeenCalledTimes(1);
-    expect(mockToast).toHaveBeenCalledWith('Queued — sends when online');
+    expect(mockToast).toHaveBeenCalledWith('Queued. Sends when online');
   });
 
   it('does not toast when the save mutation is not paused', async () => {

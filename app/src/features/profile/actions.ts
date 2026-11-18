@@ -61,7 +61,7 @@ export function useProfileActions({
         onSuccess: proceed,
         onError: () => {
           feedback.error(
-            'Failed to stop the stream. Please stop it manually before signing out.',
+            "Couldn't stop the stream. Stop it manually before signing out.",
             'Stream error',
           );
           setIsLoggingOut(false);

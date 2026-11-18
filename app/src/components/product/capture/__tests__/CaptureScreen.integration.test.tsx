@@ -62,7 +62,7 @@ jest.mock('@/context/auth', () => ({
 }));
 
 jest.mock('@/features/products/queries', () => ({
-  QUEUED_OFFLINE_LABEL: 'Queued — sends when online',
+  QUEUED_OFFLINE_LABEL: 'Queued. Sends when online',
   useSaveProductMutation: () => ({
     mutateAsync: mockMutateAsync,
     isPending: false,
@@ -188,7 +188,7 @@ describe('CaptureScreen', () => {
 
     // Both Create buttons, plus the one-time toast useCaptureEntity fires on
     // the isPaused transition (see useCaptureEntity.test.tsx for that in isolation).
-    expect(screen.getAllByText('Queued — sends when online')).toHaveLength(3);
+    expect(screen.getAllByText('Queued. Sends when online')).toHaveLength(3);
     expect(screen.queryByText('Create product')).toBeNull();
     expect(screen.queryByText('Create & add another')).toBeNull();
     expect(queryAllHostsByType('ActivityIndicator')).toHaveLength(0);

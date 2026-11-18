@@ -82,10 +82,7 @@ export function useCaptureEntity({ role, parentID, parentRole }: UseCaptureEntit
           feedback.error('Created, but some photos failed to upload.', 'Upload failed');
           return { id: draft.id, partial: true };
         }
-        feedback.error(
-          getErrorMessage(err, 'Could not create. Please try again.'),
-          'Create failed',
-        );
+        feedback.error(getErrorMessage(err, "Couldn't create. Try again."), 'Create failed');
         return undefined;
       }
     } finally {
@@ -212,7 +209,7 @@ async function reportQueuedCreate(
       return;
     }
     feedback.error(
-      `"${name}" was not created. ${getErrorMessage(err, 'Please capture it again.')}`,
+      `"${name}" was not created. ${getErrorMessage(err, 'Capture it again.')}`,
       'Create failed',
     );
     return;

@@ -182,7 +182,7 @@ describe('Fetching API Service logic', () => {
         ),
       );
 
-      await expect(searchProductBrands()).rejects.toThrow('Failed to fetch');
+      await expect(searchProductBrands()).rejects.toThrow("Couldn't load the list");
     });
 
     it('sends search param when searching brands', async () => {
@@ -333,7 +333,7 @@ describe('Fetching API Service logic', () => {
     it('throws a generic HTTP error for non-404 failures', async () => {
       server.use(http.get(`${API_URL}/products/99`, () => HttpResponse.json({}, { status: 500 })));
 
-      await expect(getBaseProduct(99)).rejects.toThrow('Failed to fetch product');
+      await expect(getBaseProduct(99)).rejects.toThrow("Couldn't load the product. Try again.");
     });
   });
 
@@ -524,7 +524,7 @@ describe('Fetching API Service logic', () => {
     it('throws on HTTP error', async () => {
       server.use(http.get(`${API_URL}/products`, () => HttpResponse.json({}, { status: 500 })));
 
-      await expect(products()).rejects.toThrow('Failed to fetch products');
+      await expect(products()).rejects.toThrow("Couldn't load products. Try again.");
     });
   });
 
@@ -583,7 +583,7 @@ describe('Fetching API Service logic', () => {
     it('throws on non-401 HTTP error', async () => {
       server.use(http.get(`${API_URL}/products`, () => HttpResponse.json({}, { status: 500 })));
 
-      await expect(products({ owner: 'me' })).rejects.toThrow('Failed to fetch products');
+      await expect(products({ owner: 'me' })).rejects.toThrow("Couldn't load products. Try again.");
     });
   });
 
