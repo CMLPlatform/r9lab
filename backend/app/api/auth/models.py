@@ -36,9 +36,9 @@ class User(BaseUserDB, TimeStampMixinBare):
         CheckConstraint("NOT is_superuser OR role = 'lab'", name="ck_user_superuser_is_lab"),
         CheckConstraint("upload_file_count >= 0", name="ck_user_upload_file_count_non_negative"),
         CheckConstraint("upload_total_bytes >= 0", name="ck_user_upload_total_bytes_non_negative"),
-        # The admin user list does an unanchored ILIKE on email OR username and
-        # seq-scans on purpose: at a few dozen rows that is faster than a GIN probe and
-        # costs nothing on write. Add a trigram index back past ~100k rows.
+        # The admin user list does an unanchored ILIKE on email OR username and scans the
+        # whole table. At a few dozen rows that is faster than a GIN probe and costs
+        # nothing on write. Add a trigram index back past ~100k rows.
     )
 
     username: Mapped[str | None] = mapped_column(String(50), index=True, unique=True, default=None)

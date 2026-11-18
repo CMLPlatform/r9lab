@@ -49,10 +49,8 @@ async def clear_cache(namespace: CacheNamespace) -> int:
 
 def main() -> None:
     """Run the cache clearing script."""
-    # Parse namespace from command line argument, default to reference-data
     namespace_arg = sys.argv[1] if len(sys.argv) > 1 else CacheNamespace.REFERENCE_DATA
 
-    # Validate namespace
     try:
         namespace = CacheNamespace(namespace_arg)
     except ValueError:
@@ -63,7 +61,6 @@ def main() -> None:
         raise SystemExit(1) from None
 
     logger.info("Clearing cache namespace: %s", namespace)
-    # Run the async function
     raise SystemExit(asyncio.run(clear_cache(namespace)))
 
 

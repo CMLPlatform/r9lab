@@ -93,11 +93,11 @@ def run_migrations_online() -> None:
         # otherwise have both attempt the DDL, and the loser aborts partway through the
         # chain. Session-scoped, so it is released when the connection closes.
         #
-        # Acquired before the timeouts below on purpose: `lock_timeout` and
+        # Take the lock before setting the timeouts below. `lock_timeout` and
         # `statement_timeout` both apply to this wait, so setting them first would make a
-        # migrator that arrives behind a running one abort rather than queue, which under
-        # the `migrations` profile is a failed deploy instead of a wait. The wait here is
-        # deliberately unbounded; the timeouts start once this session owns the lock.
+        # migrator that arrives behind a running one abort instead of queue. Under the
+        # `migrations` profile that is a failed deploy. This wait has no limit; the
+        # timeouts start once this session owns the lock.
         connection.exec_driver_sql(f"SELECT pg_advisory_lock({_MIGRATION_LOCK_ID})")
         # NOTE: an ACCESS EXCLUSIVE lock that cannot be acquired promptly must abort, not
         # queue behind readers and block every other query on prod.
