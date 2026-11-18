@@ -55,6 +55,8 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Changed
 
+- The welcome card on the products screen has even inner padding, the mark lines up with the
+  text, and "Sign in" is a solid primary button. On wide screens the actions sit beside the text.
 - The `r9lab-backup` image is built on Debian slim with only the PostgreSQL client, not the
   full `postgres:18` server image. It is about 71 MB to pull instead of 186 MB.
 - The landing page and docs Workers are named `r9lab-www-<env>` and `r9lab-docs-<env>`.
@@ -79,6 +81,9 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- An image or file upload, including a camera upload, whose database write fails no longer
+  leaves the stored file behind. Deleting media answers success once the record is gone, even
+  when removing the stored file fails; that failure is logged.
 - The API answers a bad query with a client error instead of a server error: 422 for a `search`
   longer than 100 characters, 400 for text holding a NUL character and for an id above
   2,147,483,647. `/v1/stats/series` with an `end` in the first years of the calendar and no
