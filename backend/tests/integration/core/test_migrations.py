@@ -263,6 +263,29 @@ def test_recommended_rank_index_survives_a_lost_revision_stamp(
 
 
 @pytest.mark.migration
+def test_recommended_rank_index_rebuilds_over_a_failed_build(
+    relab_alembic_config: Config, migration_helper: MigrationHelper
+) -> None:
+    """A build that failed (lock_timeout) leaves an INVALID index; the re-run replaces it."""
+    try:
+        command.stamp(relab_alembic_config, "c4f1e8a2b7d3")
+        # Marks the index the way a failed CREATE INDEX CONCURRENTLY leaves it.
+        with migration_helper.sync_engine.begin() as connection:
+            connection.execute(
+                text(
+                    "UPDATE pg_index SET indisvalid = false WHERE indexrelid = 'ix_product_recommended_rank'::regclass"
+                )
+            )
+        assert _index_is_valid(migration_helper, "ix_product_recommended_rank") is False, "precondition"
+
+        command.upgrade(relab_alembic_config, "d8b3a6f0e1c5")
+
+        assert _index_is_valid(migration_helper, "ix_product_recommended_rank") is True
+    finally:
+        command.upgrade(relab_alembic_config, "head")
+
+
+@pytest.mark.migration
 def test_downgrade_lands_on_the_lengths_the_previous_revision_declares(
     relab_alembic_config: Config, migration_helper: MigrationHelper
 ) -> None:

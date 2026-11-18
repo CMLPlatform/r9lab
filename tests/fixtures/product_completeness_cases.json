@@ -1,0 +1,25 @@
+{
+  "_comment": "<BOM> stands for U+FEFF, which the tests substitute before parsing. Shared by app/src/features/products/__tests__/missingFields.test.ts and backend/tests/integration/db/test_product_completeness.py. 'product' holds database column names; 'missing' lists the checklist ids that must be flagged. Photo weighs 3, every other field 1, out of 8 (base) or 4 (component).",
+  "cases": [
+    { "name": "complete base product", "product": { "has_type": true, "brand": "Acme", "description": "A kettle.", "weight_g": 500, "width_cm": 10, "height_cm": 20, "depth_cm": 15, "has_photo": true }, "missing": [] },
+    { "name": "empty base product", "product": {}, "missing": ["productType", "brand", "weight", "dimensions", "photo", "description"] },
+    { "name": "no product type", "product": { "brand": "Acme", "description": "d", "weight_g": 1, "width_cm": 1, "has_photo": true }, "missing": ["productType"] },
+    { "name": "no photo", "product": { "has_type": true, "brand": "Acme", "description": "d", "weight_g": 1, "width_cm": 1 }, "missing": ["photo"] },
+    { "name": "whitespace-only text", "product": { "has_type": true, "brand": "  \t\n ", "description": " \n\t", "weight_g": 1, "width_cm": 1, "has_photo": true }, "missing": ["brand", "description"] },
+    { "name": "no-break space only", "product": { "has_type": true, "brand": "  ", "description": "d", "weight_g": 1, "width_cm": 1, "has_photo": true }, "missing": ["brand"] },
+    { "name": "ideographic space only", "product": { "has_type": true, "brand": "a", "description": "　　", "weight_g": 1, "width_cm": 1, "has_photo": true }, "missing": ["description"] },
+    { "name": "byte order mark only", "product": { "has_type": true, "brand": "<BOM>", "description": "<BOM>  　", "weight_g": 1, "width_cm": 1, "has_photo": true }, "missing": ["brand", "description"] },
+    { "name": "text with padding counts as filled", "product": { "has_type": true, "brand": " Acme　", "description": "<BOM>d", "weight_g": 1, "width_cm": 1, "has_photo": true }, "missing": [] },
+    { "name": "zero weight", "product": { "has_type": true, "brand": "a", "description": "d", "weight_g": 0, "width_cm": 1, "has_photo": true }, "missing": ["weight"] },
+    { "name": "zero dimensions", "product": { "has_type": true, "brand": "a", "description": "d", "weight_g": 1, "width_cm": 0, "height_cm": 0, "depth_cm": 0, "has_photo": true }, "missing": ["dimensions"] },
+    { "name": "only width set", "product": { "has_type": true, "brand": "a", "description": "d", "weight_g": 1, "width_cm": 2, "has_photo": true }, "missing": [] },
+    { "name": "only height set", "product": { "has_type": true, "brand": "a", "description": "d", "weight_g": 1, "height_cm": 2, "has_photo": true }, "missing": [] },
+    { "name": "only depth set", "product": { "has_type": true, "brand": "a", "description": "d", "weight_g": 1, "depth_cm": 2, "has_photo": true }, "missing": [] },
+    { "name": "empty component", "component": true, "product": {}, "missing": ["weight", "photo"] },
+    { "name": "component with weight, no photo", "component": true, "product": { "weight_g": 20 }, "missing": ["photo"] },
+    { "name": "component with photo, no weight", "component": true, "product": { "has_photo": true }, "missing": ["weight"] },
+    { "name": "component with zero weight and photo", "component": true, "product": { "weight_g": 0, "has_photo": true }, "missing": ["weight"] },
+    { "name": "component with weight and photo ignores other fields", "component": true, "product": { "weight_g": 20, "has_photo": true }, "missing": [] },
+    { "name": "component with every other field but no weight or photo", "component": true, "product": { "has_type": true, "brand": "a", "description": "d", "width_cm": 1 }, "missing": ["weight", "photo"] }
+  ]
+}
