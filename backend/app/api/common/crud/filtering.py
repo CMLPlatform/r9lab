@@ -61,7 +61,9 @@ class BaseFilterSet(FilterSet):
     sortable_fields: ClassVar[tuple[str, ...]] = ()
     search_columns: ClassVar[SearchColumns] = ()
     # Filter fields with no column behind them: field name -> WHERE clause for the parsed
-    # value. Only ``eq`` reaches the builder; any other operator fails as an unknown field.
+    # value. Declare such a field with only ``eq``: fastapi-filters creates no parameter for
+    # undeclared operators, so they are ignored, and a second declared operator would reach
+    # the column lookup and fail there.
     condition_fields: ClassVar[Mapping[str, Callable[[Any], ColumnElement[bool]]]] = {}
 
     _search: str | None = None
@@ -176,7 +178,8 @@ def apply_filter[MT: Base](
     ) -> ColumnElement[bool]:
         build = model_filter.condition_fields.get(field)
         if build is None or op is not FilterOperator.eq:
-            raise NotImplementedError  # fastapi-filters falls back to the column lookup
+            # Non-condition fields fall back to the column lookup; see condition_fields.
+            raise NotImplementedError
         return build(value)
 
     statement = _apply_relationship_joins(statement, model_filter)
