@@ -1,7 +1,7 @@
 import { fireEvent, render, screen } from '@testing-library/react-native';
 import { AmountStepper } from '@/components/base/AmountStepper';
 
-test('increments and decrements', async () => {
+it('increments and decrements', async () => {
   const onChange = jest.fn();
   await render(<AmountStepper value={3} onChange={onChange} />);
   await fireEvent.press(screen.getByLabelText('Increase amount'));
@@ -10,14 +10,14 @@ test('increments and decrements', async () => {
   expect(onChange).toHaveBeenCalledWith(2);
 });
 
-test('decrement disabled at min', async () => {
+it('decrement disabled at min', async () => {
   const onChange = jest.fn();
   await render(<AmountStepper value={1} onChange={onChange} />);
   await fireEvent.press(screen.getByLabelText('Decrease amount'));
   expect(onChange).not.toHaveBeenCalled();
 });
 
-test('renders label and value', async () => {
+it('renders label and value', async () => {
   await render(<AmountStepper value={8} onChange={jest.fn()} label="Amount in parent" />);
   expect(screen.getByText('Amount in parent')).toBeOnTheScreen();
   expect(screen.getByText('8')).toBeOnTheScreen();

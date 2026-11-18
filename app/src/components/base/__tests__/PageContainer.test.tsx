@@ -3,7 +3,7 @@ import { Text } from 'react-native';
 import { PageContainer } from '@/components/base/PageContainer';
 import { queryAllHostsByProps } from '@/test-utils/index';
 
-test('renders children', async () => {
+it('renders children', async () => {
   await render(
     <PageContainer>
       <Text>content</Text>
@@ -12,7 +12,7 @@ test('renders children', async () => {
   expect(screen.getByText('content')).toBeOnTheScreen();
 });
 
-test('fullBleed renders children without the width-constrained wrapper', async () => {
+it('fullBleed renders children without the width-constrained wrapper', async () => {
   await render(
     <PageContainer fullBleed>
       <Text>hero</Text>
@@ -22,7 +22,7 @@ test('fullBleed renders children without the width-constrained wrapper', async (
   expect(screen.queryByTestId('page-container-constrained')).toBeNull();
 });
 
-test('phoneFullBleed keeps the constrained (centered, max-width) wrapper', async () => {
+it('phoneFullBleed keeps the constrained (centered, max-width) wrapper', async () => {
   // Distinct from fullBleed: it only drops the phone gutter, so it must still
   // render the width-constrained wrapper (desktop centering is preserved).
   await render(
@@ -34,7 +34,7 @@ test('phoneFullBleed keeps the constrained (centered, max-width) wrapper', async
   expect(screen.getByTestId('page-container-constrained')).toBeOnTheScreen();
 });
 
-test('the constrained column is the main landmark; fullBleed is not', async () => {
+it('the constrained column is the main landmark; fullBleed is not', async () => {
   await render(
     <>
       <PageContainer fullBleed>

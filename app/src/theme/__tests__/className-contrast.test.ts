@@ -1,4 +1,4 @@
-import { describe, expect, test } from '@jest/globals';
+import { describe, expect, test as it } from '@jest/globals';
 import { type PaletteScheme, palette } from '@/theme/palette.generated';
 
 function luminance(hex: string): number {
@@ -22,7 +22,7 @@ describe.each<[string, Record<keyof PaletteScheme, string>]>([
   ['light', palette.light],
   ['dark', palette.dark],
 ])('%s scheme className text colors', (_scheme, scheme) => {
-  test.each([
+  it.each([
     ['text-manila', scheme.accent],
     ['text-muted-foreground', scheme.mutedForeground],
     ['text-destructive', scheme.destructive],

@@ -1,7 +1,7 @@
 import { act, renderHook } from '@testing-library/react-native';
 import { useSectionNav } from '@/hooks/useSectionNav';
 
-test('scrollTo uses registered position minus offset, clamped at 0', async () => {
+it('scrollTo uses registered position minus offset, clamped at 0', async () => {
   const scrollToY = jest.fn();
   const { result } = await renderHook(() => useSectionNav(scrollToY));
   await act(() => {
@@ -14,7 +14,7 @@ test('scrollTo uses registered position minus offset, clamped at 0', async () =>
   expect(scrollToY).toHaveBeenCalledWith(0);
 });
 
-test('scroll spy activates the last section above the threshold line', async () => {
+it('scroll spy activates the last section above the threshold line', async () => {
   const { result } = await renderHook(() => useSectionNav(jest.fn()));
   await act(() => {
     result.current.registerSection('overview', 0);
@@ -29,7 +29,7 @@ test('scroll spy activates the last section above the threshold line', async () 
   expect(result.current.activeKey).toBe('physical');
 });
 
-test('scrollTo for an unregistered key is a no-op', async () => {
+it('scrollTo for an unregistered key is a no-op', async () => {
   const scrollToY = jest.fn();
   const { result } = await renderHook(() => useSectionNav(scrollToY));
   await act(() => result.current.scrollTo('media'));

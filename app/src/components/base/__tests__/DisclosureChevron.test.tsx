@@ -8,7 +8,7 @@ const turn = () => {
   return StyleSheet.flatten(tree.props.style).transform;
 };
 
-test('points right while collapsed and down while expanded', async () => {
+it('points right while collapsed and down while expanded', async () => {
   await render(<DisclosureChevron expanded={false} size={20} color="#000" />);
   expect(turn()).toEqual([{ rotate: '0deg' }]);
 

@@ -1,11 +1,11 @@
-import { describe, expect, jest, test } from '@jest/globals';
+import { describe, expect, test as it, jest } from '@jest/globals';
 import { render } from '@testing-library/react-native';
 import { AccessibilityInfo } from 'react-native';
 import { IosAnnouncement } from '@/components/base/IosAnnouncement';
 import { mockPlatform, restorePlatform } from '@/test-utils';
 
 describe('IosAnnouncement', () => {
-  test('announces on mount and on change by default', async () => {
+  it('announces on mount and on change by default', async () => {
     mockPlatform('ios');
     const announce = jest
       .spyOn(AccessibilityInfo, 'announceForAccessibility')
@@ -17,7 +17,7 @@ describe('IosAnnouncement', () => {
     restorePlatform();
   });
 
-  test('with skipInitial, stays quiet on mount like a live region', async () => {
+  it('with skipInitial, stays quiet on mount like a live region', async () => {
     mockPlatform('ios');
     const announce = jest
       .spyOn(AccessibilityInfo, 'announceForAccessibility')
@@ -30,7 +30,7 @@ describe('IosAnnouncement', () => {
     restorePlatform();
   });
 
-  test('does nothing off iOS', async () => {
+  it('does nothing off iOS', async () => {
     mockPlatform('android');
     const announce = jest
       .spyOn(AccessibilityInfo, 'announceForAccessibility')

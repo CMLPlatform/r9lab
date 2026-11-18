@@ -3,7 +3,7 @@ import { useRouter } from 'expo-router';
 import { SignedOutState } from '@/components/base/SignedOutState';
 import { renderWithProviders } from '@/test-utils/index';
 
-test('renders the default message and routes to login on sign-in press', async () => {
+it('renders the default message and routes to login on sign-in press', async () => {
   await renderWithProviders(<SignedOutState />);
   expect(screen.getByText('Sign in to use this part of R9lab.')).toBeOnTheScreen();
 
@@ -11,7 +11,7 @@ test('renders the default message and routes to login on sign-in press', async (
   expect(useRouter().replace).toHaveBeenCalledWith('/login');
 });
 
-test('renders a custom message', async () => {
+it('renders a custom message', async () => {
   await renderWithProviders(<SignedOutState message="Sign in to browse categories." />);
   expect(screen.getByText('Sign in to browse categories.')).toBeOnTheScreen();
 });

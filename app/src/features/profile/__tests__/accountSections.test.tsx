@@ -1,8 +1,8 @@
-import { describe, expect, test } from '@jest/globals';
+import { describe, expect, test as it } from '@jest/globals';
 import { ACCOUNT_SECTIONS } from '@/features/profile/accountSections';
 
 describe('ACCOUNT_SECTIONS', () => {
-  test('defines the five account groups in spec order', () => {
+  it('defines the five account groups in spec order', () => {
     expect(ACCOUNT_SECTIONS.map((section) => section.key)).toEqual([
       'preferences',
       'integrations',
@@ -12,7 +12,7 @@ describe('ACCOUNT_SECTIONS', () => {
     ]);
   });
 
-  test('labels are sentence case and danger zone is last', () => {
+  it('labels are sentence case and danger zone is last', () => {
     expect(ACCOUNT_SECTIONS.map((section) => section.label)).toEqual([
       'Preferences',
       'Integrations',

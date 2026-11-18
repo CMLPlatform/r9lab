@@ -6,7 +6,7 @@ import { getAppTheme } from '@/theme/themes';
 
 const IDENTITY_PATTERN = /Vitra · T2/;
 
-test('renders name, identity line, and facts that exist', async () => {
+it('renders name, identity line, and facts that exist', async () => {
   await render(
     <SpecHeader
       product={{
@@ -27,7 +27,7 @@ test('renders name, identity line, and facts that exist', async () => {
   expect(screen.getByText('2')).toBeOnTheScreen();
 });
 
-test('renders no facts row segments for missing data', async () => {
+it('renders no facts row segments for missing data', async () => {
   await render(
     <SpecHeader
       product={{
@@ -51,13 +51,13 @@ test('renders no facts row segments for missing data', async () => {
 describe('SpecHeader name field in edit mode', () => {
   const product = { ...baseProduct, name: 'Initial product name' };
 
-  test("names a component's field after the component, not a product", async () => {
+  it("names a component's field after the component, not a product", async () => {
     await render(<SpecHeader product={{ ...product, role: 'component' }} editMode />);
     expect(screen.getByLabelText('Component name')).toBeOnTheScreen();
     expect(screen.queryByLabelText('Product name')).toBeNull();
   });
 
-  test('renders the name as a title-scale input', async () => {
+  it('renders the name as a title-scale input', async () => {
     await render(<SpecHeader product={product} editMode />);
     const input = screen.getByLabelText('Product name');
     expect(input.props.value).toBe('Initial product name');
@@ -66,14 +66,14 @@ describe('SpecHeader name field in edit mode', () => {
     );
   });
 
-  test('preserves an in-progress draft when the product hydrates mid-edit', async () => {
+  it('preserves an in-progress draft when the product hydrates mid-edit', async () => {
     const { rerender } = await render(<SpecHeader product={product} editMode />);
     await fireEvent.changeText(screen.getByLabelText('Product name'), 'Unsaved draft');
     await rerender(<SpecHeader product={{ ...product, name: 'Hydrated name' }} editMode />);
     expect(screen.getByDisplayValue('Unsaved draft')).toBeOnTheScreen();
   });
 
-  test('calls onNameChange with the trimmed draft on blur', async () => {
+  it('calls onNameChange with the trimmed draft on blur', async () => {
     const onNameChange = jest.fn();
     await render(<SpecHeader product={product} editMode onNameChange={onNameChange} />);
     const input = screen.getByLabelText('Product name');
@@ -82,49 +82,49 @@ describe('SpecHeader name field in edit mode', () => {
     expect(onNameChange).toHaveBeenCalledWith('Updated product name');
   });
 
-  test('announces a validation error for a too-short name', async () => {
+  it('announces a validation error for a too-short name', async () => {
     await render(<SpecHeader product={product} editMode />);
     await fireEvent.changeText(screen.getByLabelText('Product name'), 'A');
     expect(screen.getByRole('alert')).toBeOnTheScreen();
   });
 
-  test('renders plain text, not an input, in view mode', async () => {
+  it('renders plain text, not an input, in view mode', async () => {
     await render(<SpecHeader product={product} editMode={false} />);
     expect(screen.queryByLabelText('Product name')).toBeNull();
     expect(screen.getByText('Initial product name')).toBeOnTheScreen();
   });
 });
 
-test('renders the record status line under the title in edit mode', async () => {
+it('renders the record status line under the title in edit mode', async () => {
   await render(
     <SpecHeader product={{ ...baseProduct, id: 29 }} editMode saveStatus="Saved · ID 29" />,
   );
   expect(screen.getByTestId('save-status')).toHaveTextContent('Saved · ID 29');
 });
 
-test('renders no status line without one', async () => {
+it('renders no status line without one', async () => {
   await render(<SpecHeader product={baseProduct} />);
   expect(screen.queryByTestId('save-status')).toBeNull();
 });
 
 describe('SpecHeader screen heading in edit mode', () => {
-  test('names the screen "Editing <name>" with a level-1 heading', async () => {
+  it('names the screen "Editing <name>" with a level-1 heading', async () => {
     await render(<SpecHeader product={{ ...baseProduct, name: 'Kettle' }} editMode />);
     const h1 = screen.getByRole('header', { name: 'Editing Kettle' });
     expect(h1.props['aria-level']).toBe(1);
   });
 
-  test('names a product without a name "New product"', async () => {
+  it('names a product without a name "New product"', async () => {
     await render(<SpecHeader product={{ ...baseProduct, id: undefined, name: '' }} editMode />);
     expect(screen.getByRole('header', { name: 'New product' }).props['aria-level']).toBe(1);
   });
 
-  test('a name cleared mid-edit on a saved product is still "Editing"', async () => {
+  it('a name cleared mid-edit on a saved product is still "Editing"', async () => {
     await render(<SpecHeader product={{ ...baseProduct, name: '' }} editMode />);
     expect(screen.getByRole('header', { name: 'Editing ' })).toBeOnTheScreen();
   });
 
-  test('view mode keeps a single level-1 heading', async () => {
+  it('view mode keeps a single level-1 heading', async () => {
     await render(<SpecHeader product={{ ...baseProduct, name: 'Kettle' }} />);
     expect(screen.getAllByRole('header')).toHaveLength(1);
   });

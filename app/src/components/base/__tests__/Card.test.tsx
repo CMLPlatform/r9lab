@@ -4,7 +4,7 @@ import { Card } from '@/components/base/Card';
 
 const SHADOW_CLASS_PATTERN = /\bshadow-(sm|md|lg|xl)\b/;
 
-test('renders children with the card surface classes', async () => {
+it('renders children with the card surface classes', async () => {
   await render(
     <Card>
       <Text>Hello</Text>
@@ -13,7 +13,7 @@ test('renders children with the card surface classes', async () => {
   expect(screen.getByText('Hello')).toBeOnTheScreen();
 });
 
-test('merges caller className with the base surface classes', async () => {
+it('merges caller className with the base surface classes', async () => {
   await render(
     <Card className="mx-4" testID="card">
       <Text>Hello</Text>
@@ -30,7 +30,7 @@ test('merges caller className with the base surface classes', async () => {
 // border + surface fill, no shadow. Only floating surfaces get the overlay tier.
 // (Tailwind's rounded-lg === 8px === DESIGN.md radius-card, generated from
 // assets/tokens.json into --radius-lg in brand.generated.css.)
-test('Card is a flat hairline surface at the card radius', async () => {
+it('Card is a flat hairline surface at the card radius', async () => {
   await render(
     <Card testID="card">
       <Text>Hello</Text>
@@ -42,7 +42,7 @@ test('Card is a flat hairline surface at the card radius', async () => {
   expect(className).toEqual(expect.stringContaining('rounded-lg'));
 });
 
-test('forwards a style prop', async () => {
+it('forwards a style prop', async () => {
   await render(
     <Card style={{ marginHorizontal: 14 }} testID="card">
       <Text>Hello</Text>

@@ -2,7 +2,7 @@ import { fireEvent, screen } from '@testing-library/react-native';
 import { ErrorState } from '@/components/base/ErrorState';
 import { renderWithProviders } from '@/test-utils';
 
-test('renders title, message, and custom action label', async () => {
+it('renders title, message, and custom action label', async () => {
   const onRetry = jest.fn();
   await renderWithProviders(
     <ErrorState
@@ -18,13 +18,13 @@ test('renders title, message, and custom action label', async () => {
   expect(onRetry).toHaveBeenCalled();
 });
 
-test('never de-emphasizes the error message', async () => {
+it('never de-emphasizes the error message', async () => {
   await renderWithProviders(<ErrorState message="Something went wrong." onRetry={jest.fn()} />);
   const className = screen.getByText('Something went wrong.').props.className as string;
   expect(className).not.toEqual(expect.stringContaining('opacity'));
 });
 
-test('compact: an inline row with a named retry, announced as it appears', async () => {
+it('compact: an inline row with a named retry, announced as it appears', async () => {
   const onRetry = jest.fn();
   await renderWithProviders(
     <ErrorState

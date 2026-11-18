@@ -53,7 +53,7 @@ beforeEach(() => {
   mockUseRpiIntegration.mockReturnValue({ enabled: true });
 });
 
-test('shows Products, Cameras, Account inside the tab group at phone width', async () => {
+it('shows Products, Cameras, Account inside the tab group at phone width', async () => {
   await renderBar();
   expect(screen.getByLabelText('Products')).toBeTruthy();
   expect(screen.getByLabelText('Cameras')).toBeTruthy();
@@ -62,33 +62,33 @@ test('shows Products, Cameras, Account inside the tab group at phone width', asy
 
 // The point of the tab groups: a detail screen belongs to a tab, so the bar
 // stays put and every other tab is still one tap away.
-test('stays visible on a detail screen inside a tab', async () => {
+it('stays visible on a detail screen inside a tab', async () => {
   (useSegments as jest.Mock).mockReturnValue(['(tabs)', '(products)', 'products', '[id]']);
   await renderBar();
   expect(screen.getByLabelText('Products')).toBeTruthy();
 });
 
-test('renders nothing outside the tab group', async () => {
+it('renders nothing outside the tab group', async () => {
   (useSegments as jest.Mock).mockReturnValue(['category-selection']);
   await renderBar();
   expect(screen.queryByLabelText('Products')).toBeNull();
 });
 
-test('renders nothing at lg', async () => {
+it('renders nothing at lg', async () => {
   const { useBreakpoint } = jest.requireMock('@/hooks/useBreakpoint');
   (useBreakpoint as jest.Mock).mockReturnValue({ isLg: true });
   await renderBar();
   expect(screen.queryByLabelText('Products')).toBeNull();
 });
 
-test('hides Cameras when rpi integration is disabled', async () => {
+it('hides Cameras when rpi integration is disabled', async () => {
   mockUseRpiIntegration.mockReturnValue({ enabled: false });
   await renderBar();
   expect(screen.getByLabelText('Products')).toBeTruthy();
   expect(screen.queryByLabelText('Cameras')).toBeNull();
 });
 
-test('hides Account when signed out', async () => {
+it('hides Account when signed out', async () => {
   mockUseAuth.mockReturnValue({ user: null });
   await renderBar();
   expect(screen.getByLabelText('Products')).toBeTruthy();
@@ -98,7 +98,7 @@ test('hides Account when signed out', async () => {
 // Destinations are links, not tabs: a tab implies an in-page tabpanel. Like
 // TopNav, the current one carries aria-current="page" for the web; native
 // screen readers read the selected state instead.
-test('marks the navigator’s focused destination as the current page', async () => {
+it('marks the navigator’s focused destination as the current page', async () => {
   await renderBar(1);
   expect(screen.getByRole('link', { name: 'Cameras' })).toBeOnTheScreen();
   expect(screen.queryByRole('tab')).toBeNull();
@@ -112,7 +112,7 @@ test('marks the navigator’s focused destination as the current page', async ()
   });
 });
 
-test('keeps aria-selected off the web, where it is invalid on a link', async () => {
+it('keeps aria-selected off the web, where it is invalid on a link', async () => {
   mockPlatform('web');
   await renderBar(1);
   expect(screen.getByLabelText('Cameras').props['aria-selected']).toBeUndefined();
@@ -122,7 +122,7 @@ test('keeps aria-selected off the web, where it is invalid on a link', async () 
 
 // Navigating by route name (not href) is what returns the user to that tab's
 // preserved trail instead of resetting it to the tab's root screen.
-test('pressing an unfocused tab navigates to its route name', async () => {
+it('pressing an unfocused tab navigates to its route name', async () => {
   await renderBar();
   await fireEvent.press(screen.getByLabelText('Cameras'));
   expect(navigate).toHaveBeenCalledWith('(cameras)');
@@ -130,7 +130,7 @@ test('pressing an unfocused tab navigates to its route name', async () => {
 
 // tabPress is the event the focused tab's own listeners (the nested stack's
 // pop-to-top) hang off; re-navigating on top of it would be a no-op at best.
-test('pressing the focused tab emits tabPress instead of navigating', async () => {
+it('pressing the focused tab emits tabPress instead of navigating', async () => {
   await renderBar();
   await fireEvent.press(screen.getByLabelText('Products'));
   expect(emit).toHaveBeenCalledWith({
@@ -141,7 +141,7 @@ test('pressing the focused tab emits tabPress instead of navigating', async () =
   expect(navigate).not.toHaveBeenCalled();
 });
 
-test('a listener that prevents the default press blocks the navigation', async () => {
+it('a listener that prevents the default press blocks the navigation', async () => {
   emit.mockReturnValue({ defaultPrevented: true });
   await renderBar();
   await fireEvent.press(screen.getByLabelText('Cameras'));
@@ -149,14 +149,14 @@ test('a listener that prevents the default press blocks the navigation', async (
   expect(navigate).not.toHaveBeenCalled();
 });
 
-test('tabs press to the One Tint, not an opacity dim', async () => {
+it('tabs press to the One Tint, not an opacity dim', async () => {
   await renderBar();
   const className = screen.getByLabelText('Products').props.className as string;
   expect(className).toEqual(expect.stringContaining('active:bg-primary/12'));
   expect(className).not.toEqual(expect.stringContaining('active:opacity'));
 });
 
-test('tabs carry a web focus-visible ring', async () => {
+it('tabs carry a web focus-visible ring', async () => {
   mockPlatform('web');
   await renderBar();
   const className = screen.getByLabelText('Products').props.className as string;

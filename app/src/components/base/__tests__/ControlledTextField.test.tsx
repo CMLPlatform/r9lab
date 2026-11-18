@@ -24,14 +24,14 @@ function Harness() {
   );
 }
 
-test('renders label, propagates input, and announces the zod error', async () => {
+it('renders label, propagates input, and announces the zod error', async () => {
   await renderWithProviders(<Harness />);
   expect(screen.getByText('Camera name')).toBeTruthy();
   await fireEvent.changeText(screen.getByPlaceholderText('Camera name'), 'x');
   expect(await screen.findByText('Name is too short')).toBeTruthy();
 });
 
-test('the label is the input accessible name, not the placeholder', async () => {
+it('the label is the input accessible name, not the placeholder', async () => {
   function Labelled() {
     const { control } = useForm({ defaultValues: { name: '' } });
     return <ControlledTextField control={control} name="name" label="Name" placeholder="Jane" />;
@@ -40,7 +40,7 @@ test('the label is the input accessible name, not the placeholder', async () => 
   expect(screen.getByPlaceholderText('Jane')).toHaveAccessibleName('Name');
 });
 
-test('a required field says so in its label and marks the input required', async () => {
+it('a required field says so in its label and marks the input required', async () => {
   function Required() {
     const { control } = useForm({ defaultValues: { name: '' } });
     return (

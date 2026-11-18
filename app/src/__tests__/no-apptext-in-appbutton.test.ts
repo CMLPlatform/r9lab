@@ -1,6 +1,6 @@
 import { globSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { expect, test } from '@jest/globals';
+import { expect, test as it } from '@jest/globals';
 
 // AppButton styles its own label; an AppText child overrides that colour
 // (and breaks contrast in one scheme). Pass a plain string instead.
@@ -13,7 +13,7 @@ const ALLOWED = new Set([
   'components/cameras/detail/detailRows.tsx',
 ]);
 
-test('no AppButton wraps an AppText child', () => {
+it('no AppButton wraps an AppText child', () => {
   const root = join(__dirname, '..');
   const offenders = globSync('**/*.tsx', { cwd: root })
     .filter((f) => !f.includes('__tests__') && !ALLOWED.has(f))
