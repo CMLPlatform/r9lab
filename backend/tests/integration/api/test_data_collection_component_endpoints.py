@@ -245,6 +245,28 @@ async def test_component_materials_routes_use_component_scope(
     assert list_response.json()[0]["material_id"] == material.id
 
 
+async def test_component_material_added_twice_is_a_conflict(
+    api_client_superuser: AsyncClient,
+    db_session: AsyncSession,
+    setup_product_graph: ProductGraph,
+) -> None:
+    """A second POST of a material already in the component's bill of materials answers 409."""
+    material = Material(name="Brass")
+    db_session.add(material)
+    await db_session.flush()
+    path = f"/v1/components/{setup_product_graph.component.id}/materials"
+    payload = [{"material_id": material.id, "quantity": BOM_QUANTITY, "unit": BOM_UNIT}]
+
+    first = await api_client_superuser.post(path, json=payload)
+    # The app shares this test session; each real request loads the bill of materials afresh.
+    db_session.expire(setup_product_graph.component, ["bill_of_materials"])
+    second = await api_client_superuser.post(path, json=payload)
+
+    assert first.status_code == status.HTTP_201_CREATED, first.text
+    assert second.status_code == status.HTTP_409_CONFLICT, second.text
+    assert len((await api_client_superuser.get(path)).json()) == 1
+
+
 async def test_delete_component(api_client_superuser: AsyncClient, setup_product_graph: ProductGraph) -> None:
     """DELETE /components/{id} removes the component."""
     response = await api_client_superuser.delete(f"/v1/components/{setup_product_graph.component.id}")

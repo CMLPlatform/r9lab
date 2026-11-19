@@ -578,6 +578,28 @@ async def test_product_materials_filter_by_material_name(
     assert [item["material_id"] for item in unfiltered_response.json()] == [material.id]
 
 
+async def test_product_material_added_twice_is_a_conflict(
+    api_client_superuser: AsyncClient,
+    db_session: AsyncSession,
+    setup_product: Product,
+) -> None:
+    """A second POST of a material already in the bill of materials answers 409 and keeps one row."""
+    material = Material(name="Copper")
+    db_session.add(material)
+    await db_session.flush()
+    path = f"/v1/products/{setup_product.id}/materials"
+    payload = [{"material_id": material.id, "quantity": BOM_QUANTITY, "unit": BOM_UNIT}]
+
+    first = await api_client_superuser.post(path, json=payload)
+    # The app shares this test session; each real request loads the bill of materials afresh.
+    db_session.expire(setup_product, ["bill_of_materials"])
+    second = await api_client_superuser.post(path, json=payload)
+
+    assert first.status_code == status.HTTP_201_CREATED, first.text
+    assert second.status_code == status.HTTP_409_CONFLICT, second.text
+    assert len((await api_client_superuser.get(path)).json()) == 1
+
+
 async def test_product_videos_reject_component_ids(
     api_client_superuser: AsyncClient,
     setup_product_graph: ProductGraph,

@@ -1,6 +1,6 @@
 """Component-scoped bill-of-materials routes."""
 
-from typing import Annotated
+from typing import TYPE_CHECKING, Annotated
 
 from fastapi import Body, Path
 from pydantic import PositiveInt
@@ -37,7 +37,13 @@ from app.api.data_collection.schemas import (
     MaterialProductLinkUpdate,
 )
 
+if TYPE_CHECKING:
+    from typing import Any
+
 component_material_router = PublicAPIRouter(prefix="/components", tags=["components"])
+_MATERIAL_ALREADY_ASSIGNED: dict[int | str, dict[str, Any]] = {
+    409: {"description": "A material is already in the bill of materials."}
+}
 
 
 @component_material_router.get(
@@ -73,6 +79,7 @@ async def get_material_in_component_bill_of_materials(
     response_model=list[MaterialProductLinkReadWithinProduct],
     status_code=201,
     summary="Add multiple materials to component bill of materials",
+    responses=_MATERIAL_ALREADY_ASSIGNED,
     dependencies=[API_WRITE_RATE_LIMIT_DEPENDENCY],
 )
 async def add_materials_to_component(
@@ -95,6 +102,7 @@ async def add_materials_to_component(
     response_model=MaterialProductLinkReadWithinProduct,
     status_code=201,
     summary="Add single material to component bill of materials",
+    responses=_MATERIAL_ALREADY_ASSIGNED,
     dependencies=[API_WRITE_RATE_LIMIT_DEPENDENCY],
 )
 async def add_material_to_component(

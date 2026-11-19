@@ -47,7 +47,10 @@ self_service_router = PublicAPIRouter(
     "/{user_id}",  # user_id is bound by the get_user_or_404 dependency
     summary="Delete a user by ID",
     status_code=204,
-    responses={400: {"description": "An administrator deletes their own account through DELETE /users/me."}},
+    responses={
+        400: {"description": "An administrator deletes their own account through DELETE /users/me."},
+        409: {"description": "The target is the anonymous system account or the last active superuser."},
+    },
 )
 async def delete_user(
     user: UserByIDDep,

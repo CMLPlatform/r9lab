@@ -9691,6 +9691,13 @@ export interface operations {
           'application/json': components['schemas']['MaterialProductLinkReadWithinProduct'][];
         };
       };
+      /** @description A material is already in the bill of materials. */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
       /** @description Validation Error */
       422: {
         headers: {
@@ -9792,6 +9799,13 @@ export interface operations {
         content: {
           'application/json': components['schemas']['MaterialProductLinkReadWithinProduct'];
         };
+      };
+      /** @description A material is already in the bill of materials. */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
       };
       /** @description Validation Error */
       422: {
@@ -10110,6 +10124,13 @@ export interface operations {
           'application/json': components['schemas']['MaterialProductLinkReadWithinProduct'][];
         };
       };
+      /** @description A material is already in the bill of materials. */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
       /** @description Validation Error */
       422: {
         headers: {
@@ -10211,6 +10232,13 @@ export interface operations {
         content: {
           'application/json': components['schemas']['MaterialProductLinkReadWithinProduct'];
         };
+      };
+      /** @description A material is already in the bill of materials. */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
       };
       /** @description Validation Error */
       422: {
@@ -11681,6 +11709,13 @@ export interface operations {
       };
       /** @description An administrator deletes their own account through DELETE /users/me. */
       400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description The target is the anonymous system account or the last active superuser. */
+      409: {
         headers: {
           [name: string]: unknown;
         };

@@ -10914,6 +10914,9 @@
             },
             "description": "Successful Response"
           },
+          "409": {
+            "description": "A material is already in the bill of materials."
+          },
           "422": {
             "content": {
               "application/json": {
@@ -11196,6 +11199,9 @@
               }
             },
             "description": "Successful Response"
+          },
+          "409": {
+            "description": "A material is already in the bill of materials."
           },
           "422": {
             "content": {
@@ -19462,6 +19468,9 @@
             },
             "description": "Successful Response"
           },
+          "409": {
+            "description": "A material is already in the bill of materials."
+          },
           "422": {
             "content": {
               "application/json": {
@@ -19744,6 +19753,9 @@
               }
             },
             "description": "Successful Response"
+          },
+          "409": {
+            "description": "A material is already in the bill of materials."
           },
           "422": {
             "content": {
