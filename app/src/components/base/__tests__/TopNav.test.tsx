@@ -141,12 +141,18 @@ it.each([
   '/forgot-password',
   '/reset-password',
   '/mfa',
-  '/category-selection',
 ])('renders nothing on the chrome-free route %s, even at lg', async (path) => {
   (useBreakpoint as jest.Mock).mockReturnValue({ isMd: true, isLg: true });
   (usePathname as jest.Mock).mockReturnValue(path);
   await render(<TopNav />);
   expect(screen.queryByText('Products')).toBeNull();
+});
+
+it('stays behind the category picker, which opens as a modal', async () => {
+  (useBreakpoint as jest.Mock).mockReturnValue({ isMd: true, isLg: true });
+  (usePathname as jest.Mock).mockReturnValue('/category-selection');
+  await render(<TopNav />);
+  expect(screen.getByText('Products')).toBeTruthy();
 });
 
 it('the shortcuts button opens the overlay', async () => {
