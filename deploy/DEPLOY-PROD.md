@@ -610,3 +610,34 @@ just stack prod migrate YES
 
 The watchdog's schema-drift check (1.4) reports both states, so neither reaches a deploy
 unnoticed.
+
+### Rotating secrets
+
+Secret files live under `secrets/prod/` (inventory: `deploy/env/variables.toml`, printed by
+`just env-inventory`). Each service mounts only the files its process reads.
+
+**An app secret:** replace the file under `secrets/prod/`, restart the affected service, and check
+`/livez` and `/readyz`. Rotating `AUTH_TOKEN_SECRET` invalidates existing login, reset and
+verification tokens. For an OAuth or email provider secret, rotate the upstream credential first,
+then update the file, then restart `api`.
+
+**A database role password:** change the PostgreSQL role password, update the matching file under
+`secrets/prod/`, and restart the affected service (`api`, `migrator` or `backup`). To rotate the
+Redis password, restart `redis` and its consumers, such as `api`.
+
+**`DATA_ENCRYPTION_KEY` is break-glass material.** Older encrypted values and backups depend on the
+previous key. Rotating it needs a planned re-encryption path and a check of backup retention.
+
+**A secret that leaked outside its host:**
+
+1. Revoke or rotate it upstream.
+1. Update the host file or the root `.env` value.
+1. Restart the affected services and run the health checks.
+1. Record what was exposed and when.
+
+Existing encrypted backups depend on the old key until their retention window passes. Never rotate
+`restic_password` (1.1).
+
+`just stack prod up` runs `deploy/postgres/initdb/provision.sh`
+against the live database before the API starts. It creates the roles, moves table ownership to the
+migration role and installs the superuser-only extensions, so an existing volume needs no rebuild.

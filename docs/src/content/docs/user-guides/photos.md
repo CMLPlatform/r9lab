@@ -52,13 +52,13 @@ Use image uploads for display photos. Use file uploads for research documents an
 data. Only a lab account sees the "Research files" block on a record it owns. Ask an administrator
 if you need the lab role.
 
-| What                 | Accepted types                                                          | Limit                    |
-| -------------------- | ----------------------------------------------------------------------- | ------------------------ |
-| Images               | `.bmp`, `.gif`, `.jpeg`, `.jpg`, `.png`, `.webp`                        | 10 MiB, 12.6 MP (contributor) |
-| Research files       | `.csv`, `.docx`, `.json`, `.md`, `.pdf`, `.pptx`, `.tsv`, `.txt`, `.xlsx` | 50 MiB                   |
-| Scientific data      | `.dat`, `.h5`, `.hdr`, `.hdf5`, `.img`, `.nitf`, `.ntf`, `.raw`, `.tif`, `.tiff` | 50 MiB            |
+| What            | Accepted types                                                                   | Limit                         |
+| --------------- | -------------------------------------------------------------------------------- | ----------------------------- |
+| Images          | `.bmp`, `.gif`, `.jpeg`, `.jpg`, `.png`, `.webp`                                 | 10 MiB, 12.6 MP (contributor) |
+| Research files  | `.csv`, `.docx`, `.json`, `.md`, `.pdf`, `.pptx`, `.tsv`, `.txt`, `.xlsx`        | 50 MiB                        |
+| Scientific data | `.dat`, `.h5`, `.hdr`, `.hdf5`, `.img`, `.nitf`, `.ntf`, `.raw`, `.tif`, `.tiff` | 50 MiB                        |
 
-A contributor account holds up to 1000 files and 3 GiB. A lab account holds up to 20 000 files and
+A contributor account holds up to 5000 files and 3 GiB. A lab account holds up to 20 000 files and
 50 GiB, and its image caps are 20 MiB and 24 MP. Deleting media frees quota. These are the default
 limits; an operator can change them (see [Configure uploads](/operations/configure/)).
 

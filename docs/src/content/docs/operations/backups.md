@@ -1,30 +1,27 @@
 ---
 title: Backups and recovery
-description: How R9lab backs up the database and uploads, and how to check, restore and roll back.
+description: What R9lab backs up, how often, where it goes and what protects the copies.
 ---
 
-This page covers what is backed up, when, and how to check it. For the services involved, see
-[Deployment topology](/operations/deployment/).
+This page describes the backup design. The commands for the production host are in
+[`deploy/DEPLOY-PROD.md`](https://github.com/CMLPlatform/r9lab/blob/main/deploy/DEPLOY-PROD.md).
+For the services involved, see [Deployment topology](/operations/deployment/).
 
 ## What is stored
 
 - PostgreSQL holds the application state.
-- Uploaded files and images sit on disk and are served by the backend. Treat them as primary
-  research data.
+- Uploaded files and images sit on disk and are served by the backend. They are primary research
+  data.
 
 ## What is backed up
 
-Database dumps and uploads go into an encrypted local restic repository under `BACKUP_HOST_DIR`.
-The backup container runs as UID and GID `65532`.
+Database dumps and uploads go into an encrypted local restic repository on the host. Backups are
+host systemd timers, not Compose services:
 
-Backups are host systemd timers, not Compose services:
+- A snapshot every hour.
+- Retention, an integrity check and an optional offsite copy once a day.
 
-- `r9lab-backup@.timer` takes a snapshot every hour.
-- `r9lab-backup-maintenance@.timer` runs retention, the integrity check and the optional offsite
-  copy once a day. The repository is repacked daily, not 24 times a day.
-
-Losing the host still costs up to a day of data. The offsite copy uses `restic copy` over restic's
-rclone backend, to the one remote in `secrets/<env>/rclone.conf`.
+Losing the host still costs up to a day of data. The offsite copy goes to one rclone remote.
 
 Each account deletion is also appended to an erasure ledger in `BACKUP_HOST_DIR/erasure-ledger`,
 outside the database. A line holds the account id, the content policy and the time. Each database
@@ -38,46 +35,21 @@ from offsite. The API refuses to start when the directory is missing.
 
 A backup refuses to run when it would replace good data with bad.
 
-- **Size check.** It refuses a dump or uploads tree smaller than half the newest stored snapshot of
-  the same tag. An empty snapshot could otherwise age out the good copies. `RESTIC_MIN_DUMP_RATIO`
-  tunes the ratio. `0` turns the check off.
-- **Environment marker.** The uploads volume carries a `.relab-volume` marker with the name of its
-  environment. A backup refuses to run if the marker is missing or names another environment. The
-  check is skipped when `R9LAB_ENVIRONMENT` is unset, as in dev and CI.
+- **Size check.** It refuses a dump or uploads tree that is much smaller than the newest snapshot,
+  so an empty one cannot age out the good copies.
+- **Environment marker.** The uploads volume carries a marker with the name of its environment. A
+  backup refuses to run when the marker is missing or names another environment.
 
-After you restore one environment's uploads into another's volume, rewrite the marker for the
-target. The restore carries the source marker along, and every backup there then refuses.
+## Restores and rollback
 
-## Check a restore
+- A monthly restore check restores the latest dump and uploads snapshot into scratch space and
+  confirms they hold real data.
+- A failed migration leaves the last successful revision in place, and a re-run resumes from there.
+- A rollback returns to an earlier release's images. It downgrades the schema only when no
+  migration in the range destroyed data. Otherwise, restore a backup.
 
-```bash
-just restore-check <env>
-```
+## Monitoring
 
-This restores the latest database dump into a disposable Postgres container and checks that it
-reads. It also restores the latest uploads snapshot into a scratch directory and checks that it
-holds real data. A monthly timer runs it for you.
-
-## Migrations and rollback
-
-Alembic runs each migration revision in one transaction. A failed migration leaves the last
-successful revision in place. A re-run resumes from there.
-
-To return to an earlier release:
-
-```bash
-just stack <env> rollback YES <tag> [<revision>]
-```
-
-This switches to that release's published images. It downgrades the schema only when no migration
-in the range destroyed data. Otherwise, restore a backup. It cannot return to a release from
-before the R9lab rename.
-
-## Scheduled work
-
-Hourly backup, daily backup maintenance, the hourly watchdog and the monthly restore check all run
-from systemd timers. The timers catch up on runs missed while the host was off.
-
-Each job pings a dead-man's switch that bypasses the telemetry collector, so it reports even when
-telemetry is broken. For local triage, run `just watchdog <env>`. It exits non-zero and prints one
-`ALERT[...]` line for each failure.
+Each scheduled job pings a dead-man's switch that bypasses the telemetry collector, so a failure
+is reported even when telemetry is down. See
+[Telemetry and monitoring](/operations/monitoring/).

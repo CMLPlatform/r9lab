@@ -32,11 +32,12 @@ confirm. Changes to materials save as you make them.
 
 ## Warnings
 
-The app flags these. Only the duplicate is refused.
+The app flags these but does not block you. A duplicate is the exception: the picker does not
+offer it.
 
 - **No materials or components.** A record needs at least one of them.
-- **Duplicate material.** A material can appear once per record. The app says it is already in
-  the list and keeps what you typed. Change the quantity of the existing row instead.
+- **Duplicate material.** A material can appear once per record. A material already in the list is
+  not offered in the picker. Change the quantity of the existing row instead.
 - **Mass balance.** For a record without components, the materials should add up to its weight
   within 10%. A larger gap is a prompt to re-check.
 - **Total mass.** The app adds up the rows only when all of them are in g or kg. If one row is in

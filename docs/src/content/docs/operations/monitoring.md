@@ -11,11 +11,11 @@ repository. Dev and CI ship nothing.
 Set these in the root `.env`. All three must be set together. `just deploy-secrets-check` enforces
 this.
 
-| Variable                      | What it does                                                         |
-| ----------------------------- | -------------------------------------------------------------------- |
-| `OTEL_EXPORTER_OTLP_ENDPOINT` | Switches on the backend's OTLP export and the `compose.telemetry.yml` overlay |
+| Variable                      | What it does                                                                                                         |
+| ----------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| `OTEL_EXPORTER_OTLP_ENDPOINT` | Switches on the backend's OTLP export and the `compose.telemetry.yml` overlay                                        |
 | `OTLP_AUTH_TOKEN`             | The collector's bearer token. Alloy reads it directly. Compose folds it into the SDK's header format for the backend |
-| `TELEMETRY_EDGE_KEY`          | A second credential that the edge in front of the collector expects  |
+| `TELEMETRY_EDGE_KEY`          | A second credential that the edge in front of the collector expects                                                  |
 
 `OTEL_EXPORTER_OTLP_PROTOCOL` defaults to `http/protobuf`. The collector sits behind a tunnel that
 routes HTTPS only. Hosts without these variables ship nothing.
