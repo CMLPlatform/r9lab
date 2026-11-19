@@ -33,6 +33,9 @@ async def export_own_account(user: CurrentActiveUserDep, session: AsyncSessionDe
     is not known in advance and an interrupted download starts over.
     """
     archive = await load_account_archive(session, user)
+    # The stream reads only the loaded archive. The yield dependency would keep the session,
+    # and its pooled connection idle in a transaction, open until the last byte is sent.
+    await session.close()
     return StreamingResponse(
         stream_account_archive(archive),
         media_type="application/zip",

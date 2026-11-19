@@ -15,6 +15,7 @@ Data portability (GDPR article 20) for the signed-in user. The archive holds:
 The ZIP is written to the response as it is built, with no temporary file.
 """
 
+import logging
 import zipfile
 from dataclasses import dataclass
 from datetime import UTC, datetime
@@ -43,6 +44,8 @@ if TYPE_CHECKING:
 
     from app.api.auth.models import User
     from app.api.file_storage.models import File, Image
+
+logger = logging.getLogger(__name__)
 
 MISSING_FILES_NAME = "missing-files.txt"
 _CHUNK_SIZE = 256 * 1024
@@ -170,10 +173,17 @@ def stream_account_archive(archive: AccountArchive) -> Iterator[bytes]:
                 missing.append(upload.arcname)
                 continue
             info.compress_type = zipfile.ZIP_STORED
-            with source, zf.open(info, "w") as target:
-                while chunk := source.read(_CHUNK_SIZE):
-                    target.write(chunk)
-                    yield sink.drain()
+            try:
+                with source, zf.open(info, "w") as target:
+                    while chunk := source.read(_CHUNK_SIZE):
+                        target.write(chunk)
+                        yield sink.drain()
+            except OSError:
+                # Part of the entry is already sent, so it cannot move to missing-files.txt.
+                # Re-raising aborts the response, so the browser marks the download failed
+                # rather than saving an archive that looks complete.
+                logger.exception("Account archive stopped: could not read %s", upload.arcname)
+                raise
         if missing:
             zf.writestr(MISSING_FILES_NAME, "".join(f"{name}\n" for name in missing))
     yield sink.drain()

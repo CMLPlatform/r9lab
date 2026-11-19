@@ -18,11 +18,12 @@ describe('the download-your-data row', () => {
   const user = setupUser();
   const globals = globalThis as unknown as Record<string, unknown>;
   const originalDocument = globals.document;
-  const link = { href: '', download: 'unset', click: jest.fn() };
+  const link = { href: '', target: '', rel: '', click: jest.fn() };
 
   beforeEach(() => {
     link.href = '';
-    link.download = 'unset';
+    link.target = '';
+    link.rel = '';
     link.click.mockReset();
     globals.document = { createElement: () => link };
   });
@@ -49,7 +50,9 @@ describe('the download-your-data row', () => {
     // The browser streams the ZIP to disk itself; the app never holds the bytes.
     expect(link.href).toBe(ACCOUNT_EXPORT_URL);
     expect(ACCOUNT_EXPORT_URL).toBe(`${API_URL}/users/me/export`);
-    expect(link.download).toBe('');
+    // A new tab, so a refused download shows its error there and the app stays open.
+    expect(link.target).toBe('_blank');
+    expect(link.rel).toBe('noopener');
     expect(sessionChecks).toBe(1);
     expect(await screen.findByText('Download started')).toBeOnTheScreen();
   });

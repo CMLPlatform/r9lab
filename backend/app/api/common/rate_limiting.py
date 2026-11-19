@@ -144,7 +144,7 @@ class Limiter:
         ``signed_in_ip_ceiling`` also charges signed-in requests to a per-IP bucket of their
         own, so a stack of throwaway accounts on one IP cannot multiply the per-user budget.
 
-        ``scope`` keeps the per-IP bucket apart from other routes at the same rate.
+        ``scope`` keeps the per-IP and per-user buckets apart from other routes at the same rate.
         """
 
         async def dependency(request: Request) -> None:
@@ -163,7 +163,8 @@ class Limiter:
             if user_id is None:
                 await self.ahit_key(rate_string, request_ip_rate_limit_key(request, scope))
             else:
-                await self.ahit_key(user_rate_string, rate_limit_bucket_key("client:user", user_id))
+                user_prefix = f"client:user:{scope}" if scope else "client:user"
+                await self.ahit_key(user_rate_string, rate_limit_bucket_key(user_prefix, user_id))
                 if signed_in_ip_ceiling is not None:
                     ip_key = rate_limit_bucket_key("client:ip:signed-in", get_client_ip(request))
                     await self.ahit_key(signed_in_ip_ceiling, ip_key)

@@ -365,3 +365,27 @@ async def test_signed_in_ip_ceiling_caps_many_accounts_on_one_ip(redis_client: R
 
     assert statuses == [200, 200, 200, 429]
     assert anonymous == 200
+
+
+async def test_per_user_buckets_are_kept_apart_by_scope(redis_client: Redis) -> None:
+    """Two routes at the same per-user rate but different scopes do not share one budget."""
+    app = FastAPI()
+    app.state.services = AppServices(redis=redis_client)
+    app.add_exception_handler(RateLimitExceededError, rate_limit_exceeded_handler)
+    limiter = Limiter(storage_uri="memory://")
+    per_user = ("1/hour", request_access_token_owner_id)
+
+    @app.get("/first", dependencies=[limiter.dependency("1/hour", scope="first", per_user=per_user)])
+    async def first() -> dict[str, bool]:
+        return {"ok": True}
+
+    @app.get("/second", dependencies=[limiter.dependency("1/hour", scope="second", per_user=per_user)])
+    async def second() -> dict[str, bool]:
+        return {"ok": True}
+
+    bearer = {"Authorization": f"Bearer {await _issue_token(redis_client, 'user-a')}"}
+    transport = ASGITransport(app=app, client=(_ROOM_IP, 1234))
+    async with httpx.AsyncClient(transport=transport, base_url="https://test") as client:
+        statuses = [(await client.get(path, headers=bearer)).status_code for path in ("/first", "/second", "/first")]
+
+    assert statuses == [200, 200, 429]
