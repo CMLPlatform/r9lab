@@ -29,7 +29,7 @@ test.describe('Top nav (>=lg)', () => {
     // The RPi setting is server-side on the shared e2e-admin account, so a
     // prior run (or this test's own leftover state) can start it enabled.
     // Force it off first so "hidden by default" below is deterministic.
-    const rpiSwitch = page.getByLabel('Raspberry Pi camera');
+    const rpiSwitch = page.getByRole('switch', { name: 'Raspberry Pi camera' });
     await expect(rpiSwitch).toBeVisible();
     if (await rpiSwitch.isChecked()) {
       await rpiSwitch.click();

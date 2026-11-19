@@ -162,7 +162,7 @@ test.describe('Profile: logout dialog', () => {
 test.describe('Profile: delete dialog', () => {
   test('delete account dialog shows the contact email address', async ({ page }) => {
     await loginAndGoToProfile(page);
-    await page.getByText('Delete account?').click();
+    await page.getByText('Delete account', { exact: true }).click();
     await expect(page.getByText('info@r9lab.io')).toBeVisible({
       timeout: 3_000,
     });

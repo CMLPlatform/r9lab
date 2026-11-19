@@ -99,12 +99,12 @@ test.describe('Products page: phone layout', () => {
     await dismissProductsInfoCard(page);
 
     const count = page.getByText(PRODUCT_COUNT_PATTERN);
-    await count.scrollIntoViewIfNeeded();
     const fab = page.getByRole('button', { name: 'Sign in to add product' });
-    // Retried rather than measured once: the count text is the list's terminal
-    // row, so scrolling to it can pull in another page of products and shift it
-    // between the two boundingBox() calls.
+    // Scrolled and measured inside the retry: the count text is the list's terminal
+    // row, so scrolling to it can pull in another page of products and push it
+    // back below the fold.
     await expect(async () => {
+      await count.scrollIntoViewIfNeeded();
       const [countBox, fabBox] = await Promise.all([count.boundingBox(), fab.boundingBox()]);
       expect(countBox).not.toBeNull();
       expect(fabBox).not.toBeNull();
