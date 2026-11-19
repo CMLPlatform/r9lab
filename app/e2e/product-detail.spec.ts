@@ -209,7 +209,9 @@ test.describe('Product detail: phone chunking', () => {
     expect((nameBox?.y ?? 0) + (nameBox?.height ?? 0)).toBeLessThanOrEqual(844);
   });
 
-  test('Properties has internal hierarchy and its fields clear the flow Save bar', async ({
+  // The Save bar floats over the content on phones. Fields may pass under it while scrolling;
+  // scrolled to the end, the content's bottom padding must lift the last control clear of it.
+  test('Properties has internal hierarchy and the form end scrolls clear of the Save bar', async ({
     page,
   }) => {
     await loginAndReachProducts(page);
@@ -219,20 +221,25 @@ test.describe('Product detail: phone chunking', () => {
     await expect(page.getByText('Measurements', { exact: true })).toBeVisible();
     await expect(page.getByText('Circularity notes', { exact: true })).toBeVisible();
 
-    const saveBar = page.getByTestId('save-bar-dock');
-    const noteFields = page.locator('textarea');
-    await expect(noteFields).toHaveCount(3);
-    const fields = await noteFields.all();
-    await Promise.all(fields.map((noteField) => noteField.scrollIntoViewIfNeeded()));
-    const [fieldBoxes, saveBox] = await Promise.all([
-      Promise.all(fields.map((noteField) => noteField.boundingBox())),
-      saveBar.boundingBox(),
-    ]);
-    expect(saveBox).not.toBeNull();
-    for (const fieldBox of fieldBoxes) {
-      expect(fieldBox).not.toBeNull();
-      expect((fieldBox?.y ?? 0) + (fieldBox?.height ?? 0)).toBeLessThanOrEqual(saveBox?.y ?? 0);
-    }
+    await expect(page.locator('textarea')).toHaveCount(3);
+    // Delete is the last control in edit mode.
+    const lastControl = page.getByRole('button', { name: 'Delete product' });
+    await lastControl.scrollIntoViewIfNeeded();
+    // To the end of the scroller, whatever its length.
+    await lastControl.hover();
+    await page.mouse.wheel(0, 10_000);
+
+    const saveRow = page.getByTestId('save-bar-row');
+    await expect
+      .poll(async () => {
+        const [fieldBox, saveBox] = await Promise.all([
+          lastControl.boundingBox(),
+          saveRow.boundingBox(),
+        ]);
+        if (!(fieldBox && saveBox)) return Number.NaN;
+        return saveBox.y - (fieldBox.y + fieldBox.height);
+      })
+      .toBeGreaterThanOrEqual(0);
   });
 });
 
