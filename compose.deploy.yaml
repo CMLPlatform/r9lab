@@ -162,6 +162,11 @@ services:
       # Upload ceilings. Raise these from the root .env on an instance whose
       # existing corpus already exceeds a default (the quota ledger counts real
       # rows, so an over-limit owner is blocked from uploading entirely).
+      MAX_FILE_UPLOAD_SIZE_MB: "${MAX_FILE_UPLOAD_SIZE_MB:-50}"
+      MAX_IMAGE_UPLOAD_SIZE_MB: "${MAX_IMAGE_UPLOAD_SIZE_MB:-10}"
+      MAX_IMAGE_UPLOAD_SIZE_LAB_MB: "${MAX_IMAGE_UPLOAD_SIZE_LAB_MB:-20}"
+      MAX_IMAGE_UPLOAD_PIXELS: "${MAX_IMAGE_UPLOAD_PIXELS:-12582912}"
+      MAX_IMAGE_UPLOAD_PIXELS_LAB: "${MAX_IMAGE_UPLOAD_PIXELS_LAB:-24000000}"
       MAX_UPLOAD_FILES_PER_USER: "${MAX_UPLOAD_FILES_PER_USER:-5000}"
       MAX_UPLOAD_BYTES_PER_USER_MB: "${MAX_UPLOAD_BYTES_PER_USER_MB:-3072}"
       MAX_UPLOAD_FILES_PER_LAB_USER: "${MAX_UPLOAD_FILES_PER_LAB_USER:-20000}"
