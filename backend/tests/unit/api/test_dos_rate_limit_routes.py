@@ -168,6 +168,7 @@ RATE_LIMIT_EXEMPT_ROUTES = {
     ("PATCH", "/v1/admin/users/{user_id}"),
     ("POST", "/v1/admin/users/{user_id}/mfa/reset"),
     ("PUT", "/v1/admin/users/{user_id}/role"),
+    ("PUT", "/v1/admin/users/{user_id}/active"),
     ("DELETE", "/v1/admin/users/{user_id}"),
     ("DELETE", "/v1/admin/plugins/r9cam/cameras/{camera_id}"),
     # Device-authenticated: needs a fresh ES256 assertion from a paired camera's key.
