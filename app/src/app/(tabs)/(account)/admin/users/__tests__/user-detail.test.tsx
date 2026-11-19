@@ -65,6 +65,13 @@ describe('Admin user detail screen', () => {
     });
   });
 
+  it('titles a user without a username by email, once', async () => {
+    await renderDetail(mockAdminUser({ id: TARGET_ID, username: null, email: 'anon@example.org' }));
+
+    expect(screen.queryByText('No username')).toBeNull();
+    expect(screen.getAllByText('anon@example.org')).toHaveLength(1);
+  });
+
   it('sets the role after confirming', async () => {
     const sent = recordAdminWrites();
     await renderDetail();

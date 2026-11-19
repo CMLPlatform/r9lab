@@ -112,7 +112,7 @@ export function AdminUserDetail({ id }: { id: string }) {
     );
   }
   const user = query.data;
-  const name = user.username ?? 'No username';
+  const name = user.username ?? user.email;
   return (
     <ScrollView contentContainerStyle={{ paddingBottom: 40 }}>
       <Head>
@@ -127,9 +127,11 @@ export function AdminUserDetail({ id }: { id: string }) {
               {name}
             </AppText>
           )}
-          <AppText variant="data" selectable>
-            {user.email}
-          </AppText>
+          {user.username ? (
+            <AppText variant="data" selectable>
+              {user.email}
+            </AppText>
+          ) : null}
           <AdminUserBadges user={user} />
         </View>
         {me?.id === user.id ? <OwnAccountNotice /> : <UserActions user={user} />}

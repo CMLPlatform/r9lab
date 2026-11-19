@@ -31,18 +31,20 @@ const FILTERS: { key: AdminUsersFilter; label: string }[] = [
 
 function UserRow({ user, onPress }: { user: AdminUser; onPress: (id: string) => void }) {
   const handlePress = useCallback(() => onPress(user.id), [onPress, user.id]);
-  const name = user.username ?? 'No username';
+  const name = user.username ?? user.email;
   return (
     <Pressable
       onPress={handlePress}
       accessibilityRole="button"
-      accessibilityLabel={`${name}, ${user.email}`}
+      accessibilityLabel={user.username ? `${name}, ${user.email}` : name}
       className={cn('min-h-11 gap-1 border-t border-border px-4 py-3', PRESS_TINT)}
     >
       <AppText className="font-semibold">{name}</AppText>
-      <AppText variant="caption" className="text-muted-foreground">
-        {user.email}
-      </AppText>
+      {user.username ? (
+        <AppText variant="caption" className="text-muted-foreground">
+          {user.email}
+        </AppText>
+      ) : null}
       <AdminUserBadges user={user} />
     </Pressable>
   );

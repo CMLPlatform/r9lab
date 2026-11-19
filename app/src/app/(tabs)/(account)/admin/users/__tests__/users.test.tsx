@@ -83,6 +83,30 @@ describe('Admin users screen', () => {
     expect(requests.at(-1)?.searchParams.get('search')).toBe('grace');
   });
 
+  it('names a user without a username by email, once', async () => {
+    mockUseAuth.mockReturnValue({
+      user: mockUser({ isSuperuser: true, mfaEnabled: true }),
+      isLoading: false,
+    });
+    server.use(
+      http.get(`${API_URL}/admin/users`, () =>
+        HttpResponse.json({
+          items: [mockAdminUser({ username: null, email: 'anon@example.org' })],
+          total: 1,
+          page: 1,
+          size: 25,
+          pages: 1,
+        }),
+      ),
+    );
+
+    await renderWithProviders(<AdminUsersScreen />, { withDialog: true });
+
+    await waitFor(() => expect(screen.getByText('anon@example.org')).toBeOnTheScreen());
+    expect(screen.queryByText('No username')).toBeNull();
+    expect(screen.getAllByText('anon@example.org')).toHaveLength(1);
+  });
+
   it('pages through the results', async () => {
     mockUseAuth.mockReturnValue({
       user: mockUser({ isSuperuser: true, mfaEnabled: true }),
