@@ -242,8 +242,8 @@ def cache[**P, T](
             return result
 
         # FastAPI injects the request through this extra parameter, so every endpoint keys
-        # by its full query string even when it declares no Request of its own: filter sets
-        # keep their search term in private state that their repr leaves out.
+        # by the query params its route declares even when it declares no Request of its
+        # own: filter sets keep their search term in private state that their repr leaves out.
         cast("Any", wrapper).__signature__ = _signature_with_request(func)
         return wrapper
 
