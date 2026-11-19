@@ -62,6 +62,10 @@ export default function Products() {
     <>
       <Head>
         <title>Products · R9lab</title>
+        <meta
+          name="description"
+          content="Browse products documented for circular-economy research, with their parts, materials and photos."
+        />
       </Head>
       <PageContainer phoneFullBleed>
         <ScreenTitle>Products</ScreenTitle>

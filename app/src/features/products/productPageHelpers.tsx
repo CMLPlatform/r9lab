@@ -184,3 +184,11 @@ export function getPrimaryFabIcon({
   }
   return <Icon name="pencil" color={theme.colors.onBackground} />;
 }
+
+// Search results cut a snippet at about this length.
+const META_DESCRIPTION_MAX = 155;
+const FALLBACK_DESCRIPTION = 'A product documented on R9lab for circular-economy research.';
+
+export function productMetaDescription(product: { description?: string }): string {
+  return product.description?.trim().slice(0, META_DESCRIPTION_MAX) || FALLBACK_DESCRIPTION;
+}

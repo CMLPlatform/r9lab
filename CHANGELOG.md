@@ -30,6 +30,12 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- The app links the accessibility statement from its sign-in and sign-up screens, and Terms,
+  Privacy policy and the accessibility statement from Account, under About.
+  ([#506](https://github.com/CMLPlatform/r9lab/issues/506))
+- The public web app routes (products, a product, a profile, sign-in, sign-up) carry a
+  `<meta name="description">`, taken from the product's description on a product page.
+  ([#504](https://github.com/CMLPlatform/r9lab/issues/504))
 - r9cam cameras can sign their device tokens with EdDSA (Ed25519) as well as ES256. Each camera
   may use only the algorithm of the key it paired with. The backend now uses r9cam-models
   0.7.0, which accepts Ed25519 public keys at pairing. ([#501](https://github.com/CMLPlatform/r9lab/issues/501))

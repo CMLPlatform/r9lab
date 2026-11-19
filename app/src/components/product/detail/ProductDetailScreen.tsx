@@ -15,6 +15,7 @@ import { SectionNavContext } from '@/components/base/SectionNavContext';
 import { SectionNavLayout } from '@/components/base/SectionNavLayout';
 import ProductDetailsSkeleton from '@/components/product/ProductDetailsSkeleton';
 import { AmountDraftFlushContext } from '@/features/products/amountDraftFlush';
+import { productMetaDescription } from '@/features/products/productPageHelpers';
 import { useProductFiles } from '@/features/products/useProductFiles';
 import type { UseProductFormOptions } from '@/features/products/useProductForm';
 import { useProductPageScreen } from '@/features/products/useProductPageScreen';
@@ -61,6 +62,7 @@ function DocumentChrome({ product, justSaved }: { product: Product; justSaved: b
     <>
       <Head>
         <title>{`${product.name?.trim() || entityLabelTitle(product)} · R9lab`}</title>
+        <meta name="description" content={productMetaDescription(product)} />
       </Head>
       <AppText accessibilityLiveRegion="polite" style={styles.srOnly}>
         {justSaved ? 'Saved' : ''}

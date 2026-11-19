@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { HttpResponse, http } from 'msw';
+import { Children, isValidElement, type ReactElement, type ReactNode } from 'react';
 import Products from '@/app/(tabs)/(products)/products';
 import { API_URL } from '@/config';
 import { productsInfiniteQueryOptions } from '@/features/products/queries';
@@ -25,6 +26,24 @@ const mockDialogApi = {
 const mockUseDialog = jest.fn(() => ({
   ...mockDialogApi,
 }));
+
+// Capture the head children: the test renderer cannot mount <title> or <meta>.
+let mockHeadChildren: ReactNode;
+jest.mock('expo-router/head', () => ({
+  __esModule: true,
+  default: ({ children }: { children: ReactNode }) => {
+    mockHeadChildren = children;
+    return null;
+  },
+}));
+
+function headDescription(): string | undefined {
+  const meta = Children.toArray(mockHeadChildren).find(
+    (child): child is ReactElement<{ name: string; content: string }> =>
+      isValidElement(child) && child.type === 'meta',
+  );
+  return meta?.props.content;
+}
 
 jest.mock('expo-router', () => ({
   useLocalSearchParams: jest.fn(),
@@ -308,6 +327,11 @@ describe('Products screen', () => {
     await renderProducts();
     expect(screen.getByLabelText('Filters, 2 active').props.accessibilityState.expanded).toBe(true);
     expect(screen.getByText('Last 7d')).toBeOnTheScreen();
+  });
+
+  it('describes the page for search results', async () => {
+    await renderProducts();
+    expect(headDescription()).toContain('Browse products');
   });
 
   it('shows skeleton rows while loading', async () => {

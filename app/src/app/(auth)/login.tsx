@@ -25,6 +25,7 @@ export default function Login() {
     <>
       <Head>
         <title>Sign in · R9lab</title>
+        <meta name="description" content="Sign in to R9lab to add and manage your own products." />
       </Head>
       <LoginLayout onBrowse={actions.browseProducts}>
         <LoginCard>

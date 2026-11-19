@@ -6,10 +6,12 @@ import { renderWithProviders, setupUser } from '@/test-utils/index';
 
 // EXPO_PUBLIC_DOCS_URL is unset under Jest, which would leave the link inert.
 const DOCS_URL = 'https://docs.relab.example';
+const WEBSITE_URL = 'https://www.relab.example';
 
 jest.mock('@/config', () => ({
   ...(jest.requireActual('@/config') as object),
   DOCS_URL: 'https://docs.relab.example',
+  WEBSITE_URL: 'https://www.relab.example',
 }));
 
 jest.mock('@/services/externalLinks', () => ({
@@ -68,5 +70,17 @@ describe('ProfileAboutSection', () => {
     expect(mockOpenExternalUrl).toHaveBeenCalledWith(
       new URL('/project/9r-framework', DOCS_URL).toString(),
     );
+  });
+
+  it.each([
+    ['Terms', '/terms'],
+    ['Privacy policy', '/privacy'],
+    ['Accessibility statement', '/accessibility'],
+  ])('opens %s on the website', async (name, path) => {
+    await renderWithProviders(<ProfileAboutSection />);
+
+    await user.press(screen.getByRole('button', { name }));
+
+    expect(mockOpenExternalUrl).toHaveBeenCalledWith(new URL(path, WEBSITE_URL).toString());
   });
 });

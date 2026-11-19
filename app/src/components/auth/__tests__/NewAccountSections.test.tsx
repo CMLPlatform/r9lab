@@ -54,6 +54,16 @@ describe('PrivacyPolicy', () => {
 
     expect(mockOpenExternalUrl).toHaveBeenCalledWith(new URL('/privacy', WEBSITE_URL).toString());
   });
+
+  it('opens the accessibility statement on the website', async () => {
+    await renderWithProviders(<PrivacyPolicy />);
+
+    await user.press(screen.getByRole('link', { name: 'Accessibility statement' }));
+
+    expect(mockOpenExternalUrl).toHaveBeenCalledWith(
+      new URL('/accessibility', WEBSITE_URL).toString(),
+    );
+  });
 });
 
 describe('NewAccountLayout', () => {
