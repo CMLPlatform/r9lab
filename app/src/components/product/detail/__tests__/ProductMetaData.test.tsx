@@ -17,6 +17,8 @@ const TESTUSER_PATTERN = /testuser/;
 const COMPONENT_ID_PATTERN = /Component ID:/;
 const MODERATOR_PATTERN = /A moderator/;
 const NO_EDITS_PATTERN = /No edits recorded/;
+const SHOW_HISTORY_PATTERN = /Show edit history$/;
+const HIDE_HISTORY_PATTERN = /Hide edit history$/;
 
 describe('ProductMetaData', () => {
   it('shows the product ID', async () => {
@@ -104,12 +106,17 @@ describe('ProductMetaData', () => {
       const product = { ...baseProduct, updatedAt: '2026-11-19T10:00:00Z' };
       await renderWithProviders(<ProductMetaData product={product} />);
 
-      await user.press(screen.getByRole('button', { name: 'Show edit history' }));
+      const date = new Date(product.updatedAt).toLocaleDateString();
+      // The accessible name starts with the visible date, so voice control finds it (WCAG 2.5.3).
+      expect(
+        screen.getByRole('button', { name: `Last updated ${date}. Show edit history` }),
+      ).toBeOnTheScreen();
+      await user.press(screen.getByRole('button', { name: SHOW_HISTORY_PATTERN }));
 
       expect(await screen.findByText('Changed weight, brand')).toBeOnTheScreen();
       expect(screen.getByText(TESTUSER_PATTERN)).toBeOnTheScreen();
       expect(screen.getByText(MODERATOR_PATTERN)).toBeOnTheScreen();
-      expect(screen.getByRole('button', { name: 'Hide edit history' })).toBeOnTheScreen();
+      expect(screen.getByRole('button', { name: HIDE_HISTORY_PATTERN })).toBeOnTheScreen();
     });
 
     it("reads a component's history from the component route", async () => {
@@ -126,7 +133,7 @@ describe('ProductMetaData', () => {
       };
       await renderWithProviders(<ProductMetaData product={component} />);
 
-      await user.press(screen.getByRole('button', { name: 'Show edit history' }));
+      await user.press(screen.getByRole('button', { name: SHOW_HISTORY_PATTERN }));
 
       expect(await screen.findByText(NO_EDITS_PATTERN)).toBeOnTheScreen();
     });

@@ -47,7 +47,8 @@ export default function ProductMetaData({ product }: Props) {
               onPress={toggleHistory}
               accessibilityRole="button"
               accessibilityState={{ expanded: historyOpen }}
-              accessibilityLabel={`${historyOpen ? 'Hide' : 'Show'} edit history`}
+              // Starts with the visible text, so voice control can name the button (WCAG 2.5.3).
+              accessibilityLabel={`Last updated ${new Date(product.updatedAt).toLocaleDateString()}. ${historyOpen ? 'Hide' : 'Show'} edit history`}
               className={cn('justify-center rounded-md', PRESS_TINT, WEB_FOCUS_RING)}
               style={styles.link}
             >
