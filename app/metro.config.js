@@ -1,4 +1,9 @@
 const { getDefaultConfig } = require('expo/metro-config');
+
+// Draw modal routes (the category picker) as a dialog on wide web and a sheet on phones.
+// Without it expo-router's web Stack shows them as plain pages. The Expo CLI reads the
+// flag after loading this file, so one line here covers dev, the web export and E2E.
+process.env.EXPO_UNSTABLE_WEB_MODAL ??= '1';
 const { withUniwindConfig } = require('uniwind/metro');
 
 const config = getDefaultConfig(__dirname);
