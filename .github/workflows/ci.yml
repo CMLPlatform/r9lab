@@ -317,8 +317,8 @@ jobs:
 
   api-diff:
     name: API Breaking Changes
-    # The public schema is consumed by every installed app build and the device
-    # schema by cameras in the field, so a silent removal or tightened enum hurts.
+    # The public schema is consumed by every installed app build, and the device and
+    # r9cam schemas by cameras in the field, so a silent removal or tightened enum hurts.
     # The `breaking-api` label marks an intended break: add it, then re-run this job.
     needs: changes
     if: github.event_name == 'pull_request' && needs.changes.outputs.backend == 'true'
@@ -348,16 +348,24 @@ jobs:
           fetch-depth: 2
           persist-credentials: false
 
+      # A schema file this PR adds has no base to break: it is skipped, not failed.
       - name: Extract base schemas
+        id: base
         if: steps.label.outputs.skip != 'true'
         run: |-
           mkdir -p .api-base
-          for doc in public device; do
-            git show "HEAD^1:docs/public/api/schemas/openapi.$doc.json" >".api-base/openapi.$doc.json"
+          for doc in public device r9cam; do
+            path="docs/public/api/schemas/openapi.$doc.json"
+            if git cat-file -e "HEAD^1:$path" 2>/dev/null; then
+              git show "HEAD^1:$path" >".api-base/openapi.$doc.json"
+              echo "$doc=true" >>"$GITHUB_OUTPUT"
+            else
+              echo "::notice file=$path::$path is new in this pull request; nothing to diff against."
+            fi
           done
 
       - name: Diff the public schema
-        if: steps.label.outputs.skip != 'true'
+        if: steps.label.outputs.skip != 'true' && steps.base.outputs.public == 'true'
         uses: oasdiff/oasdiff-action/breaking@14ca7009a63c417dfe27b7c44359c4bcccaf8eee # v0.2.1
         with:
           base: .api-base/openapi.public.json
@@ -367,11 +375,21 @@ jobs:
           github-token: ""
 
       - name: Diff the device schema
-        if: steps.label.outputs.skip != 'true'
+        if: steps.label.outputs.skip != 'true' && steps.base.outputs.device == 'true'
         uses: oasdiff/oasdiff-action/breaking@14ca7009a63c417dfe27b7c44359c4bcccaf8eee # v0.2.1
         with:
           base: .api-base/openapi.device.json
           revision: docs/public/api/schemas/openapi.device.json
+          fail-on: ERR
+          review: "false"
+          github-token: ""
+
+      - name: Diff the r9cam camera schema
+        if: steps.label.outputs.skip != 'true' && steps.base.outputs.r9cam == 'true'
+        uses: oasdiff/oasdiff-action/breaking@14ca7009a63c417dfe27b7c44359c4bcccaf8eee # v0.2.1
+        with:
+          base: .api-base/openapi.r9cam.json
+          revision: docs/public/api/schemas/openapi.r9cam.json
           fail-on: ERR
           review: "false"
           github-token: ""
