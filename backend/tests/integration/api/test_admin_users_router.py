@@ -8,7 +8,7 @@ coroutines and never touched it.
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Any
-from unittest.mock import patch
+from unittest.mock import ANY, patch
 from uuid import uuid4
 
 import pytest
@@ -59,6 +59,7 @@ class TestAdminUsersAuthorization:
             ("patch", "/{uid}"),
             ("delete", "/{uid}"),
             ("post", "/{uid}/mfa/reset"),
+            ("put", "/{uid}/active"),
         ],
     )
     async def test_regular_user_is_denied(
@@ -66,7 +67,7 @@ class TestAdminUsersAuthorization:
     ) -> None:
         """A non-superuser is denied every admin verb."""
         path = ADMIN_USERS + path_suffix.format(uid=db_superuser.id)
-        kwargs = {"json": {}} if method == "patch" else {}
+        kwargs = {"json": {"is_active": False}} if method == "put" else {"json": {}} if method == "patch" else {}
         response = await getattr(api_client_user, method)(path, **kwargs)
         assert response.status_code in (401, 403)
 
@@ -103,12 +104,18 @@ class TestAdminUsersNotFound:
     # UserNotExists straight into the catch-all handler as a 500.
     @pytest.mark.parametrize(
         ("method", "path_suffix"),
-        [("get", "/{uid}"), ("patch", "/{uid}"), ("delete", "/{uid}"), ("post", "/{uid}/mfa/reset")],
+        [
+            ("get", "/{uid}"),
+            ("patch", "/{uid}"),
+            ("delete", "/{uid}"),
+            ("post", "/{uid}/mfa/reset"),
+            ("put", "/{uid}/active"),
+        ],
     )
     async def test_missing_user_returns_404(self, api_client_superuser, method: str, path_suffix: str) -> None:
         """Each admin verb maps a missing id to 404."""
         path = ADMIN_USERS + path_suffix.format(uid=uuid4())
-        kwargs = {"json": {}} if method == "patch" else {}
+        kwargs = {"json": {"is_active": False}} if method == "put" else {"json": {}} if method == "patch" else {}
         response = await getattr(api_client_superuser, method)(path, **kwargs)
         assert response.status_code == 404
 
@@ -169,6 +176,96 @@ class TestAdminUsersActions:
         assert db_user.mfa_totp_secret is None
         assert db_user.mfa_confirmed_at is None
         assert db_user.mfa_recovery_codes == []
+
+
+REVOKE = "app.api.auth.routers.admin_users.revoke_user_refresh_tokens"
+AUDIT = "app.api.auth.routers.admin_users.audit_event"
+
+
+class TestAdminUserSuspension:
+    """`PUT /admin/users/{id}/active` suspends or reactivates an account without erasing it."""
+
+    async def test_suspend_revokes_sessions_and_audits_the_actor(
+        self, api_client_superuser, db_session: AsyncSession, db_superuser: User, db_user: User
+    ) -> None:
+        """Suspending flips is_active, ends the target's sessions and records the acting admin."""
+        with patch(REVOKE) as revoke, patch(AUDIT) as log_audit:
+            response = await api_client_superuser.put(f"{ADMIN_USERS}/{db_user.id}/active", json={"is_active": False})
+
+        assert response.status_code == 200, response.text
+        assert response.json()["is_active"] is False
+        await db_session.refresh(db_user)
+        assert db_user.is_active is False
+        revoke.assert_awaited_once_with(db_user.id, ANY)
+        log_audit.assert_called_once_with(db_superuser.id, AuditAction.DEACTIVATE, User, db_user.id)
+
+    async def test_reactivate_keeps_sessions_untouched(
+        self, api_client_superuser, db_session: AsyncSession, db_superuser: User, db_user: User
+    ) -> None:
+        """Reactivating needs no session revocation and is audited as its own action."""
+        db_user.is_active = False
+        await db_session.commit()
+
+        with patch(REVOKE) as revoke, patch(AUDIT) as log_audit:
+            response = await api_client_superuser.put(f"{ADMIN_USERS}/{db_user.id}/active", json={"is_active": True})
+
+        assert response.status_code == 200, response.text
+        await db_session.refresh(db_user)
+        assert db_user.is_active is True
+        revoke.assert_not_awaited()
+        log_audit.assert_called_once_with(db_superuser.id, AuditAction.REACTIVATE, User, db_user.id)
+
+    async def test_admin_cannot_suspend_themselves(
+        self, api_client_superuser, db_session: AsyncSession, db_superuser: User
+    ) -> None:
+        """Self-suspension is refused before any session is revoked."""
+        with patch(REVOKE) as revoke:
+            response = await api_client_superuser.put(
+                f"{ADMIN_USERS}/{db_superuser.id}/active", json={"is_active": False}
+            )
+
+        assert response.status_code == 400
+        await db_session.refresh(db_superuser)
+        assert db_superuser.is_active is True
+        revoke.assert_not_awaited()
+
+    async def test_last_active_superuser_cannot_be_suspended(
+        self, api_client_superuser, db_session: AsyncSession, db_superuser: User
+    ) -> None:
+        """The guard holds even when the actor's own account went inactive meanwhile."""
+        target = await UserFactory.create_async(
+            session=db_session, is_active=True, is_superuser=True, mfa_enabled=True, refresh_instance=True
+        )
+        # Stands in for a concurrent suspension of the acting admin by the target.
+        db_superuser.is_active = False
+        await db_session.commit()
+
+        with patch(REVOKE) as revoke:
+            response = await api_client_superuser.put(f"{ADMIN_USERS}/{target.id}/active", json={"is_active": False})
+
+        assert response.status_code == 409
+        await db_session.refresh(target)
+        assert target.is_active is True
+        revoke.assert_not_awaited()
+
+    async def test_superuser_can_be_suspended_while_another_one_is_active(
+        self, api_client_superuser, db_session: AsyncSession
+    ) -> None:
+        """The guard blocks only the last admin; the actor still counts as one."""
+        target = await UserFactory.create_async(
+            session=db_session, is_active=True, is_superuser=True, mfa_enabled=True, refresh_instance=True
+        )
+
+        with patch(REVOKE):
+            response = await api_client_superuser.put(f"{ADMIN_USERS}/{target.id}/active", json={"is_active": False})
+
+        assert response.status_code == 200, response.text
+
+    @pytest.mark.parametrize("body", [{}, {"is_active": False, "is_superuser": True}, {"is_active": "maybe"}])
+    async def test_body_is_validated(self, api_client_superuser, db_user: User, body: dict[str, object]) -> None:
+        """Only a boolean `is_active` is accepted; privileged extras never ride along."""
+        response = await api_client_superuser.put(f"{ADMIN_USERS}/{db_user.id}/active", json=body)
+        assert response.status_code == 422
 
 
 @dataclass(slots=True)

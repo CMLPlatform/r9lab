@@ -2330,6 +2330,30 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/v1/admin/users/{user_id}/active': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    /**
+     * Suspend or reactivate a user
+     * @description Suspend (`is_active: false`) or reactivate a user without erasing anything.
+     *
+     *     A suspended account cannot sign in, and its refresh sessions are revoked; its
+     *     products stay. A dedicated route for the same reason as the role route: the
+     *     self-service `UserUpdate` schema must never carry `is_active`.
+     */
+    put: operations['set_user_active_v1_admin_users__user_id__active_put'];
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/v1/profiles/{username}': {
     parameters: {
       query?: never;
@@ -5793,6 +5817,17 @@ export interface components {
      * @enum {string}
      */
     Unit: 'kg' | 'g' | 'm' | 'cm';
+    /**
+     * UserActiveUpdate
+     * @description Administrator request to suspend or reactivate one account.
+     */
+    UserActiveUpdate: {
+      /**
+       * Is Active
+       * @description False suspends the account and ends its sessions; true reactivates it.
+       */
+      is_active: boolean;
+    };
     /**
      * UserPreferences
      * @description Typed user preferences persisted as JSONB.
@@ -11745,6 +11780,56 @@ export interface operations {
         content: {
           'application/json': components['schemas']['UserRead'];
         };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  set_user_active_v1_admin_users__user_id__active_put: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The user's ID */
+        user_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['UserActiveUpdate'];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['UserRead'];
+        };
+      };
+      /** @description An administrator cannot suspend their own account. */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description The target is the last active superuser. */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
       };
       /** @description Validation Error */
       422: {

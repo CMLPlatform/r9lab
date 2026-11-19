@@ -148,6 +148,13 @@ Security-sensitive areas:
   blocks the loads, the policy is `cross-origin` for `/uploads` alone. The relaxation is derived
   from the environment, not configured, so staging and production cannot opt into it.
 - admin APIs
+  - Every `/v1/admin` route needs an active superuser with TOTP enrolled
+    (`current_active_superuser`), and every write is audited with the acting admin's id. The app's
+    admin section is hidden from other accounts, but that is presentation only.
+  - Suspending an account (`PUT /v1/admin/users/{user_id}/active`) revokes its refresh sessions
+    before the write, and refuses the acting admin's own account and the last active superuser.
+  - No admin route sets `is_verified` or `is_superuser`: verification proves control of the
+    mailbox, and OAuth sign-in links by email only to verified accounts.
 - RPi camera device APIs and WebSocket relay
   - A camera acts for its owner. Device-signed HTTP routes and the relay accept a camera only when
     its credential is active and its owner account is active and verified

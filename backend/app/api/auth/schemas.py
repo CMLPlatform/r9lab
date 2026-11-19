@@ -223,6 +223,14 @@ class UserRoleUpdate(BaseModel):
     role: UserRole = Field(description="The contributor tier to assign.")
 
 
+class UserActiveUpdate(BaseModel):
+    """Administrator request to suspend or reactivate one account."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    is_active: bool = Field(description="False suspends the account and ends its sessions; true reactivates it.")
+
+
 # Re-authentication input on UserUpdate, never written to the account.
 STEP_UP_ONLY_FIELDS = frozenset({"current_password", "mfa_code"})
 

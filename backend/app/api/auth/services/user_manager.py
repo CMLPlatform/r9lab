@@ -37,7 +37,6 @@ from app.api.auth.services.password_validator import validate_password as _valid
 from app.api.auth.services.rate_limiter import ACCOUNT_GUESS_DAILY_RATE_LIMIT, LOGIN_RATE_LIMIT
 from app.api.auth.services.user_database import UserDatabaseAsync
 from app.api.auth.terms import CURRENT_TERMS_VERSION
-from app.api.common.audit import AuditAction, audit_event
 from app.api.common.rate_limiting import limiter, rate_limit_bucket_key
 from app.api.common.routers.dependencies import background_tasks_from, get_external_http_client
 from app.core.database import get_async_session
@@ -331,12 +330,6 @@ class UserManager(UUIDIDMixin, BaseUserManager[User, UUID4]):
             await self.user_db.session.commit()
         await revoke_user_refresh_tokens(user.id, request)
         await send_password_reset_confirmation_email(user.email, user.username, background_tasks_from(request))
-
-    async def on_after_update(self, user: User, update_dict: dict, request: Request | None = None) -> None:
-        """Revoke all refresh tokens when a user is deactivated."""
-        if update_dict.get("is_active") is False:
-            await revoke_user_refresh_tokens(user.id, request)
-            audit_event(user.id, AuditAction.DEACTIVATE, User, user.id)
 
     async def on_before_delete(self, user: User, request: Request | None = None) -> None:
         """Revoke all refresh tokens before a user is hard-deleted.

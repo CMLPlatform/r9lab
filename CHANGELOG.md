@@ -67,6 +67,10 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   History starts with this release, covers neither media, components nor materials, and is kept
   for two years. Erasing an account clears the history of its products. A schema rollback below this release is refused once any edit is recorded: roll
   back the code only. ([#361](https://github.com/CMLPlatform/r9lab/issues/361))
+- Admin API: `PUT /v1/admin/users/{user_id}/active` with `{"is_active": false}` suspends an
+  account and ends its sessions; `true` reactivates it. Products stay. An admin cannot suspend
+  their own account or the last active superuser. Both actions are audited
+  (`deactivate`, `reactivate`).
 - r9cam cameras can sign their device tokens with EdDSA (Ed25519) as well as ES256. Each camera
   may use only the algorithm of the key it paired with. The backend now uses r9cam-models
   0.7.0, which accepts Ed25519 public keys at pairing. ([#501](https://github.com/CMLPlatform/r9lab/issues/501))

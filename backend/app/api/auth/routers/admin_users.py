@@ -5,6 +5,7 @@ from typing import Annotated, cast
 from fastapi import Depends, HTTPException, Request, Security
 from fastapi_pagination import Page
 from fastapi_users.exceptions import InvalidPasswordException, UserAlreadyExists
+from sqlalchemy import select
 
 from app.api.auth.dependencies import (
     CurrentActiveSuperUserDep,
@@ -16,13 +17,14 @@ from app.api.auth.examples import ADMIN_USERS_RESPONSE_EXAMPLES
 from app.api.auth.filters import UserFilter
 from app.api.auth.models import User
 from app.api.auth.roles import UserRole
-from app.api.auth.schemas import UserRead, UserRoleUpdate, UserUpdate
+from app.api.auth.schemas import UserActiveUpdate, UserRead, UserRoleUpdate, UserUpdate
 from app.api.auth.services import mfa_service
+from app.api.auth.services.account_security import revoke_user_refresh_tokens
 from app.api.common.audiences import AdminAPIRouter
 from app.api.common.audit import AuditAction, AuditContext, audit_event
 from app.api.common.crud.filtering import create_filter_dependency
 from app.api.common.crud.query import page_models
-from app.api.common.exceptions import BadRequestError
+from app.api.common.exceptions import BadRequestError, ConflictError
 from app.api.common.routers.dependencies import AsyncSessionDep
 
 router = AdminAPIRouter(prefix="/admin/users", tags=["admin"], dependencies=[Security(current_active_superuser)])
@@ -141,4 +143,49 @@ async def set_user_role(
         user.id,
         context=AuditContext(operation=f"set_role_{role_update.role.value}"),
     )
+    return updated
+
+
+@router.put(
+    "/{user_id}/active",  # user_id is bound by the get_user_or_404 dependency
+    summary="Suspend or reactivate a user",
+    response_model=UserRead,
+    responses={
+        400: {"description": "An administrator cannot suspend their own account."},
+        409: {"description": "The target is the last active superuser."},
+    },
+)
+async def set_user_active(
+    active_update: UserActiveUpdate,
+    user: UserByIDDep,
+    user_manager: UserManagerDep,
+    actor: CurrentActiveSuperUserDep,
+    request: Request,
+) -> User:
+    """Suspend (`is_active: false`) or reactivate a user without erasing anything.
+
+    A suspended account cannot sign in, and its refresh sessions are revoked; its
+    products stay. A dedicated route for the same reason as the role route: the
+    self-service `UserUpdate` schema must never carry `is_active`.
+    """
+    if not active_update.is_active:
+        if user.id == actor.id:
+            msg = "You cannot suspend your own account."
+            raise BadRequestError(msg)
+        if user.is_superuser and user.is_active:
+            # Locked, so two admins suspending each other at once cannot both see the other as "remaining".
+            other_superuser = await user_manager.user_db.session.execute(
+                select(User.id)
+                .where(User.is_superuser.is_(True), User.is_active.is_(True), User.id != user.id)
+                .with_for_update()
+                .limit(1)
+            )
+            if other_superuser.first() is None:
+                msg = "The last active superuser cannot be suspended."
+                raise ConflictError(msg)
+        # Before the write, so a Redis failure aborts rather than leaving a suspended user with live sessions.
+        await revoke_user_refresh_tokens(user.id, request)
+    updated = await user_manager.user_db.update(user, {"is_active": active_update.is_active})
+    action = AuditAction.REACTIVATE if active_update.is_active else AuditAction.DEACTIVATE
+    audit_event(actor.id, action, User, user.id)
     return updated
