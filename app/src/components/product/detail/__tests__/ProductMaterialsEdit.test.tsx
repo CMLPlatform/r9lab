@@ -137,9 +137,16 @@ describe('ProductMaterials edit mode', () => {
     );
     await renderEdit(bill([aluminum]));
 
-    await user.press(screen.getByRole('radio', { name: 'kg' }));
+    await user.press(screen.getByRole('radio', { name: 'Unit: kg' }));
 
     await waitFor(() => expect(body).toEqual({ unit: 'kg' }));
+  });
+
+  it('names each unit in context and marks the recorded one as checked', async () => {
+    await renderEdit(bill([aluminum]));
+
+    expect(screen.getByRole('radio', { name: 'Unit: g', checked: true })).toBeOnTheScreen();
+    expect(screen.getByRole('radio', { name: 'Unit: kg', checked: false })).toBeOnTheScreen();
   });
 
   it('rejects a zero quantity without sending it', async () => {

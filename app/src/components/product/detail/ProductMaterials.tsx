@@ -3,7 +3,6 @@ import { AccessibilityInfo, Platform, View } from 'react-native';
 import Animated, { LayoutAnimationConfig } from 'react-native-reanimated';
 import { AppButton } from '@/components/base/AppButton';
 import { AppText } from '@/components/base/AppText';
-import { Chip } from '@/components/base/Chip';
 import { useDialog } from '@/components/base/dialogContext';
 import { SingleSelectFilterModal } from '@/components/base/FilterSelectionModal';
 import { IconButton } from '@/components/base/IconButton';
@@ -163,10 +162,17 @@ function MaterialRow({
         error={error}
       />
       {editable ? (
-        <View className="mb-1 flex-row items-center justify-between px-4">
-          <UnitChoice label={`Unit for ${material.name}`} value={material.unit} onChange={onUnit} />
+        <View className="mb-1 flex-row items-start gap-2 px-4">
+          <View className="flex-1">
+            <UnitChoice
+              label={`Unit for ${material.name}`}
+              value={material.unit}
+              onChange={onUnit}
+            />
+          </View>
           <IconButton
             icon="trash-2"
+            className="shrink-0"
             accessibilityLabel={`Remove ${material.name}`}
             onPress={onRemove}
           />
@@ -188,21 +194,26 @@ function UnitChoice({
   value: ApiMaterialUnit;
   onChange: (unit: ApiMaterialUnit) => void;
 }) {
-  const theme = useAppTheme();
   return (
-    <View accessibilityRole="radiogroup" accessibilityLabel={label} className="flex-row gap-2">
+    <View
+      accessibilityRole="radiogroup"
+      accessibilityLabel={label}
+      className="flex-row flex-wrap gap-2"
+    >
       {UNITS.map((unit) => (
-        <Chip
+        <AppButton
           key={unit}
-          accessibilityRole="radio"
+          variant={unit === value ? 'tonal' : 'outline'}
+          role="radio"
+          // aria-checked, not only accessibilityState: react-native-web drops the latter.
+          aria-checked={unit === value}
           accessibilityState={{ checked: unit === value }}
-          accessibilityLabel={unit}
-          style={unit === value ? { borderWidth: 2, borderColor: theme.colors.primary } : undefined}
-          // biome-ignore lint/performance/noJsxPropsBind: four short chips, re-rendered only on a data change.
+          accessibilityLabel={`Unit: ${unit}`}
+          // biome-ignore lint/performance/noJsxPropsBind: four short buttons, re-rendered only on a data change.
           onPress={() => onChange(unit)}
         >
           {unit}
-        </Chip>
+        </AppButton>
       ))}
     </View>
   );
