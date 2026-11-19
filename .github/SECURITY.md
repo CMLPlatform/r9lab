@@ -25,8 +25,7 @@ Both reach only the maintainers.
 
 ## Supported Versions
 
-Only the latest release and `main` get security fixes. Self-hosters upgrade to the latest release
-to get a fix.
+Only the latest release and `main` get security fixes.
 
 ## Security Baseline
 
