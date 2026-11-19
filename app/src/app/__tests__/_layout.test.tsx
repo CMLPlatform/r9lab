@@ -4,7 +4,6 @@ import type React from 'react';
 import { Text, View } from 'react-native';
 import { AppStack, Providers } from '@/app/_layout';
 import { HeaderRightPill } from '@/components/base/HeaderRightPill';
-import { PlainHeaderTitle } from '@/components/base/PlainHeaderTitle';
 import { useAuth } from '@/context/auth';
 import { renderWithProviders } from '@/test-utils/index';
 
@@ -136,15 +135,6 @@ describe('AppStack', () => {
     expect(mockScreenOptions['cameras/index']).toBeUndefined();
     expect(mockScreenOptions.account).toBeUndefined();
     // Screens presented over a tab stay here.
-    expect(mockScreenOptions['category-selection']?.title).toBe('Select category');
-    // The screen has its own h1: a default header title would be a second one.
-    expect(mockScreenOptions['category-selection']?.headerTitle).toBe(PlainHeaderTitle);
-    // A modal, so the form it was opened from stays in view behind it.
-    expect(mockScreenOptions['category-selection']?.presentation).toBe('modal');
-    expect(mockScreenOptions['category-selection']?.webModalStyle).toEqual({
-      width: 720,
-      height: '85%',
-    });
     expect(mockScreenOptions['users/[username]']).toBeDefined();
   });
 });

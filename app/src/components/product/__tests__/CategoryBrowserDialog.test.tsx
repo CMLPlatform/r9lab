@@ -1,33 +1,21 @@
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
-import { useRouter } from 'expo-router';
 import { delay, HttpResponse, http } from 'msw';
 import { StyleSheet } from 'react-native';
-import CategorySelection from '@/app/category-selection';
+import { CategoryBrowserDialog } from '@/components/product/CategoryBrowserDialog';
 import { API_URL } from '@/config';
 import { MIN_TAP_TARGET } from '@/constants';
-import { setPendingTypeSelection } from '@/features/products/pendingTypeSelection';
 import { useCategorySelection } from '@/features/products/useCategorySelection';
 import { useRecentCategories } from '@/features/products/useRecentCategories';
 import { mockPlatform, renderWithProviders, restorePlatform } from '@/test-utils/index';
 import { server } from '@/test-utils/server';
-import type { User } from '@/types/User';
 
-const mockUseAuth = jest.fn();
-const mockedSetPending = jest.mocked(setPendingTypeSelection);
+const mockSelect = jest.fn();
+const mockDismiss = jest.fn();
 const SUBCATEGORY_COUNT_PATTERN = /1 subcategor/;
 const TYPING_NOW_PATTERN = /typing-now/;
 const BLURB_PATTERN = /Type a name \(e\.g\. laptop\) to search every category/;
 const INFO_TOOLTIP_LABEL_PATTERN = /Info: Product types come from/;
-
-jest.mock('@/context/auth', () => ({
-  useAuth: () => mockUseAuth(),
-}));
-
-jest.mock('@/features/products/pendingTypeSelection', () => ({
-  setPendingTypeSelection: jest.fn(),
-  takePendingTypeSelection: jest.fn(),
-}));
 
 // Every other test in this file exercises the real hook (the API stubbed with
 // MSW) end to end, so wrap (don't replace) it: jest.fn() defaults to calling
@@ -43,8 +31,10 @@ jest.mock('@/features/products/useCategorySelection', () => ({
   ),
 }));
 
-const mockBack = jest.fn();
-const mockReplace = jest.fn();
+const renderBrowser = () =>
+  renderWithProviders(
+    <CategoryBrowserDialog visible onDismiss={mockDismiss} onSelect={mockSelect} />,
+  );
 
 const PETROLEUM_RECENT = {
   id: 2,
@@ -70,21 +60,13 @@ const PRODUCT_TYPES = [
   { id: 88, name: 'CPV: 031', description: 'Agricultural and horticultural products' },
 ];
 
-describe('CategorySelection', () => {
+describe('CategoryBrowserDialog', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     // The recents store is a module-level singleton (zustand), so it outlives
     // any single test's render; reset it here rather than letting one test's
     // recordRecent leak a duplicate "Petroleum products" node into the next.
     useRecentCategories.setState({ recents: [] });
-    (useRouter as jest.Mock).mockReturnValue({
-      push: jest.fn(),
-      replace: mockReplace,
-      back: mockBack,
-      setParams: jest.fn(),
-      dismissTo: jest.fn(),
-    });
-    mockUseAuth.mockReturnValue({ user: { id: '1', username: 'testuser' } as Partial<User> });
     server.use(
       http.get(`${API_URL}/categories/tree`, ({ request }) => {
         const url = new URL(request.url);
@@ -117,34 +99,48 @@ describe('CategorySelection', () => {
     );
   });
 
-  it('redirects guests to login', async () => {
-    mockUseAuth.mockReturnValue({ user: null });
-    await renderWithProviders(<CategorySelection />);
-
-    await waitFor(() => {
-      expect(mockReplace).toHaveBeenCalledWith({
-        pathname: '/login',
-        params: { redirectTo: '/products' },
-      });
-    });
-  });
-
-  // The picker has no in-page title, so without this the document has no h1
-  // and entry focus lands on the unlabelled main column.
-  it('gives the screen a level 1 heading on web', async () => {
+  it('titles the dialog with a level 2 heading on web', async () => {
     mockPlatform('web');
     try {
-      await renderWithProviders(<CategorySelection />);
-      const title = await screen.findByText('Select category');
-      expect(title.props['aria-level']).toBe(1);
+      await renderBrowser();
+      const title = await screen.findByText('Browse categories');
+      expect(title.props['aria-level']).toBe(2);
     } finally {
       restorePlatform();
     }
   });
 
+  it('starts each opening at the root with an empty search', async () => {
+    const view = await renderBrowser();
+    await fireEvent.press(await screen.findByText('1 subcategories'));
+    await screen.findByText('Agricultural and horticultural products');
+    await fireEvent.changeText(screen.getByPlaceholderText('Search'), 'petrol');
+
+    await view.rerender(
+      <CategoryBrowserDialog visible={false} onDismiss={mockDismiss} onSelect={mockSelect} />,
+    );
+    await act(async () => {
+      jest.advanceTimersByTime(500);
+    });
+    await view.rerender(
+      <CategoryBrowserDialog visible onDismiss={mockDismiss} onSelect={mockSelect} />,
+    );
+
+    expect(await screen.findByText('Petroleum products')).toBeOnTheScreen();
+    expect(screen.getByPlaceholderText('Search').props.value).toBe('');
+    expect(screen.queryByRole('button', { name: 'Go back to parent category' })).toBeNull();
+  });
+
+  it('closes from its Close button without picking', async () => {
+    await renderBrowser();
+    await fireEvent.press(await screen.findByText('Close'));
+    expect(mockDismiss).toHaveBeenCalled();
+    expect(mockSelect).not.toHaveBeenCalled();
+  });
+
   it('shows a retryable error instead of spinning when the category list fails to load', async () => {
     server.use(http.get(`${API_URL}/categories/tree`, () => HttpResponse.error(), { once: true }));
-    await renderWithProviders(<CategorySelection />);
+    await renderBrowser();
 
     expect(await screen.findByText("Couldn't load the category list.")).toBeOnTheScreen();
     await fireEvent.press(screen.getByText('Retry'));
@@ -152,44 +148,44 @@ describe('CategorySelection', () => {
   });
 
   it('renders root category items initially', async () => {
-    await renderWithProviders(<CategorySelection />);
+    await renderBrowser();
     await waitFor(() => {
       expect(screen.getByText('Agricultural products')).toBeOnTheScreen();
       expect(screen.getByText('Petroleum products')).toBeOnTheScreen();
     });
   });
 
-  it('hands the picked type to the pending slot and pops back when a leaf is pressed', async () => {
-    await renderWithProviders(<CategorySelection />);
+  it('hands the picked type on and closes when a leaf is pressed', async () => {
+    await renderBrowser();
     await screen.findByText('Petroleum products');
     await fireEvent.press(screen.getByText('Petroleum products'));
     await waitFor(() => {
-      expect(mockedSetPending).toHaveBeenCalledWith(77);
-      expect(mockBack).toHaveBeenCalled();
+      expect(mockSelect).toHaveBeenCalledWith(77);
+      expect(mockDismiss).toHaveBeenCalled();
     });
   });
 
   it('stays on the picker with an error when the database has no row for the pick', async () => {
     server.use(http.get(`${API_URL}/product-types`, () => HttpResponse.json({ items: [] })));
-    await renderWithProviders(<CategorySelection />);
+    await renderBrowser();
     await fireEvent.press(await screen.findByText('Petroleum products'));
 
     expect(await screen.findByText("Couldn't select that type. Try again.")).toBeOnTheScreen();
-    expect(mockedSetPending).not.toHaveBeenCalled();
-    expect(mockBack).not.toHaveBeenCalled();
+    expect(mockSelect).not.toHaveBeenCalled();
+    expect(mockDismiss).not.toHaveBeenCalled();
   });
 
   it('stays on the picker with an error when the lookup request fails', async () => {
     server.use(http.get(`${API_URL}/product-types`, () => HttpResponse.error()));
-    await renderWithProviders(<CategorySelection />);
+    await renderBrowser();
     await fireEvent.press(await screen.findByText('Petroleum products'));
 
     expect(await screen.findByText("Couldn't select that type. Try again.")).toBeOnTheScreen();
-    expect(mockedSetPending).not.toHaveBeenCalled();
+    expect(mockSelect).not.toHaveBeenCalled();
   });
 
   it('navigates into subcategory when subcategories button is pressed', async () => {
-    await renderWithProviders(<CategorySelection />);
+    await renderBrowser();
     // Agricultural products has 1 subcategory; shows "1 subcategories" link
     await waitFor(() => {
       expect(screen.getByText(SUBCATEGORY_COUNT_PATTERN)).toBeOnTheScreen();
@@ -201,7 +197,7 @@ describe('CategorySelection', () => {
   });
 
   it('shows history breadcrumb after navigating into subcategory', async () => {
-    await renderWithProviders(<CategorySelection />);
+    await renderBrowser();
     await screen.findByText('1 subcategories');
     await fireEvent.press(screen.getByText('1 subcategories'));
     await waitFor(() => {
@@ -210,7 +206,7 @@ describe('CategorySelection', () => {
   });
 
   it('pressing the history breadcrumb navigates back up to the parent level', async () => {
-    await renderWithProviders(<CategorySelection />);
+    await renderBrowser();
     await screen.findByText('1 subcategories');
     await fireEvent.press(screen.getByText('1 subcategories'));
     // Now inside Agricultural products; breadcrumb shows
@@ -226,7 +222,7 @@ describe('CategorySelection', () => {
 
   it('shows a Recent section above the list at the root when there are recent picks', async () => {
     useRecentCategories.setState({ recents: [PETROLEUM_RECENT] });
-    await renderWithProviders(<CategorySelection />);
+    await renderBrowser();
     await screen.findByText('Agricultural products');
 
     expect(screen.getByText('Recent')).toBeOnTheScreen();
@@ -235,7 +231,7 @@ describe('CategorySelection', () => {
   });
 
   it('omits the Recent section when there are no recent picks', async () => {
-    await renderWithProviders(<CategorySelection />);
+    await renderBrowser();
     await screen.findByText('Agricultural products');
 
     expect(screen.queryByText('Recent')).toBeNull();
@@ -243,7 +239,7 @@ describe('CategorySelection', () => {
 
   it('hides the Recent section once a search is active', async () => {
     useRecentCategories.setState({ recents: [PETROLEUM_RECENT] });
-    await renderWithProviders(<CategorySelection />);
+    await renderBrowser();
     await screen.findByText('Recent');
 
     await fireEvent.changeText(screen.getByPlaceholderText('Search'), 'agri');
@@ -255,7 +251,7 @@ describe('CategorySelection', () => {
 
   it('hides the Recent section once browsed into a subcategory', async () => {
     useRecentCategories.setState({ recents: [PETROLEUM_RECENT] });
-    await renderWithProviders(<CategorySelection />);
+    await renderBrowser();
     await screen.findByText('1 subcategories');
 
     await fireEvent.press(screen.getByText('1 subcategories'));
@@ -265,21 +261,21 @@ describe('CategorySelection', () => {
     });
   });
 
-  it('selecting a recent category hands it to the pending slot like a normal pick', async () => {
+  it('selecting a recent category hands it on like a normal pick', async () => {
     useRecentCategories.setState({ recents: [PETROLEUM_RECENT] });
-    await renderWithProviders(<CategorySelection />);
+    await renderBrowser();
     await screen.findByText('Recent');
 
     await fireEvent.press(screen.getAllByText('Petroleum products')[0]);
 
     await waitFor(() => {
-      expect(mockedSetPending).toHaveBeenCalledWith(77);
-      expect(mockBack).toHaveBeenCalled();
+      expect(mockSelect).toHaveBeenCalledWith(77);
+      expect(mockDismiss).toHaveBeenCalled();
     });
   });
 
   it('records the picked category as a recent when a leaf is selected', async () => {
-    await renderWithProviders(<CategorySelection />);
+    await renderBrowser();
     await screen.findByText('Petroleum products');
 
     await fireEvent.press(screen.getByText('Petroleum products'));
@@ -298,7 +294,7 @@ describe('CategorySelection', () => {
       ],
     });
     const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => undefined);
-    await renderWithProviders(<CategorySelection />);
+    await renderBrowser();
     await screen.findByText('Recent');
     expect(screen.getByText('Old bundle entry')).toBeOnTheScreen();
     // React logs "two children with the same key" when ids collide.
@@ -307,7 +303,7 @@ describe('CategorySelection', () => {
   });
 
   it('keeps the previous results on screen while the next search loads', async () => {
-    await renderWithProviders(<CategorySelection />);
+    await renderBrowser();
     await screen.findByPlaceholderText('Search');
     await fireEvent.changeText(screen.getByPlaceholderText('Search'), 'petroleum');
     await act(async () => {
@@ -329,7 +325,7 @@ describe('CategorySelection', () => {
 
   it('words a failed search as a search error, not a category list error', async () => {
     server.use(http.get(`${API_URL}/product-types`, () => HttpResponse.error()));
-    await renderWithProviders(<CategorySelection />);
+    await renderBrowser();
     await screen.findByPlaceholderText('Search');
     await fireEvent.changeText(screen.getByPlaceholderText('Search'), 'petroleum');
     await act(async () => {
@@ -339,14 +335,14 @@ describe('CategorySelection', () => {
   });
 
   it('shows the plain-language blurb and contextual CPV help tooltip', async () => {
-    await renderWithProviders(<CategorySelection />);
+    await renderBrowser();
     await screen.findByPlaceholderText('Search');
     expect(screen.getByText(BLURB_PATTERN)).toBeOnTheScreen();
     expect(screen.getByLabelText(INFO_TOOLTIP_LABEL_PATTERN)).toBeOnTheScreen();
   });
 
   it('meets the 44px tap-target floor on the subcategories link and history breadcrumb', async () => {
-    await renderWithProviders(<CategorySelection />);
+    await renderBrowser();
     const linkButton = await screen.findByRole('button', { name: 'Browse 1 subcategories' });
     expect(StyleSheet.flatten(linkButton.props.style).minHeight).toBe(MIN_TAP_TARGET);
 
@@ -358,12 +354,12 @@ describe('CategorySelection', () => {
   });
 
   it('focuses the search field on open', async () => {
-    await renderWithProviders(<CategorySelection />);
+    await renderBrowser();
     expect((await screen.findByPlaceholderText('Search')).props.autoFocus).toBe(true);
   });
 
   it('search matches nested leaves from the root, not just the current level', async () => {
-    await renderWithProviders(<CategorySelection />);
+    await renderBrowser();
     await screen.findByPlaceholderText('Search');
     await fireEvent.changeText(screen.getByPlaceholderText('Search'), 'horticultural');
     await act(async () => {
@@ -374,7 +370,7 @@ describe('CategorySelection', () => {
   });
 
   it('search covers the whole tree even when browsed into a branch', async () => {
-    await renderWithProviders(<CategorySelection />);
+    await renderBrowser();
     await fireEvent.press(await screen.findByText('1 subcategories'));
     await screen.findByText('Agricultural and horticultural products');
     await fireEvent.changeText(screen.getByPlaceholderText('Search'), 'petroleum');
@@ -398,7 +394,7 @@ describe('CategorySelection', () => {
         }),
       ),
     );
-    await renderWithProviders(<CategorySelection />);
+    await renderBrowser();
 
     await screen.findByText('Common types');
     // The nested leaf appears in the shortcut even though the root list does not show it.
@@ -407,18 +403,18 @@ describe('CategorySelection', () => {
 
     await fireEvent.press(screen.getByText('Agricultural and horticultural products'));
     await waitFor(() => {
-      expect(mockedSetPending).toHaveBeenCalledWith(88);
+      expect(mockSelect).toHaveBeenCalledWith(88);
     });
   });
 
   it('omits "Common types" when stats report nothing', async () => {
-    await renderWithProviders(<CategorySelection />);
+    await renderBrowser();
     await screen.findByText('Agricultural products');
     expect(screen.queryByText('Common types')).toBeNull();
   });
 
   it('filters categories by search query', async () => {
-    await renderWithProviders(<CategorySelection />);
+    await renderBrowser();
     await screen.findByPlaceholderText('Search');
     await fireEvent.changeText(screen.getByPlaceholderText('Search'), 'petroleum');
     // Step the 300ms debounce off the fake clock instead of letting waitFor poll
@@ -432,7 +428,7 @@ describe('CategorySelection', () => {
   });
 
   it('shows an empty state when the search query matches nothing', async () => {
-    await renderWithProviders(<CategorySelection />);
+    await renderBrowser();
     await screen.findByPlaceholderText('Search');
     await fireEvent.changeText(screen.getByPlaceholderText('Search'), 'nonexistent-widget');
     await act(async () => {
@@ -452,13 +448,12 @@ describe('CategorySelection', () => {
   // query `filtered` was actually computed from.
   it('quotes the debounced query, not the in-flight keystroke, in the empty state', async () => {
     (useCategorySelection as jest.Mock).mockReturnValueOnce({
-      user: { id: '1', username: 'testuser' },
       history: [],
       filtered: [],
       loading: false,
       loadFailed: false,
       retryLoad: jest.fn(),
-      selectFailed: false,
+      pickFailed: false,
       commonTypes: [],
       recents: [],
       searchQuery: 'typing-now',
@@ -466,10 +461,10 @@ describe('CategorySelection', () => {
       setSearchQuery: jest.fn(),
       selectBranch: jest.fn(),
       moveUp: jest.fn(),
-      selectType: jest.fn(),
+      pick: jest.fn(),
     });
 
-    await renderWithProviders(<CategorySelection />);
+    await renderBrowser();
 
     expect(screen.getByText('No categories match “typing”. Try a broader term.')).toBeOnTheScreen();
     expect(screen.queryByText(TYPING_NOW_PATTERN)).toBeNull();

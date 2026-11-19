@@ -19,11 +19,12 @@ photos, hangs below it.
 1. Add a photo of the intact product, as it arrived. Do this before you open it.
 1. Type the **Name**. It is the only required field. Use what is on the label, such as
    "Cordless drill".
-1. Choose a **Product type**, if one fits. If none fits, leave it empty.
+1. Under **Product type**, type a word such as "drill" and choose the closest match. If no
+   word finds it, choose **Browse categories**. If none fits, leave it empty.
 1. Choose **Create product**. To start another record straight away, choose
    **Create & add another**.
 
-![The new product form with an Add photos area, a Name field filled with "Cordless drill", a Product type button, and Create product buttons.](/images/guides/new-product-form.webp)
+![The new product form with an Add photos area, a Name field filled with "Cordless drill", the Product type row, and Create product buttons.](/images/guides/new-product-form.webp)
 
 After you create it, the record opens. Add the brand, model, measurements and notes there.
 

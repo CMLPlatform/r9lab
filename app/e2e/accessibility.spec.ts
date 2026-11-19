@@ -99,7 +99,6 @@ test.describe('Accessibility', () => {
     await page.setViewportSize({ width: 390, height: 844 });
     await loginAndReachProducts(page, SEEDED_MEMBER);
     for (const [path, title] of [
-      ['/category-selection', 'Select category'],
       ['/cameras/add', 'Add camera'],
       ['/users/bob', 'bob'],
     ]) {

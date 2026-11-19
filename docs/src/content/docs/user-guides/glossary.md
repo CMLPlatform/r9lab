@@ -94,8 +94,9 @@ from CPV.
 ### CPV
 
 Common Procurement Vocabulary, a standard European list of product categories. R9lab uses it so
-that researchers can compare and count records across teardowns. You browse it by category and
-pick the closest match. The code itself never appears in the app.
+that researchers can compare and count records across teardowns. You search it by name, or browse
+it by category, and pick the closest match. The app shows each category's CPV code with its
+name.
 
 ### Category
 

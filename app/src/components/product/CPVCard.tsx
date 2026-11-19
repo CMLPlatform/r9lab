@@ -24,7 +24,10 @@ export default function CPVCard({ CPV, onPress, actionElement }: Props) {
         onPress={onPress}
         disabled={!onPress}
         accessibilityRole={onPress ? 'button' : undefined}
-        accessibilityLabel={onPress ? `${CPV.name}, ${CPV.description}` : undefined}
+        // The plain name first: the code alone tells a listener little.
+        accessibilityLabel={
+          onPress ? [CPV.description, CPV.name].filter(Boolean).join(', ') : undefined
+        }
         className={cn('flex-1', onPress && PRESS_TINT, WEB_FOCUS_RING)}
       >
         <View className="p-3 gap-0.5">

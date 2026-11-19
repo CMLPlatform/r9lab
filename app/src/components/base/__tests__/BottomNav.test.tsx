@@ -69,7 +69,7 @@ it('stays visible on a detail screen inside a tab', async () => {
 });
 
 it('renders nothing outside the tab group', async () => {
-  (useSegments as jest.Mock).mockReturnValue(['category-selection']);
+  (useSegments as jest.Mock).mockReturnValue(['users', '[username]']);
   await renderBar();
   expect(screen.queryByLabelText('Products')).toBeNull();
 });

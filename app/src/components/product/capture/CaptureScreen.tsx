@@ -1,4 +1,3 @@
-import { useFocusEffect, useRouter } from 'expo-router';
 import Head from 'expo-router/head';
 import { useCallback, useId, useRef } from 'react';
 import { type TextInput, View } from 'react-native';
@@ -10,13 +9,11 @@ import { DocsLink } from '@/components/base/DocsLink';
 import { PageContainer } from '@/components/base/PageContainer';
 import { PageHeaderRow } from '@/components/base/PageHeaderRow';
 import { Input } from '@/components/base/ui/input';
-import CPVCard, { CpvTypeLoadError } from '@/components/product/CPVCard';
 import ProductImageGallery from '@/components/product/ProductImageGallery';
+import { ProductTypeField } from '@/components/product/ProductTypeField';
 import { DATA_COLLECTION_DOCS_PATH } from '@/config';
-import { takePendingTypeSelection } from '@/features/products/pendingTypeSelection';
 import { QUEUED_OFFLINE_LABEL } from '@/features/products/queries';
 import { useCaptureScreen } from '@/features/products/useCaptureScreen';
-import { useCpvType } from '@/features/products/useCpvType';
 import { useBreakpoint } from '@/hooks/useBreakpoint';
 import {
   PRODUCT_NAME_MAX_LENGTH,
@@ -32,7 +29,7 @@ type CaptureScreenProps = {
   parentRole?: 'product' | 'component';
 };
 
-/** Type row: the ProductType.tsx round-trip driven by a typeID/onChange pair (a draft has no [id] route). */
+/** Type row: a draft has no product yet, so the field runs on a typeID/onChange pair. */
 function CaptureTypeRow({
   typeID,
   onTypeChange,
@@ -42,36 +39,10 @@ function CaptureTypeRow({
   onTypeChange: (typeID: number) => void;
   entityRole: 'product' | 'component';
 }) {
-  const router = useRouter();
-  const cpvType = useCpvType(typeID);
-
-  useFocusEffect(
-    useCallback(() => {
-      const pendingTypeId = takePendingTypeSelection();
-      if (pendingTypeId !== null) onTypeChange(pendingTypeId);
-    }, [onTypeChange]),
-  );
-
-  const labels = typeRowLabels(entityRole);
-  const goToCategorySelection = useCallback(() => router.push('/category-selection'), [router]);
-
   return (
     <View>
-      <AppText variant="eyebrow">{labels.title}</AppText>
-      {typeID === undefined ? (
-        <AppButton
-          variant="outline"
-          className="w-full"
-          accessibilityLabel={labels.choose}
-          onPress={goToCategorySelection}
-        >
-          {labels.choose}
-        </AppButton>
-      ) : cpvType.status === 'ready' ? (
-        <CPVCard CPV={cpvType.type} onPress={goToCategorySelection} />
-      ) : cpvType.status === 'error' ? (
-        <CpvTypeLoadError typeID={typeID} retry={cpvType.retry} />
-      ) : null}
+      <AppText variant="eyebrow">{typeRowLabels(entityRole).title}</AppText>
+      <ProductTypeField typeID={typeID} entityRole={entityRole} onTypeChange={onTypeChange} />
     </View>
   );
 }
