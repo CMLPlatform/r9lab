@@ -135,7 +135,8 @@ Security-sensitive areas:
     directly. Triggering a capture also needs a verified account.
   - The relay re-checks the camera on every heartbeat (30 s) and closes the socket with 1008 when
     the camera is gone, its credential is no longer active or differs from the key the socket
-    authenticated with, or its owner fails the bar above. A failed re-check also closes it.
+    authenticated with, or its owner fails the bar above. A re-check that errors or takes over 5 s
+    keeps the socket once; two in a row close it with 1011, and the device authenticates again.
 - backups, secrets, logs, and telemetry
 - release and security artifacts: the GHCR images the hosts pull, and the landing page and docs
   deploy, whose Cloudflare API token is a GitHub Environment secret holding only Workers

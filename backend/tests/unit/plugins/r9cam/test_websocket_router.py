@@ -276,20 +276,49 @@ async def test_heartbeat_closes_a_socket_the_camera_may_no_longer_hold(camera: S
     websocket.send_text.assert_not_awaited()
 
 
-async def test_heartbeat_closes_when_the_camera_re_check_fails() -> None:
-    """A database error during the re-check closes the socket rather than skip the check."""
+async def _hang(*_args: object, **_kwargs: object) -> None:
+    await asyncio.Event().wait()
+
+
+async def test_heartbeat_keeps_the_socket_after_one_failed_re_check() -> None:
+    """A single database error keeps the tunnel and still pings; a success resets the count."""
     websocket = MagicMock()
     websocket.close = AsyncMock()
+    websocket.send_text = AsyncMock()
+    lookups = [OSError("db down"), _authorised_camera(), OSError("db down")]
+
+    with (
+        patch(f"{_ROUTER}.asyncio.sleep", new=AsyncMock(side_effect=[None, None, None, asyncio.CancelledError])),
+        patch(f"{_ROUTER}.monotonic", return_value=1.0),
+        patch(f"{_ROUTER}._get_camera", new=AsyncMock(side_effect=lookups)),
+        patch(f"{_ROUTER}.logger"),
+        pytest.raises(asyncio.CancelledError),
+    ):
+        await _heartbeat_loop(websocket, _heartbeat_session())
+
+    websocket.close.assert_not_awaited()
+    assert websocket.send_text.await_count == 3
+
+
+@pytest.mark.parametrize("failure", ["error", "timeout"])
+async def test_heartbeat_closes_with_1011_after_two_failed_re_checks(failure: str) -> None:
+    """Two failed re-checks in a row, a timeout included, close with 1011 rather than a policy close."""
+    websocket = MagicMock()
+    websocket.close = AsyncMock()
+    websocket.send_text = AsyncMock()
+    lookup = AsyncMock(side_effect=OSError("db down")) if failure == "error" else _hang
 
     with (
         patch(f"{_ROUTER}.asyncio.sleep", new=AsyncMock()),
         patch(f"{_ROUTER}.monotonic", return_value=1.0),
-        patch(f"{_ROUTER}._get_camera", new=AsyncMock(side_effect=OSError("db down"))),
+        patch(f"{_ROUTER}._RECHECK_TIMEOUT", 0.01),
+        patch(f"{_ROUTER}._get_camera", new=lookup),
         patch(f"{_ROUTER}.logger"),
     ):
-        await _heartbeat_loop(websocket, _heartbeat_session())
+        await asyncio.wait_for(_heartbeat_loop(websocket, _heartbeat_session()), timeout=2)
 
-    websocket.close.assert_awaited_once_with(code=_WS_POLICY_VIOLATION, reason="Camera no longer authorised.")
+    websocket.close.assert_awaited_once_with(code=_WS_INTERNAL_ERROR, reason="Authorisation check unavailable.")
+    websocket.send_text.assert_awaited_once()
 
 
 async def test_heartbeat_keeps_pinging_a_camera_that_is_still_authorised() -> None:

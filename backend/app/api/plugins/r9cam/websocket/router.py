@@ -45,6 +45,10 @@ _WS_BYTES = "bytes"
 
 _HEARTBEAT_INTERVAL = 30.0
 _HEARTBEAT_TIMEOUT = 90.0
+# Bounds one credential re-check, so a stalled database cannot hold the heartbeat.
+_RECHECK_TIMEOUT = 5.0
+# A database blip must not drop every tunnel: only this many failed re-checks in a row close one.
+_MAX_FAILED_RECHECKS = 2
 
 # Bounds memory if a device flags responses has_binary but never sends the frame.
 _MAX_PENDING_BINARY_RESPONSES = 64
@@ -69,6 +73,7 @@ class _RelayWebSocketSession:
     # camera's stored credential differs.
     relay_key_id: str | None = None
     relay_public_key_jwk: dict | None = None
+    failed_rechecks: int = 0
     last_pong_at: float = field(default_factory=monotonic)
     # FIFO of headers awaiting their binary frame: WebSocket frames arrive in order.
     pending_binary_responses: deque[_PendingBinaryResponse] = field(
@@ -290,11 +295,23 @@ async def _heartbeat_loop(websocket: WebSocket, session: _RelayWebSocketSession)
                 await websocket.close(code=1001)
             return
         try:
-            authorised = await _camera_still_authorised(session)
+            async with asyncio.timeout(_RECHECK_TIMEOUT):
+                authorised = await _camera_still_authorised(session)
         except Exception:
-            # Fail closed: the device reconnects and authenticates again once the database answers.
-            logger.exception("Camera %s re-check failed; closing.", sanitize_log_value(session.camera_id))
-            authorised = False
+            session.failed_rechecks += 1
+            logger.exception(
+                "Camera %s credential re-check failed (%d in a row).",
+                sanitize_log_value(session.camera_id),
+                session.failed_rechecks,
+            )
+            if session.failed_rechecks >= _MAX_FAILED_RECHECKS:
+                # The device reconnects and authenticates again once the database answers.
+                with contextlib.suppress(Exception):
+                    await websocket.close(code=status.WS_1011_INTERNAL_ERROR, reason="Authorisation check unavailable.")
+                return
+            authorised = True
+        else:
+            session.failed_rechecks = 0
         if not authorised:
             logger.warning(
                 "Camera %s credential revoked, rotated or deleted, or owner no longer allowed; closing.",
