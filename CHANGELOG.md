@@ -67,6 +67,10 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   History starts with this release, covers neither media, components nor materials, and is kept
   for two years. Erasing an account clears the history of its products. A schema rollback below this release is refused once any edit is recorded: roll
   back the code only. ([#361](https://github.com/CMLPlatform/r9lab/issues/361))
+- An Admin section in the app for superusers, under Account: search and filter users, change a
+  role, reset two-step verification, suspend or reactivate, and delete an account (typing its email
+  confirms). A superuser without two-step verification sees a prompt to turn it on first. Other
+  accounts do not see the section.
 - Admin API: `PUT /v1/admin/users/{user_id}/active` with `{"is_active": false}` suspends an
   account and ends its sessions; `true` reactivates it. Products stay. An admin cannot suspend
   their own account or the last active superuser. Both actions are audited

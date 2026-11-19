@@ -1,0 +1,111 @@
+import { beforeEach, describe, expect, it, jest } from '@jest/globals';
+import { act, screen, waitFor } from '@testing-library/react-native';
+import { useRouter } from 'expo-router';
+import { HttpResponse, http } from 'msw';
+import AdminUsersScreen from '@/app/(tabs)/(account)/admin/users/index';
+import { API_URL } from '@/config';
+import {
+  mockAdminUser,
+  mockUser,
+  renderWithProviders,
+  server,
+  setupUser,
+} from '@/test-utils/index';
+import type { User } from '@/types/User';
+
+const mockUseAuth = jest.fn<() => { user: User | undefined; isLoading: boolean }>();
+jest.mock('@/context/auth', () => ({ useAuth: () => mockUseAuth() }));
+
+const ADMIN_PATH = /\/admin\/users/;
+
+/** Every admin request the screen sends, so a test can assert on what went out or that nothing did. */
+function recordAdminRequests() {
+  const urls: URL[] = [];
+  server.events.on('request:start', ({ request }) => {
+    if (ADMIN_PATH.test(request.url)) urls.push(new URL(request.url));
+  });
+  return urls;
+}
+
+describe('Admin users screen', () => {
+  const user = setupUser();
+  const navigate = jest.fn();
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    (useRouter as jest.Mock).mockReturnValue({ push: jest.fn(), replace: jest.fn(), navigate });
+  });
+
+  it('shows nothing of the admin section to a non-superuser and calls no admin route', async () => {
+    mockUseAuth.mockReturnValue({ user: mockUser({ isSuperuser: false }), isLoading: false });
+    const requests = recordAdminRequests();
+
+    await renderWithProviders(<AdminUsersScreen />, { withDialog: true });
+
+    expect(screen.getByText('For administrators only')).toBeOnTheScreen();
+    expect(screen.queryByLabelText('Search users')).toBeNull();
+    expect(requests).toEqual([]);
+  });
+
+  it('asks a superuser without two-step verification to enrol first instead of failing calls', async () => {
+    mockUseAuth.mockReturnValue({
+      user: mockUser({ isSuperuser: true, mfaEnabled: false }),
+      isLoading: false,
+    });
+    const requests = recordAdminRequests();
+
+    await renderWithProviders(<AdminUsersScreen />, { withDialog: true });
+
+    expect(screen.getByText('Turn on two-step verification first')).toBeOnTheScreen();
+    await user.press(screen.getByRole('button', { name: 'Set up two-step verification' }));
+    expect(navigate).toHaveBeenCalledWith('/account');
+    expect(requests).toEqual([]);
+  });
+
+  it('lists users for an enrolled superuser and sends search and filter as query params', async () => {
+    mockUseAuth.mockReturnValue({
+      user: mockUser({ isSuperuser: true, mfaEnabled: true }),
+      isLoading: false,
+    });
+    const requests = recordAdminRequests();
+
+    await renderWithProviders(<AdminUsersScreen />, { withDialog: true });
+
+    await waitFor(() => expect(screen.getByText('ada@example.org')).toBeOnTheScreen());
+    expect(requests.at(-1)?.searchParams.get('page')).toBe('1');
+
+    await user.type(screen.getByLabelText('Search users'), 'grace');
+    await act(() => jest.advanceTimersByTimeAsync(400));
+    await waitFor(() => expect(requests.at(-1)?.searchParams.get('search')).toBe('grace'));
+
+    await user.press(screen.getByRole('button', { name: 'Suspended' }));
+    await waitFor(() => expect(requests.at(-1)?.searchParams.get('is_active')).toBe('false'));
+    expect(requests.at(-1)?.searchParams.get('search')).toBe('grace');
+  });
+
+  it('pages through the results', async () => {
+    mockUseAuth.mockReturnValue({
+      user: mockUser({ isSuperuser: true, mfaEnabled: true }),
+      isLoading: false,
+    });
+    server.use(
+      http.get(`${API_URL}/admin/users`, ({ request }) => {
+        const page = Number(new URL(request.url).searchParams.get('page'));
+        return HttpResponse.json({
+          items: [mockAdminUser({ email: `page${page}@example.org` })],
+          total: 30,
+          page,
+          size: 25,
+          pages: 2,
+        });
+      }),
+    );
+
+    await renderWithProviders(<AdminUsersScreen />, { withDialog: true });
+
+    await waitFor(() => expect(screen.getByText('page1@example.org')).toBeOnTheScreen());
+    await user.press(screen.getByRole('button', { name: 'Next' }));
+    await waitFor(() => expect(screen.getByText('page2@example.org')).toBeOnTheScreen());
+    expect(screen.getByText('Page 2 of 2')).toBeOnTheScreen();
+  });
+});

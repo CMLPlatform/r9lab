@@ -1,7 +1,7 @@
 import { HttpResponse, http } from 'msw';
 import { setupServer } from 'msw/node';
 import { API_URL } from '@/config';
-import { mockUser } from './api-mocks';
+import { mockAdminUser, mockUser } from './api-mocks';
 
 /**
  * Default happy-path handlers for the relab API.
@@ -152,6 +152,23 @@ export const handlers = [
   // escaping to a real, unreachable address, so this keeps their semantics
   // unchanged while making it deterministic instead of a live network wait.
   http.get('*/healthz', () => HttpResponse.error()),
+  // Admin user routes: one page with one user, and each write answering as the backend does.
+  http.get(`${API_URL}/admin/users`, () =>
+    HttpResponse.json({ items: [mockAdminUser()], total: 1, page: 1, size: 25, pages: 1 }),
+  ),
+  http.get(`${API_URL}/admin/users/:id`, ({ params }) =>
+    HttpResponse.json(mockAdminUser({ id: String(params.id) })),
+  ),
+  http.put(`${API_URL}/admin/users/:id/role`, async ({ params, request }) => {
+    const { role } = (await request.json()) as { role: 'contributor' | 'lab' };
+    return HttpResponse.json(mockAdminUser({ id: String(params.id), role }));
+  }),
+  http.put(`${API_URL}/admin/users/:id/active`, async ({ params, request }) => {
+    const { is_active } = (await request.json()) as { is_active: boolean };
+    return HttpResponse.json(mockAdminUser({ id: String(params.id), is_active }));
+  }),
+  http.post(`${API_URL}/admin/users/:id/mfa/reset`, () => new HttpResponse(null, { status: 204 })),
+  http.delete(`${API_URL}/admin/users/:id`, () => new HttpResponse(null, { status: 204 })),
   // Handle OAuth authorize redirects used by Expo Auth Session in tests
   http.get(`${API_URL}/oauth/:provider/session/authorize`, async (resolverParams: unknown) => {
     // The resolver param shape can vary between interceptor implementations:

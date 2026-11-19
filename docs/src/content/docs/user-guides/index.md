@@ -14,6 +14,6 @@ measurements and a final check. The [Glossary](glossary/) defines the terms.
 
 [Hardware](hardware/) and the Raspberry Pi camera ([r9cam](r9cam/)) are optional: a phone camera is enough to
 contribute. [API interaction](api/) covers reading and writing R9lab data from scripts, notebooks,
-or integrations, and assumes you have an account.
+or integrations, and assumes you have an account. [Managing users](admin/) is for administrators.
 
 For how the platform is built, see [Architecture](/architecture/).

@@ -111,6 +111,8 @@ The edit history of those products is deleted, since it can hold text the owner 
 
 Admins delete accounts through `DELETE /v1/admin/users/{user_id}` and can choose to delete the products instead of anonymizing them. Neither route deletes the last active superuser.
 
+Admins can also suspend an account without erasing it (`PUT /v1/admin/users/{user_id}/active`). A suspended account cannot sign in, its refresh sessions are revoked, and its products stay. An admin cannot suspend their own account or the last active superuser.
+
 ## OAuth
 
 Google and GitHub support session-cookie callbacks, bearer-token callbacks, and account linking. Google accounts may be linked by verified email; GitHub linking requires explicit association. Linking or unlinking a sign-in provider requires the current password. An account with two-step verification also enters a current authenticator code or a recovery code (`mfa_code`), and a recovery code used here is spent. An account with neither a password nor two-step verification must have signed in within the last 10 minutes. Wrong passwords and codes count against the per-account guess budget. OAuth login creates R9lab-owned sessions; R9lab does not perform IdP-wide logout.

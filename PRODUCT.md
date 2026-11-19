@@ -54,15 +54,18 @@ Access rules:
 - Signed-out visitors can browse. `/` redirects to `/products` and the list renders anonymously.
 - Verification gates creation. Unverified accounts see "Verify your email to start creating".
 - A username is required to own records.
-- `isSuperuser` grants the backend's `/admin` routes and nothing in the app. The app displays it as
-  a badge and is not planned to become an admin surface.
+- `isSuperuser` grants the backend's `/admin` routes. The app shows superusers an Admin section
+  under Account (users: role, two-step reset, suspend and reactivate, deletion). Other accounts
+  never see it, and a superuser without two-step verification sees a prompt to turn it on instead,
+  because the backend refuses `/admin` without it. Hiding the section is presentation; the backend
+  enforces every rule. Reference-data editing stays in the API for now.
 
 Accounts carry a `role` of `contributor` (default) or `lab`, alongside the three booleans. `lab`
 grants non-image research-file upload and the larger upload quota. Only a superuser assigns a role,
-through `PUT /v1/admin/users/{user_id}/role`; `role` is absent from the self-service update schema.
-Existing accounts were backfilled to `contributor`, so lab members are promoted by hand after
-deploy. The enum has two values only: a "viewer" is an unverified account and an "admin" is a
-superuser.
+through `PUT /v1/admin/users/{user_id}/role`, which the app's admin section calls; `role` is absent
+from the self-service update schema. Existing accounts were backfilled to `contributor`, so lab
+members are promoted by hand after deploy. The enum has two values only: a "viewer" is an
+unverified account and an "admin" is a superuser.
 
 ## Positioning
 

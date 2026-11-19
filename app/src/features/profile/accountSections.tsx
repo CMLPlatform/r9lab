@@ -1,6 +1,6 @@
 // Do not export a component from this file (react-refresh/only-export-components).
 import type { ReactNode, RefObject } from 'react';
-import type { View } from 'react-native';
+import { View } from 'react-native';
 import { ProfileAboutSection } from '@/components/profile/About';
 import {
   ProfileAccountSection,
@@ -16,18 +16,22 @@ import {
   ProfileVisibilitySection,
 } from '@/components/profile/Preferences';
 import { ProfileSecuritySection } from '@/components/profile/SecuritySection';
+import { ProfileAction } from '@/components/profile/shared';
 import type { useProfileScreen } from '@/features/profile/useProfileScreen';
+import type { User } from '@/types/User';
 
 export type AccountSectionKey =
   | 'preferences'
   | 'integrations'
   | 'security'
   | 'data'
+  | 'admin'
   | 'about'
   | 'danger';
 
 export type AccountSectionContext = ReturnType<typeof useProfileScreen> & {
   onManageCameras: () => void;
+  onOpenAdminUsers: () => void;
   onRefetchAuth: () => void;
   /** Return-focus targets for the corresponding dialogs; see AppDialog's `triggerRef`. */
   logoutTriggerRef: RefObject<View | null>;
@@ -39,6 +43,8 @@ export type AccountSectionDef = {
   key: AccountSectionKey;
   label: string;
   title: string;
+  /** Omitted: always shown. */
+  visible?: (profile: User) => boolean;
   render: (ctx: AccountSectionContext) => ReactNode;
 };
 
@@ -134,6 +140,27 @@ export const ACCOUNT_SECTIONS: AccountSectionDef[] = [
     label: 'Your data',
     title: 'Your data',
     render: () => <DataExportAction />,
+  },
+  {
+    key: 'admin',
+    label: 'Admin',
+    title: 'Admin',
+    // Presentation only: the backend gates every /admin route on its own.
+    visible: (profile) => profile.isSuperuser,
+    render: ({ profile, onOpenAdminUsers }) => (
+      <View className="mx-1">
+        <ProfileAction
+          title="Users"
+          subtitle={
+            profile.profile?.mfaEnabled
+              ? 'Roles, two-step verification, suspension and deletion'
+              : 'Turn on two-step verification above first'
+          }
+          icon="circle-user-round"
+          onPress={onOpenAdminUsers}
+        />
+      </View>
+    ),
   },
   {
     key: 'about',

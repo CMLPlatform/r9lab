@@ -41,6 +41,13 @@ Authorization: Bearer {{token}}
 POST {{baseUrl}}/admin/users/REPLACE_USER_ID/mfa/reset
 Authorization: Bearer {{token}}
 
+### Suspend a user (signs them out; set true to reactivate).
+PUT {{baseUrl}}/admin/users/REPLACE_USER_ID/active
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{"is_active": false}
+
 ### Delete a user (irreversible).
 DELETE {{baseUrl}}/admin/users/REPLACE_USER_ID
 Authorization: Bearer {{token}}

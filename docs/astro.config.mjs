@@ -54,6 +54,7 @@ const SIDEBAR = [
       { label: 'Hardware', slug: 'user-guides/hardware' },
       { label: 'r9cam setup', slug: 'user-guides/r9cam' },
       { label: 'Using the API', slug: 'user-guides/api' },
+      { label: 'Managing users', slug: 'user-guides/admin' },
     ],
   },
   {

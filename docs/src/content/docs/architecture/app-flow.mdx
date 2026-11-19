@@ -66,6 +66,8 @@ graph TD
 | `/cameras/add` | Pairing a new Raspberry Pi camera. |
 | `/cameras/[id]` | Camera detail, live view and streaming controls. |
 | `/account` | The signed-in account: profile, preferences, integrations, sign-out. |
+| `/admin/users` | User administration, in the account tab. Superusers with two-step verification only. |
+| `/admin/users/[id]` | One account: role, two-step reset, suspension, deletion. |
 | `/category-selection` | Category and product-type picker. Presents over whichever screen opened it. |
 | `/users/[username]` | Public contributor profile. |
 
@@ -78,6 +80,10 @@ Three rules of that tree:
   navigator.
 - **`/category-selection` and `/users/[username]` sit on the root stack, not in a tab.** More
   than one tab reaches them, so they join no single tab's trail.
+
+The account screen links to `/admin/users` only for superusers. The admin screens show a
+"turn on two-step verification" state to a superuser without it, and refuse everyone else; the
+backend enforces the same rule on every `/v1/admin` route.
 
 Accounts with the Raspberry Pi integration switched off do not see the cameras destination. The
 tab still exists; `useVisibleDestinations` in `src/navigation/destinations.ts` filters the

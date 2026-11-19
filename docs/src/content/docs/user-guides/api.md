@@ -40,7 +40,8 @@ user details, and owner-scoped workflows require a valid token.
 ## Interactive tooling and admin tasks
 
 Point a client at the API and authenticate with a bearer token from `POST /v1/auth/bearer/login`.
-The same path covers superuser tasks like `POST /v1/admin/cache/clear/{namespace}`.
+The same path covers superuser tasks like `POST /v1/admin/cache/clear/{namespace}`. User
+administration also has a screen in the app; see [Managing users](../admin/).
 
 - **Postman, Bruno, Insomnia**: import the OpenAPI schema (`app/src/types/openapi.json`) for the
   full endpoint collection, then set auth to *Bearer*.
