@@ -183,10 +183,14 @@ async def require_erasable_account(session: AsyncSession, user: User) -> User:
         msg = "The anonymous system account cannot be deleted."
         raise ConflictError(msg)
     # Superusers first, in id order, so two admins erasing each other queue instead of
-    # deadlocking; then the target, before any product row, in the owner-first order every
-    # product writer uses (lock_product_owner). The caller's instance may belong to the
-    # auth dependency's own session, hence the reload.
+    # deadlocking; then the anonymous account that takes the content, then the target,
+    # before any product row, in the order every product writer uses (lock_product_owner):
+    # an edit of an anonymized product holds the anonymous row and waits for its editor's.
+    # The caller's instance may belong to the auth dependency's own session, hence the reload.
     await require_other_active_superuser(session, user, action="deleted")
+    await session.execute(
+        select(User.id).where(User.email_canonical == canonicalize_email(ANONYMOUS_USER_EMAIL)).with_for_update()
+    )
     return await require_locked_model(session, User, user.id)
 
 

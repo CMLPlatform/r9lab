@@ -10,10 +10,11 @@ from unittest.mock import patch
 from uuid import uuid4
 
 import pytest
-from sqlalchemy import delete, func, select, text
+from sqlalchemy import delete, func, select, text, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.application.account_erasure import ANONYMOUS_USER_EMAIL, erase_user
+from app.api.application import account_erasure
+from app.api.application.account_erasure import ANONYMOUS_USER_EMAIL, erase_user, get_or_create_anonymous_user
 from app.api.auth.models import User
 from app.api.common.crud.exceptions import ModelNotFoundError
 from app.api.data_collection.crud.product_commands import delete_product, update_product
@@ -67,9 +68,9 @@ async def committed_product(_setup_test_database: None, async_engine: AsyncEngin
         await session.commit()
 
 
-async def _wait_until_a_writer_waits_on_a_lock(engine: AsyncEngine) -> None:
+async def _wait_until_a_writer_waits_on_a_lock(engine: AsyncEngine, *, patience_s: float = 10) -> None:
     async with engine.connect() as connection:
-        for _ in range(200):
+        for _ in range(int(patience_s / 0.05)):
             waiting = await connection.scalar(
                 text(
                     "SELECT count(*) FROM pg_stat_activity "
@@ -163,3 +164,56 @@ async def test_owner_erasure_racing_their_update_does_not_deadlock(
         anonymous_id = await session.scalar(select(User.id).where(User.email == ANONYMOUS_USER_EMAIL))
         assert await session.scalar(select(Product.owner_id).where(Product.id == product_id)) == anonymous_id
     assert await _revision_versions(async_engine, product_id) == []
+
+
+async def test_moderator_erasure_racing_their_edit_of_an_anonymized_product_does_not_deadlock(
+    async_engine: AsyncEngine, committed_product: tuple[User, int]
+) -> None:
+    """The erasure holds the moderator's row and then wants the anonymous owner's; the edit must not hold it first.
+
+    The edit locks the product's owner (here the anonymous account) and then, through the
+    revision's editor foreign key, the moderator. The erasure has to take the anonymous
+    row before the moderator's, or the two wait on each other.
+    """
+    _owner, product_id = committed_product
+    async with AsyncSession(async_engine, expire_on_commit=False) as session:
+        moderator = await UserFactory.create_async(session=session)
+        anonymous = await get_or_create_anonymous_user(session)
+        await session.execute(update(Product).where(Product.id == product_id).values(owner_id=anonymous.id))
+        await session.commit()
+
+    original = account_erasure.get_or_create_anonymous_user
+    edit_started = asyncio.Event()
+
+    async def hold_until_the_edit_runs(session: AsyncSession) -> User:
+        # The erasure holds its own row here; let the edit start before it goes on.
+        edit_started.set()
+        await _wait_until_a_writer_waits_on_a_lock(async_engine, patience_s=2)
+        return await original(session)
+
+    async with AsyncSession(async_engine) as eraser, AsyncSession(async_engine) as editor:
+        erased_moderator = await eraser.get_one(User, moderator.id)
+
+        async def erase() -> None:
+            with (
+                patch("app.api.application.account_erasure.audit_event"),
+                patch.object(account_erasure, "get_or_create_anonymous_user", hold_until_the_edit_runs),
+            ):
+                await erase_user(eraser, erased_moderator, actor_id=uuid4())
+
+        async def edit() -> Product:
+            await edit_started.wait()
+            return await update_product(
+                editor, product_id, ProductUpdate(name="Late edit"), if_match_version=1, user_id=moderator.id
+            )
+
+        erasing_result, edit_result = await asyncio.wait_for(
+            asyncio.gather(erase(), edit(), return_exceptions=True), STEP_TIMEOUT_S
+        )
+
+    assert erasing_result is None, erasing_result
+    assert isinstance(edit_result, ModelNotFoundError), edit_result
+    assert await _revision_versions(async_engine, product_id) == []
+    async with AsyncSession(async_engine) as session:
+        await session.execute(delete(User).where(User.id == moderator.id))
+        await session.commit()
