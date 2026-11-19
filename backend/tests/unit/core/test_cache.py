@@ -21,10 +21,8 @@ from app.core.cache import (
 )
 
 
-def _request_with_query(query: str) -> MagicMock:
-    request = MagicMock()
-    request.url.query = query
-    return request
+def _request_with_query(query: str) -> Request:
+    return Request({"type": "http", "method": "GET", "path": "/", "headers": [], "query_string": query.encode()})
 
 
 def _example_endpoint() -> None:
@@ -152,13 +150,10 @@ async def test_cached_endpoint_without_request_parameter_keys_by_query_string() 
     cached = cache(expire=60)(endpoint)
     request_param = next(p for p in inspect.signature(cached).parameters.values() if p.annotation is Request)
 
-    def request(query: str) -> Request:
-        return Request({"type": "http", "method": "GET", "path": "/", "headers": [], "query_string": query.encode()})
-
     init_cache(None)
     try:
         results = [
-            await cached(product_filter=filters, **{request_param.name: request(query)})
+            await cached(product_filter=filters, **{request_param.name: _request_with_query(query)})
             for query in ("search=a", "search=b", "search=a")
         ]
     finally:

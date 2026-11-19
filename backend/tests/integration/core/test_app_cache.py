@@ -331,3 +331,51 @@ async def test_cold_not_modified_response_is_not_cached_as_canonical_response(
         assert response3.status_code == 200
         assert response3.json() == {"value": "fresh"}
         assert call_count["conditional"] == 2
+
+
+async def test_cache_key_ignores_undeclared_params_and_param_order(
+    mount_cache_client: Callable[[APIRouter], AbstractAsyncContextManager[AsyncClient]],
+) -> None:
+    """Only the query params a route declares enter the key, in a fixed order.
+
+    The endpoint ignores any other param, so letting one vary the key would only let a
+    client fill the cache with copies of the same response.
+    """
+    router = APIRouter()
+    call_count = {"calls": 0}
+
+    @router.get("/declared")
+    @cache(expire=EXPIRE_60)
+    async def declared_endpoint(value: str, other: str = "") -> dict:
+        call_count["calls"] += 1
+        return {"value": value, "other": other, "call_count": call_count["calls"]}
+
+    async with mount_cache_client(router) as client:
+        first = await client.get("/declared?value=a&other=b&junk=1")
+        junk = await client.get("/declared?value=a&other=b&junk=2")
+        reordered = await client.get("/declared?other=b&value=a")
+        different = await client.get("/declared?value=c&other=b")
+
+    assert [r.json()["call_count"] for r in (first, junk, reordered)] == [1, 1, 1]
+    assert different.json() == {"value": "c", "other": "b", "call_count": 2}
+
+
+async def test_credentials_bypass_the_cache_only_where_the_endpoint_reads_the_request(
+    mount_cache_client: Callable[[APIRouter], AbstractAsyncContextManager[AsyncClient]],
+) -> None:
+    """An endpoint without a ``Request`` serves the shared entry to signed-in clients too."""
+    router = APIRouter()
+    call_count = {"calls": 0}
+
+    @router.get("/shared")
+    @cache(expire=EXPIRE_60)
+    async def shared_endpoint() -> dict:
+        call_count["calls"] += 1
+        return {"call_count": call_count["calls"]}
+
+    async with mount_cache_client(router) as client:
+        anonymous = await client.get("/shared")
+        signed_in = await client.get("/shared", headers={"Authorization": "Bearer token-1"})
+
+    assert anonymous.json()["call_count"] == 1
+    assert signed_in.json()["call_count"] == 1
