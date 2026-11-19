@@ -11,10 +11,11 @@ from fastapi import status
 
 from app.api.application.account_export import MISSING_FILES_NAME
 from app.api.data_collection.crud import product_tree_queries
-from app.api.data_collection.models.product import Product
+from app.api.data_collection.models.product import Product, ProductRevision
 from app.api.file_storage.crud.support_paths import stored_file_path
 from app.api.file_storage.models import Image
 from app.api.plugins.r9cam.models import Camera
+from tests.constants import IF_MATCH_FRESH
 from tests.fixtures.client import override_authenticated_user
 
 if TYPE_CHECKING:
@@ -174,3 +175,60 @@ async def test_export_is_not_held_to_the_product_export_caps(
 
     [exported] = json.loads(archive.read("products.json"))
     assert [child["id"] for child in exported["components"]] == [own_tree[1].id]
+
+
+async def test_export_holds_the_edit_history_without_other_editors(
+    api_client: AsyncClient,
+    test_app: FastAPI,
+    db_session: AsyncSession,
+    db_user: User,
+    db_superuser: User,
+    own_tree: tuple[Product, Product],
+) -> None:
+    """Edits of own products come with their values, own edits elsewhere without; no other editor is named."""
+    product_id = own_tree[0].id
+    others_product = Product(owner_id=db_superuser.id, name="Someone else's kettle")
+    db_session.add(others_product)
+    await db_session.flush()
+    others_id, moderator_id, moderator_name = others_product.id, str(db_superuser.id), str(db_superuser.username)
+    db_session.add_all(
+        [
+            # A moderator's correction of the user's product, and the user's edit of another's.
+            ProductRevision(
+                product_id=product_id,
+                editor_id=db_superuser.id,
+                version=1,
+                changed_fields=["description"],
+                snapshot={"description": "moderated"},
+            ),
+            ProductRevision(
+                product_id=others_id,
+                editor_id=db_user.id,
+                version=1,
+                changed_fields=["name"],
+                snapshot={"name": "Someone else's kettle"},
+            ),
+        ]
+    )
+    await db_session.flush()
+    with override_authenticated_user(test_app, db_user):
+        edit = await api_client.patch(
+            f"/v1/products/{product_id}", json={"name": "Renamed kettle"}, headers=IF_MATCH_FRESH
+        )
+        assert edit.status_code == status.HTTP_200_OK, edit.text
+        await _fresh_session_state(db_session, db_user)
+
+        _, archive = await _export(api_client)
+
+    raw = archive.read("revisions.json").decode()
+    by_product_and_editor = {(r["product_id"], r["edited_by_you"]): r for r in json.loads(raw)}
+    own_edit = by_product_and_editor[product_id, True]
+    assert own_edit["changed_fields"] == ["name"]
+    assert own_edit["snapshot"]["name"] == "Renamed kettle"
+    assert by_product_and_editor[product_id, False]["snapshot"] == {"description": "moderated"}
+    elsewhere = by_product_and_editor[others_id, True]
+    assert elsewhere["changed_fields"] == ["name"]
+    assert elsewhere["snapshot"] is None
+    assert len(by_product_and_editor) == 3
+    assert moderator_id not in raw
+    assert moderator_name not in raw

@@ -7,6 +7,10 @@ Data portability (GDPR article 20) for the signed-in user. The archive holds:
 - ``products.json`` and ``products.csv``: every base product the user owns with its whole
   component tree, built by the same code as ``/products/export`` but without its caps; the
   user's upload quota bounds the archive instead.
+- ``revisions.json``: the edit history of the user's own products and components, with the
+  values each edit left, and the user's own edits of other people's products, without those
+  values. Each entry has the time, product id, version and changed fields, and says whether
+  the user made the edit; it never names another editor.
 - ``images/<product id>/<image id><ext>`` and ``files/<product id>/<file id><ext>``: the
   stored uploads, uncompressed, since photos are compressed already.
 - ``missing-files.txt``: uploads the active storage could not read (any remote backend,
@@ -23,7 +27,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 from pydantic import TypeAdapter
-from sqlalchemy import select
+from sqlalchemy import or_, select
 
 from app.api.auth.schemas import UserRead
 from app.api.data_collection.crud.product_tree_queries import (
@@ -31,7 +35,7 @@ from app.api.data_collection.crud.product_tree_queries import (
     apply_product_detail_loaders,
     load_all_descendants,
 )
-from app.api.data_collection.models.product import Product
+from app.api.data_collection.models.product import Product, ProductRevision
 from app.api.data_collection.presentation.product_export import build_product_exports, render_products_csv
 from app.api.data_collection.schemas import ProductExportRead
 from app.api.file_storage.crud.support_paths import stored_file_path
@@ -89,6 +93,27 @@ def _account_record(user: User, cameras: Iterable[Camera]) -> dict[str, Any]:
     }
 
 
+async def _revision_records(session: AsyncSession, user: User) -> list[dict[str, Any]]:
+    statement = (
+        select(ProductRevision, Product.owner_id)
+        .join(Product, Product.id == ProductRevision.product_id)
+        .where(or_(Product.owner_id == user.id, ProductRevision.editor_id == user.id))
+        .order_by(ProductRevision.created_at, ProductRevision.id)
+    )
+    return [
+        {
+            "created_at": revision.created_at.isoformat(),
+            "product_id": revision.product_id,
+            "version": revision.version,
+            "changed_fields": revision.changed_fields,
+            "edited_by_you": revision.editor_id == user.id,
+            # Another owner's product: the values it left are theirs, not the user's.
+            "snapshot": revision.snapshot if owner_id == user.id else None,
+        }
+        for revision, owner_id in (await session.execute(statement)).tuples()
+    ]
+
+
 def _upload(folder: str, product_id: int, item: File | Image) -> ArchiveUpload:
     path = stored_file_path(item)
     suffix = path.suffix.lower() if path else Path(item.filename).suffix.lower()
@@ -119,6 +144,7 @@ async def load_account_archive(session: AsyncSession, user: User) -> AccountArch
         "account.json": TypeAdapter(dict[str, Any]).dump_json(_account_record(user, cameras), indent=2),
         "products.json": TypeAdapter(list[ProductExportRead]).dump_json(products, indent=2),
         "products.csv": render_products_csv(products).encode(),
+        "revisions.json": TypeAdapter(list[dict[str, Any]]).dump_json(await _revision_records(session, user), indent=2),
     }
     return AccountArchive(data_files=data_files, uploads=uploads)
 

@@ -124,6 +124,9 @@ Account screen. The native app does not offer it; use the web app.
   acceptance and cameras. No passwords, tokens or keys.
 - `products.json` and `products.csv`: every base product you own with its components, in the
   export shapes above.
+- `revisions.json`: the edit history of your products and components (time, product id, version,
+  the fields changed and what they said afterwards), and the edits you made to other people's
+  products (time, product id, version and the fields changed). It never names another editor.
 - `images/<id>/` and `files/<id>/`: the photos and research files of product or component `<id>`,
   as uploaded, one file per image or file id.
 - `missing-files.txt`: present only when some uploads could not be read; it lists them.

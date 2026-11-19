@@ -105,8 +105,10 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   ship in an AGPL-3.0-or-later project.
 - Download all your data: `GET /v1/users/me/export` streams one ZIP with `account.json`
   (profile, preferences, linked sign-ins, terms acceptance and cameras, never tokens or keys),
-  `products.json` and `products.csv` (every product you own, with no 100-product cap), and your
-  photos and files under `images/` and `files/`. Uploads the server cannot read are listed in
+  `products.json` and `products.csv` (every product you own, with no 100-product cap),
+  `revisions.json` (the edit history of your products, and your edits of other people's products
+  without their values; no other editor is named), and your photos and files under `images/` and
+  `files/`. Uploads the server cannot read are listed in
   `missing-files.txt`. It is limited to 5 downloads an hour (`API_ACCOUNT_EXPORT_RATE_LIMIT`).
   The web app has a **Download your data** row on the Account screen; the native app points to
   the web app. ([#343](https://github.com/CMLPlatform/r9lab/issues/343))
