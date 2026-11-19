@@ -45,7 +45,11 @@ const SIDEBAR = [
     items: [
       { label: 'Guides overview', slug: 'user-guides' },
       { label: 'Getting started', slug: 'user-guides/getting-started' },
-      { label: 'Data collection', slug: 'user-guides/data-collection' },
+      { label: 'Add your first product', slug: 'user-guides/first-product' },
+      { label: 'Add components', slug: 'user-guides/components' },
+      { label: 'Record materials', slug: 'user-guides/materials' },
+      { label: 'Take and upload photos', slug: 'user-guides/photos' },
+      { label: 'Data collection checklist', slug: 'user-guides/data-collection' },
       { label: 'Glossary', slug: 'user-guides/glossary' },
       { label: 'Hardware', slug: 'user-guides/hardware' },
       { label: 'r9cam setup', slug: 'user-guides/r9cam' },
@@ -68,9 +72,24 @@ const SIDEBAR = [
   {
     label: 'Operations',
     items: [
-      { label: 'Install', slug: 'operations/install' },
-      { label: 'Deployment and operations', slug: 'operations/deployment' },
-      { label: 'Security and hardening', slug: 'operations/security' },
+      {
+        label: 'Run it',
+        items: [
+          { label: 'Install', slug: 'operations/install' },
+          { label: 'Configure uploads', slug: 'operations/configure' },
+          { label: 'Backups and recovery', slug: 'operations/backups' },
+          { label: 'Secrets and rotation', slug: 'operations/secrets' },
+          { label: 'Telemetry and monitoring', slug: 'operations/monitoring' },
+        ],
+      },
+      {
+        label: 'Reference',
+        items: [
+          { label: 'Deployment topology', slug: 'operations/deployment' },
+          { label: 'Security and hardening', slug: 'operations/security' },
+          { label: 'Security assurance case', slug: 'operations/security-assurance' },
+        ],
+      },
     ],
   },
   {
@@ -123,9 +142,8 @@ export default defineConfig({
     '/architecture/rpi-cam': '/architecture/r9cam/',
     '/api/rpi-cam': '/api/r9cam/',
     '/operations/prerequisites': '/operations/install/',
-    '/operations/configure': '/operations/deployment/',
     '/operations/deploy': '/operations/deployment/',
-    '/operations/upgrade-backup': '/operations/deployment/',
+    '/operations/upgrade-backup': '/operations/backups/',
   },
   markdown: { processor: satteri({ hastPlugins: [tableScroll] }) },
   vite: {

@@ -97,9 +97,17 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   `missing-files.txt`. It is limited to 5 downloads an hour (`API_ACCOUNT_EXPORT_RATE_LIMIT`).
   The web app has a **Download your data** row on the Account screen; the native app points to
   the web app. ([#343](https://github.com/CMLPlatform/r9lab/issues/343))
+- The docs have contributor guides for a first product, components, materials and photos, with
+  screenshots of the app. The data collection page is now a checklist.
+  ([#524](https://github.com/CMLPlatform/r9lab/issues/524))
 
 ### Changed
 
+- The docs Operations section is grouped into "Run it" and "Reference". The deployment page is split
+  into Deployment topology, Backups and recovery, Secrets and rotation, and Telemetry and
+  monitoring; the upload limits are on a new Configure uploads page, and the security assurance case
+  has its own page. `/operations/upgrade-backup` now redirects to Backups and recovery.
+  ([#524](https://github.com/CMLPlatform/r9lab/issues/524))
 - The landing page shows the example teardown's six photo plates in two columns on a phone, so
   the "Why" section is not pushed far down. A plate with sub-parts says how many ("258 g · 2
   parts"). Links to the app open in the same tab; links to other sites still open a new one.

@@ -1,9 +1,10 @@
 ---
 title: Getting started
-description: Create an account and capture a first R9lab product record.
+description: Create an account and find your way to a first R9lab product record.
 ---
 
-R9lab documents a product while you take it apart. A useful first record needs a clear product identity, a few good photos, and notes on what you found.
+R9lab documents a product while you take it apart. A useful first record has a clear product
+name, a few good photos, and notes on what you found.
 
 ## Create an account
 
@@ -15,29 +16,29 @@ R9lab documents a product while you take it apart. A useful first record needs a
 GitHub and Google sign-in skip the email-verification step.
 :::
 
-## Before you start
+## What you need
 
-- Prepare a workspace with enough space for the product and separated components.
-- Good lighting matters more than equipment; see [Hardware](../hardware/).
-- Have a device ready for photos. A phone is fine; a camera rig is optional.
+- A workspace with enough space for the product and its separated parts.
+- Good lighting. It matters more than equipment; see [Hardware](../hardware/).
+- A device for photos. A phone is fine. A camera rig is optional.
 
-## Make your first product record
+## Your first record
 
-Once signed in:
+Follow the guides in this order:
 
-1. Create a **product record** for the item you're about to document, such as a power drill.
-1. Add identifying information: name, brand, model, any initial notes.
-1. Photograph the intact product before you open it.
-1. As you disassemble, create **child records** for meaningful components, such as a battery pack, motor assembly, or housing.
-1. Attach images, measurements, and notes at the level where they belong.
+1. [Add your first product](../first-product/): name it and add a first photo.
+1. [Add components](../components/): record the parts as you take them out.
+1. [Record materials](../materials/): note what each part is made of.
+1. [Take and upload photos](../photos/): get photos someone else can check.
 
 :::note[Start simple]
-A partial record with good photos beats a perfect one that never gets finished. You can fill in gaps later.
+A partial record with good photos beats a perfect one that never gets finished. You can fill in
+gaps later.
 :::
 
 ## Next steps
 
-- [Data collection guide](../data-collection/): how to build a thorough record
+- [Data collection checklist](../data-collection/): measurements, notes and a final check
 - [Hardware](../hardware/): simple and advanced capture setups
 - [r9cam](../r9cam/): if you are using a Raspberry Pi camera
 - [API guide](../api/): for scripts and technical integrations
