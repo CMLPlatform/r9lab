@@ -5,8 +5,9 @@ Data portability (GDPR article 20) for the signed-in user. The archive holds:
 - ``account.json``: profile, preferences, linked sign-in providers (names and account ids,
   never tokens), contributor-terms acceptance and camera registrations (never keys).
 - ``products.json`` and ``products.csv``: every base product the user owns with its whole
-  component tree, built by the same code as ``/products/export`` but without its caps; the
-  user's upload quota bounds the archive instead.
+  component tree, built by the same code as ``/products/export`` but with one cap instead of
+  its two: ``ACCOUNT_EXPORT_MAX_PRODUCTS`` base products and components together, past which
+  the route answers 413. The user's upload quota bounds the uploads.
 - ``revisions.json``: the edit history of the user's own products and components, with the
   values each edit left, and the user's own edits of other people's products, without those
   values. Each entry has the time, product id, version and changed fields, and says whether
@@ -30,11 +31,14 @@ from pydantic import TypeAdapter
 from sqlalchemy import or_, select
 
 from app.api.auth.schemas import UserRead
+from app.api.common.exceptions import PayloadTooLargeError
 from app.api.data_collection.crud.product_tree_queries import (
+    EXPORT_MAX_COMPONENTS,
     PRODUCT_EXPORT_RELATIONSHIPS,
     apply_product_detail_loaders,
     load_all_descendants,
 )
+from app.api.data_collection.exceptions import ProductExportTooLargeError
 from app.api.data_collection.models.product import Product, ProductRevision
 from app.api.data_collection.presentation.product_export import build_product_exports, render_products_csv
 from app.api.data_collection.schemas import ProductExportRead
@@ -52,7 +56,19 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 MISSING_FILES_NAME = "missing-files.txt"
+# Base products and components in one archive, all held in memory while it builds.
+ACCOUNT_EXPORT_MAX_PRODUCTS = 10 * EXPORT_MAX_COMPONENTS
 _CHUNK_SIZE = 256 * 1024
+
+
+class AccountArchiveTooLargeError(PayloadTooLargeError):
+    """Raised when an account holds more products and components than one archive takes."""
+
+    def __init__(self) -> None:
+        super().__init__(
+            f"Your account has more than {ACCOUNT_EXPORT_MAX_PRODUCTS:,} products and components, "
+            "too many for one download. Email us for a copy of your data."
+        )
 
 
 @dataclass(frozen=True, slots=True)
@@ -121,13 +137,27 @@ def _upload(folder: str, product_id: int, item: File | Image) -> ArchiveUpload:
 
 
 async def load_account_archive(session: AsyncSession, user: User) -> AccountArchive:
-    """Load the user's account record, product trees and upload paths."""
+    """Load the user's account record, product trees and upload paths.
+
+    Raises:
+        AccountArchiveTooLargeError: past ``ACCOUNT_EXPORT_MAX_PRODUCTS`` products and components.
+    """
     statement = apply_product_detail_loaders(
-        select(Product).where(Product.owner_id == user.id, Product.parent_id.is_(None)).order_by(Product.id),
+        select(Product)
+        .where(Product.owner_id == user.id, Product.parent_id.is_(None))
+        .order_by(Product.id)
+        .limit(ACCOUNT_EXPORT_MAX_PRODUCTS + 1),
         PRODUCT_EXPORT_RELATIONSHIPS,
     )
     roots = list((await session.execute(statement)).scalars().unique().all())
-    children_by_parent_id = await load_all_descendants(session, [root.id for root in roots], capped=False)
+    if len(roots) > ACCOUNT_EXPORT_MAX_PRODUCTS:
+        raise AccountArchiveTooLargeError
+    try:
+        children_by_parent_id = await load_all_descendants(
+            session, [root.id for root in roots], max_components=ACCOUNT_EXPORT_MAX_PRODUCTS - len(roots)
+        )
+    except ProductExportTooLargeError as e:
+        raise AccountArchiveTooLargeError from e
     products = build_product_exports(roots, children_by_parent_id, user)
     cameras = (
         (await session.execute(select(Camera).where(Camera.owner_id == user.id).order_by(Camera.created_at)))

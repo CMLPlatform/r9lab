@@ -166,7 +166,8 @@ class Limiter:
                 user_prefix = f"client:user:{scope}" if scope else "client:user"
                 await self.ahit_key(user_rate_string, rate_limit_bucket_key(user_prefix, user_id))
                 if signed_in_ip_ceiling is not None:
-                    ip_key = rate_limit_bucket_key("client:ip:signed-in", get_client_ip(request))
+                    ip_prefix = f"client:ip:signed-in:{scope}" if scope else "client:ip:signed-in"
+                    ip_key = rate_limit_bucket_key(ip_prefix, get_client_ip(request))
                     await self.ahit_key(signed_in_ip_ceiling, ip_key)
 
         dependency.__name__ = name

@@ -21454,7 +21454,7 @@
     },
     "/v1/users/me/export": {
       "get": {
-        "description": "Download your account details, every product you own and their photos and files, as one ZIP.\n\nThe archive holds ``account.json``, ``products.json``, ``products.csv`` (the same\nformats as ``/products/export``, without its size caps), ``images/`` and ``files/``,\ngrouped by product id. Uploads the server cannot read are listed in\n``missing-files.txt`` instead. The archive is built while it downloads, so its size\nis not known in advance and an interrupted download starts over.",
+        "description": "Download your account details, every product you own and their photos and files, as one ZIP.\n\nThe archive holds ``account.json``, ``products.json``, ``products.csv`` (the same\nformats as ``/products/export``, capped at 50,000 products and components together\ninstead of its caps), ``revisions.json``,\n``images/`` and ``files/``, grouped by product id. Uploads the server cannot read are listed in\n``missing-files.txt`` instead. The archive is built while it downloads, so its size\nis not known in advance and an interrupted download starts over.",
         "operationId": "export_own_account_v1_users_me_export_get",
         "responses": {
           "200": {
@@ -21467,6 +21467,9 @@
               }
             },
             "description": "Successful Response"
+          },
+          "413": {
+            "description": "The account has more products and components than one archive takes."
           }
         },
         "security": [

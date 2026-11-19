@@ -131,8 +131,8 @@ Account screen. The native app does not offer it; use the web app.
   as uploaded, one file per image or file id.
 - `missing-files.txt`: present only when some uploads could not be read; it lists them.
 
-The export limits above do not apply: the archive holds all your products, and its size is bounded
-by your upload quota. The ZIP is built while it downloads, so the browser shows no total size, and an
+The export limits above do not apply: the archive holds up to 50,000 products and components
+together, and answers `413` past that. Its size is bounded by your upload quota. The ZIP is built while it downloads, so the browser shows no total size, and an
 interrupted download starts over. You can download it 5 times an hour.
 
 ## Integration advice

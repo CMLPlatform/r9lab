@@ -20,15 +20,19 @@ router = PublicAPIRouter(prefix="/users", tags=["users"], dependencies=[Security
     "/me/export",
     summary="Download all your data as a ZIP archive",
     response_class=StreamingResponse,
-    responses={200: {"content": {"application/zip": {"schema": {"type": "string", "format": "binary"}}}}},
+    responses={
+        200: {"content": {"application/zip": {"schema": {"type": "string", "format": "binary"}}}},
+        413: {"description": "The account has more products and components than one archive takes."},
+    },
     dependencies=[API_ACCOUNT_EXPORT_RATE_LIMIT_DEPENDENCY],
 )
 async def export_own_account(user: CurrentActiveUserDep, session: AsyncSessionDep) -> StreamingResponse:
     """Download your account details, every product you own and their photos and files, as one ZIP.
 
     The archive holds ``account.json``, ``products.json``, ``products.csv`` (the same
-    formats as ``/products/export``, without its size caps), ``images/`` and ``files/``,
-    grouped by product id. Uploads the server cannot read are listed in
+    formats as ``/products/export``, capped at 50,000 products and components together
+    instead of its caps), ``revisions.json``,
+    ``images/`` and ``files/``, grouped by product id. Uploads the server cannot read are listed in
     ``missing-files.txt`` instead. The archive is built while it downloads, so its size
     is not known in advance and an interrupted download starts over.
     """

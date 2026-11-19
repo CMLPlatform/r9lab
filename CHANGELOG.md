@@ -109,7 +109,10 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   `revisions.json` (the edit history of your products, and your edits of other people's products
   without their values; no other editor is named), and your photos and files under `images/` and
   `files/`. Uploads the server cannot read are listed in
-  `missing-files.txt`. It is limited to 5 downloads an hour (`API_ACCOUNT_EXPORT_RATE_LIMIT`).
+  `missing-files.txt`. It is limited to 5 downloads an hour (`API_ACCOUNT_EXPORT_RATE_LIMIT`),
+  and signed-in downloads from one IP to 15 an hour
+  (`API_ACCOUNT_EXPORT_RATE_LIMIT_SIGNED_IN_PER_IP`). An account with more than 50,000 products
+  and components gets 413.
   The web app has a **Download your data** row on the Account screen; the native app points to
   the web app. ([#343](https://github.com/CMLPlatform/r9lab/issues/343))
 - The docs have contributor guides for a first product, components, materials and photos, with

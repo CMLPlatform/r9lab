@@ -11,8 +11,15 @@ from unittest.mock import MagicMock
 import pytest
 
 from app.api.application import account_export
-from app.api.application.account_export import AccountArchive, ArchiveUpload, stream_account_archive
+from app.api.application.account_export import (
+    AccountArchive,
+    AccountArchiveTooLargeError,
+    ArchiveUpload,
+    load_account_archive,
+    stream_account_archive,
+)
 from app.api.application.routers import account_export as account_export_router
+from app.api.data_collection.exceptions import ProductExportTooLargeError
 
 if TYPE_CHECKING:
     from typing import Any, Self
@@ -79,3 +86,43 @@ def test_a_file_dated_before_1980_is_archived(tmp_path: Path) -> None:
     with zipfile.ZipFile(io.BytesIO(b"".join(stream_account_archive(archive)))) as zf:
         assert zf.read("images/7/old.jpg") == b"old photo"
         assert zf.getinfo("images/7/old.jpg").date_time[0] == 1980
+
+
+def _roots_result(count: int) -> MagicMock:
+    result = MagicMock()
+    result.scalars.return_value.unique.return_value.all.return_value = [MagicMock(id=i) for i in range(count)]
+    return result
+
+
+async def test_an_account_past_the_product_cap_gets_413(mock_session: Any, monkeypatch: pytest.MonkeyPatch) -> None:
+    """More base products than the cap is refused before any component tree loads."""
+    monkeypatch.setattr(account_export, "ACCOUNT_EXPORT_MAX_PRODUCTS", 2)
+    mock_session.execute.return_value = _roots_result(3)
+    descendants = MagicMock()
+    monkeypatch.setattr(account_export, "load_all_descendants", descendants)
+
+    with pytest.raises(AccountArchiveTooLargeError) as raised:
+        await load_account_archive(mock_session, MagicMock())
+
+    assert raised.value.http_status_code == 413
+    descendants.assert_not_called()
+
+
+async def test_components_share_the_cap_with_their_base_products(
+    mock_session: Any, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The component walk gets what the base products left of the cap, and its overflow is a 413 too."""
+    monkeypatch.setattr(account_export, "ACCOUNT_EXPORT_MAX_PRODUCTS", 5)
+    mock_session.execute.return_value = _roots_result(2)
+    budgets: list[int] = []
+
+    async def descendants(_session: object, _root_ids: object, *, max_components: int) -> dict[int, list[Any]]:
+        budgets.append(max_components)
+        raise ProductExportTooLargeError(10, max_components)
+
+    monkeypatch.setattr(account_export, "load_all_descendants", descendants)
+
+    with pytest.raises(AccountArchiveTooLargeError):
+        await load_account_archive(mock_session, MagicMock())
+
+    assert budgets == [3]

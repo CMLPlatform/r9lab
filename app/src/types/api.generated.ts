@@ -2344,7 +2344,8 @@ export interface paths {
      *
      *     A suspended account cannot sign in, and its refresh sessions are revoked; its
      *     products stay. A dedicated route for the same reason as the role route: the
-     *     self-service `UserUpdate` schema must never carry `is_active`.
+     *     self-service `UserUpdate` schema must never carry `is_active`. A request that
+     *     matches the current state changes nothing and is not audited.
      */
     put: operations['set_user_active_v1_admin_users__user_id__active_put'];
     post?: never;
@@ -2388,8 +2389,9 @@ export interface paths {
      * @description Download your account details, every product you own and their photos and files, as one ZIP.
      *
      *     The archive holds ``account.json``, ``products.json``, ``products.csv`` (the same
-     *     formats as ``/products/export``, without its size caps), ``images/`` and ``files/``,
-     *     grouped by product id. Uploads the server cannot read are listed in
+     *     formats as ``/products/export``, capped at 50,000 products and components together
+     *     instead of its caps), ``revisions.json``,
+     *     ``images/`` and ``files/``, grouped by product id. Uploads the server cannot read are listed in
      *     ``missing-files.txt`` instead. The archive is built while it downloads, so its size
      *     is not known in advance and an interrupted download starts over.
      */
@@ -11974,6 +11976,13 @@ export interface operations {
         content: {
           'application/zip': string;
         };
+      };
+      /** @description The account has more products and components than one archive takes. */
+      413: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
       };
     };
   };
