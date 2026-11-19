@@ -1,5 +1,6 @@
 """The erasure ledger file: append, read back, and unreadable lines."""
 
+import logging
 from typing import TYPE_CHECKING
 from unittest.mock import patch
 from uuid import uuid4
@@ -64,6 +65,34 @@ def test_a_torn_last_line_does_not_swallow_the_next_record(tmp_path: Path) -> No
     records, bad_lines = read_erasure_ledger(path)
     assert [(r.user_id, r.content) for r in records] == [(kept, "delete")]
     assert bad_lines == [1]
+
+
+def test_a_torn_final_line_is_skipped_with_a_warning(tmp_path: Path, caplog: pytest.LogCaptureFixture) -> None:
+    """An append cut short at the end of the file never committed its erasure, so replay can go on."""
+    path = tmp_path / "erasures.jsonl"
+    kept = uuid4()
+    append_erasure(path, kept, "anonymize")
+    with path.open("a", encoding="utf-8") as ledger:
+        ledger.write('\n{"user_id": "' + str(uuid4()) + '", "cont')
+    caplog.set_level(logging.WARNING, logger="app.api.application.account_erasure")
+
+    records, bad_lines = read_erasure_ledger(path)
+
+    assert [r.user_id for r in records] == [kept]
+    assert bad_lines == []
+    assert "partial record at line 4" in caplog.text
+
+
+def test_a_bad_final_line_with_a_newline_still_fails(tmp_path: Path) -> None:
+    """A whole line that does not parse was written in full, so it is reported, not skipped."""
+    path = tmp_path / "erasures.jsonl"
+    append_erasure(path, uuid4(), "anonymize")
+    with path.open("a", encoding="utf-8") as ledger:
+        ledger.write("not a record\n")
+
+    _, bad_lines = read_erasure_ledger(path)
+
+    assert bad_lines == [3]
 
 
 def test_a_short_write_raises(tmp_path: Path) -> None:

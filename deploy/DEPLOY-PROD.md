@@ -548,6 +548,22 @@ an account it cannot erase, or no ledger file at all fails the restore and leave
 the log names the line or the account id. An entry is written before its erasure commits, so an
 erasure whose commit failed still has one, and a later restore erases that account.
 
+A last line with no newline at its end is an append cut short by a power cut or a full disk. Its
+erasure never committed, so the replay skips it with a warning. The next erasure ends that line,
+and from then on it is reported like any other unreadable line. To clear a reported line:
+
+1. Read it, with the line number from the log:
+   `sudo sed -n '<line>p' "${BACKUP_HOST_DIR:-./backups}/erasure-ledger/erasures.jsonl"`. A bad
+   line reported in the backup copy (`/run/erasure-ledger-backup/...`) is in the live ledger too;
+   fix the live one.
+2. Keep a copy: `sudo cp -p erasures.jsonl erasures.jsonl.bak` in that directory.
+3. If the line holds a whole account id, rewrite it as a full record, so the replay erases that
+   account: `{"user_id": "<id>", "content": "<anonymize or delete, as the line shows; anonymize if
+   it does not>", "erased_at": "<the time on the next record>"}`. That person asked for the
+   erasure, so erasing again is the safe side. With no whole id there is no account to name:
+   delete the line.
+4. Re-run the replay by hand as below (without `--empty-ok`), then `just stack prod up YES`.
+
 On a host where no account was ever erased there is no ledger file yet, and the restore stops at the
 replay. Confirm the ledger directory is the mounted backup disk (`findmnt -T
 "${BACKUP_HOST_DIR:-./backups}/erasure-ledger"`), then finish by hand:

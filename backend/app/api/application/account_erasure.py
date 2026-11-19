@@ -252,7 +252,11 @@ def append_erasure(path: Path, user_id: UUID4, content: ErasureContent) -> None:
 def read_erasure_ledger(path: Path) -> tuple[list[ErasureRecord], list[int]]:
     """Return the ledger's valid records in order, and the numbers of the lines that are not.
 
-    A missing file means no account was erased yet. Blank lines are skipped.
+    A missing file means no account was erased yet. Blank lines are skipped. An unreadable
+    last line with no trailing newline is an append cut short by a crash or a full disk:
+    ``append_erasure`` fsyncs before the erasure commits, so that erasure never happened.
+    It is skipped with a warning rather than reported. Once a later append has ended it with
+    a newline, it is reported like any other bad line.
     """
     if not path.exists():
         return [], []
@@ -265,6 +269,10 @@ def read_erasure_ledger(path: Path) -> tuple[list[ErasureRecord], list[int]]:
             try:
                 records.append(ErasureRecord.model_validate_json(line))
             except ValidationError:
+                # Only the last line of a file can lack a newline.
+                if not line.endswith("\n"):
+                    logger.warning("Erasure ledger %s ends in a partial record at line %d; skipped", path, number)
+                    continue
                 bad_lines.append(number)
     return records, bad_lines
 
