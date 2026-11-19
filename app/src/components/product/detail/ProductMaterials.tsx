@@ -17,6 +17,7 @@ import { useAppTheme } from '@/theme/appThemeContext';
 import type { ApiMaterialUnit } from '@/types/api';
 import type { Product, ProductMaterial } from '@/types/Product';
 import { heading } from '@/utils/a11y';
+import { decimalSeparatorFor, parseLocalizedFloat } from '@/utils/locale';
 
 interface Props {
   product: Product;
@@ -230,7 +231,8 @@ function AddMaterial({
   const [pickerOpen, setPickerOpen] = useState(false);
   const [search, setSearch] = useState('');
   const [picked, setPicked] = useState<{ id: number; name: string }>();
-  const [quantity, setQuantity] = useState<number>();
+  // The typed text, not the blurred value: on native, a tap on Add can leave the field focused.
+  const [quantityText, setQuantityText] = useState('');
   const [unit, setUnit] = useState<ApiMaterialUnit>(DEFAULT_UNIT);
   const [error, setError] = useState<string>();
 
@@ -267,11 +269,12 @@ function AddMaterial({
   };
   const reset = () => {
     setPicked(undefined);
-    setQuantity(undefined);
+    setQuantityText('');
     setUnit(DEFAULT_UNIT);
     setError(undefined);
   };
   const confirm = () => {
+    const quantity = parseLocalizedFloat(quantityText, decimalSeparatorFor());
     if (!picked || quantity === undefined || quantity <= 0) {
       setError(QUANTITY_ERROR);
       return;
@@ -293,8 +296,8 @@ function AddMaterial({
           </AppText>
           <LocalizedFloatInput
             label="Quantity"
-            value={quantity}
-            onChange={setQuantity}
+            value={undefined}
+            onChangeText={setQuantityText}
             error={error}
           />
           <UnitChoice label={`Unit for ${picked.name}`} value={unit} onChange={setUnit} />

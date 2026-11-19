@@ -79,6 +79,27 @@ describe('ProductMaterials edit mode', () => {
     expect(path.endsWith('/products/1/materials/9')).toBe(true);
   });
 
+  // On native the Add tap can leave the field focused, so no blur commits the quantity first.
+  it('adds the typed quantity when Add is pressed before the field blurs', async () => {
+    serveMaterials();
+    let body: unknown;
+    server.use(
+      http.post(`${API_URL}/products/:id/materials/:materialId`, async ({ request }) => {
+        body = await request.json();
+        return HttpResponse.json({}, { status: 201 });
+      }),
+    );
+    await renderEdit(bill([aluminum]));
+
+    await user.press(screen.getByText('Add material'));
+    await user.press(await screen.findByText('Copper'));
+    await user.type(await screen.findByLabelText('Quantity'), '12', { skipBlur: true });
+    await user.press(screen.getByText('Add'));
+
+    await waitFor(() => expect(body).toEqual({ quantity: 12, unit: 'g' }));
+    expect(screen.queryByText('Enter a quantity above 0.')).toBeNull();
+  });
+
   it('does not offer a material that is already recorded', async () => {
     serveMaterials([copper, { id: 7, name: 'Aluminum', description: '' }]);
     await renderEdit(bill([aluminum]));
