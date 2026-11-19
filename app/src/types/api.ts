@@ -3,6 +3,8 @@ import type { components } from './api.generated';
 
 type ApiSchemaName = keyof components['schemas'];
 
+export type ApiCategoryTreeNode = components['schemas']['CategoryReadWithRecursiveSubCategories'];
+
 // ─── Products ────────────────────────────────────────────────────────────────
 // Detail payloads returned by the stable role-specific resource URLs.
 export type ApiBaseProductDetail =
@@ -16,6 +18,7 @@ export type ApiComponentChildItem = components['schemas']['ComponentRead'];
 export type ApiComponentTreeItem = components['schemas']['ComponentReadWithRecursiveComponents'];
 export type ApiProductCreate = components['schemas']['ProductCreateWithComponents'];
 export type ApiProductUpdate = components['schemas']['ProductUpdate'];
+export type ApiProductRevision = components['schemas']['ProductRevisionRead'];
 // ─── Materials ───────────────────────────────────────────────────────────────
 export type ApiMaterialLink = components['schemas']['MaterialProductLinkReadWithinProduct'];
 export type ApiMaterialUnit = components['schemas']['Unit'];
@@ -39,9 +42,14 @@ export type ApiCategoryStat = components['schemas']['CategoryStat'];
 // ─── Pagination ──────────────────────────────────────────────────────────────
 type ProductPageSchemaName = Extract<ApiSchemaName, 'Page_TypeVar_Customized_ProductRead_'>;
 type StringPageSchemaName = Extract<ApiSchemaName, 'Page_TypeVar_Customized_str_'>;
+type RevisionPageSchemaName = Extract<
+  ApiSchemaName,
+  'Page_TypeVar_Customized_ProductRevisionRead_'
+>;
 
 export type ApiPaginatedProducts = components['schemas'][ProductPageSchemaName];
 export type ApiPaginatedBrands = components['schemas'][StringPageSchemaName];
+export type ApiPaginatedRevisions = components['schemas'][RevisionPageSchemaName];
 
 // ─── RPi Cam ────────────────────────────────────────────────────────────────
 export type ApiCameraConnectionStatus = components['schemas']['CameraConnectionStatus'];

@@ -14,9 +14,10 @@ import type {
   ApiImageRead,
   ApiMaterialLink,
   ApiPaginatedProducts,
+  ApiPaginatedRevisions,
   ApiVideoRead,
 } from '@/types/api';
-import type { Product } from '@/types/Product';
+import type { Product, ProductMaterial } from '@/types/Product';
 import { apiFetch } from './client';
 import { throwFromResponse } from './errors';
 import { resolveApiMediaUrl, resolveApiMediaUrlMap } from './media';
@@ -53,6 +54,19 @@ type ProductMapperPayload =
   | ApiComponentChildItem
   | ApiComponentDetail
   | ApiComponentTreeItem;
+
+/** Sorted by name here because the API relationship has no order_by. */
+export function toProductMaterials(links: ApiMaterialLink[]): ProductMaterial[] {
+  return links
+    .map((link) => ({
+      materialID: link.material_id,
+      name: link.material.name,
+      quantity: link.quantity,
+      unit: link.unit,
+      ...(link.material.source ? { source: link.material.source } : {}),
+    }))
+    .sort((a, b) => a.name.localeCompare(b.name));
+}
 
 // Fields mapped identically for base products and components.
 function commonProductFields(data: ProductMapperPayload, meId?: string) {
@@ -112,16 +126,10 @@ function commonProductFields(data: ProductMapperPayload, meId?: string) {
     // undefined = the payload has no bill of materials (list rows, nested
     // children); [] = loaded and empty. ProductMaterials renders nothing for
     // the former, so a list row never claims a record has no materials.
-    // Sorted by name here because the API relationship has no order_by.
-    materials: ('bill_of_materials' in data ? data.bill_of_materials : undefined)
-      ?.map((link: ApiMaterialLink) => ({
-        materialID: link.material_id,
-        name: link.material.name,
-        quantity: link.quantity,
-        unit: link.unit,
-        ...(link.material.source ? { source: link.material.source } : {}),
-      }))
-      .sort((a, b) => a.name.localeCompare(b.name)),
+    materials:
+      'bill_of_materials' in data && data.bill_of_materials
+        ? toProductMaterials(data.bill_of_materials)
+        : undefined,
     thumbnailUrl: resolveApiMediaUrl(data.thumbnail_url),
     thumbnailUrls: resolveApiMediaUrlMap(data.thumbnail_urls),
     ...(productTypeName ? { productTypeName } : {}),
@@ -219,6 +227,25 @@ export async function getComponentTree(id: number): Promise<Product[] | null> {
   const data = (await response.json()) as ApiComponentTreeItem[];
   // NOTE: no viewer lookup, so `ownedBy` is never 'me'; callers read the measurements only.
   return data.map((component) => toComponent(component));
+}
+
+// The history list shows one page; older edits are rare enough not to page through.
+export const REVISIONS_PAGE_SIZE = 50;
+
+/** The newest recorded edits of a product or component, with the API's editor redaction. */
+/** The edit history; `signedIn` sends the session, so an owner or admin gets the values too. */
+export async function getRevisions(
+  id: number,
+  role: Product['role'],
+  signedIn: boolean,
+): Promise<ApiPaginatedRevisions> {
+  const url = new URL(
+    `${baseUrl}/${role === 'component' ? 'components' : 'products'}/${id}/revisions`,
+  );
+  url.searchParams.set('size', String(REVISIONS_PAGE_SIZE));
+  const response = await (signedIn ? fetchWithAuth : apiFetch)(url, { method: 'GET' });
+  if (!response.ok) await throwFromResponse(response, "Couldn't load the edit history. Try again.");
+  return (await response.json()) as ApiPaginatedRevisions;
 }
 
 export function newProduct(

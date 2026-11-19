@@ -4363,6 +4363,51 @@
         "title": "Page[TypeVar]Customized[ProductRead]",
         "type": "object"
       },
+      "Page_TypeVar_Customized_ProductRevisionRead_": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ProductRevisionRead"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "links": {
+            "$ref": "#/components/schemas/Links",
+            "readOnly": true
+          },
+          "page": {
+            "minimum": 1.0,
+            "title": "Page",
+            "type": "integer"
+          },
+          "pages": {
+            "minimum": 0.0,
+            "title": "Pages",
+            "type": "integer"
+          },
+          "size": {
+            "minimum": 1.0,
+            "title": "Size",
+            "type": "integer"
+          },
+          "total": {
+            "minimum": 0.0,
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "total",
+          "page",
+          "size",
+          "pages",
+          "links"
+        ],
+        "title": "Page[TypeVar]Customized[ProductRevisionRead]",
+        "type": "object"
+      },
       "Page_TypeVar_Customized_str_": {
         "properties": {
           "items": {
@@ -5386,6 +5431,74 @@
           "id"
         ],
         "title": "ProductReadWithRelationshipsAndFlatComponents",
+        "type": "object"
+      },
+      "ProductRevisionRead": {
+        "description": "One recorded edit of a product's own fields, newest first in the history list.",
+        "properties": {
+          "by_moderator": {
+            "description": "Whether someone other than the owner made the edit.",
+            "title": "By Moderator",
+            "type": "boolean"
+          },
+          "changed_fields": {
+            "description": "Names of the fields this edit changed.",
+            "items": {
+              "type": "string"
+            },
+            "title": "Changed Fields",
+            "type": "array"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "editor_username": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Hidden when the viewer may not see the editor's profile, for a moderator's edit unless the viewer is an admin, and once the editor's account is deleted.",
+            "title": "Editor Username"
+          },
+          "id": {
+            "exclusiveMinimum": 0.0,
+            "title": "Id",
+            "type": "integer"
+          },
+          "snapshot": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The product's editable fields as this edit left them. Only for the owner and admins: it can hold text the owner later removed.",
+            "title": "Snapshot"
+          },
+          "version": {
+            "description": "The product's version after this edit.",
+            "exclusiveMinimum": 0.0,
+            "title": "Version",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "version",
+          "created_at",
+          "changed_fields",
+          "by_moderator"
+        ],
+        "title": "ProductRevisionRead",
         "type": "object"
       },
       "ProductSummary": {
@@ -10801,6 +10914,9 @@
             },
             "description": "Successful Response"
           },
+          "409": {
+            "description": "A material is already in the bill of materials."
+          },
           "422": {
             "content": {
               "application/json": {
@@ -11084,6 +11200,9 @@
             },
             "description": "Successful Response"
           },
+          "409": {
+            "description": "A material is already in the bill of materials."
+          },
           "422": {
             "content": {
               "application/json": {
@@ -11104,6 +11223,89 @@
           }
         ],
         "summary": "Add single material to component bill of materials",
+        "tags": [
+          "components"
+        ],
+        "x-audience": [
+          "public",
+          "app"
+        ]
+      }
+    },
+    "/v1/components/{component_id}/revisions": {
+      "get": {
+        "description": "Get a page of the component's recorded edits, newest first, as ``GET /products/{id}/revisions`` does.",
+        "operationId": "get_component_revisions_v1_components__component_id__revisions_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "component_id",
+            "required": true,
+            "schema": {
+              "exclusiveMinimum": 0,
+              "title": "Component Id",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Page number",
+            "in": "query",
+            "name": "page",
+            "required": false,
+            "schema": {
+              "default": 1,
+              "description": "Page number",
+              "minimum": 1,
+              "title": "Page",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Page size",
+            "in": "query",
+            "name": "size",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "description": "Page size",
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Size",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Page_TypeVar_Customized_ProductRevisionRead_"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          },
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "summary": "Get a component's edit history",
         "tags": [
           "components"
         ],
@@ -19266,6 +19468,9 @@
             },
             "description": "Successful Response"
           },
+          "409": {
+            "description": "A material is already in the bill of materials."
+          },
           "422": {
             "content": {
               "application/json": {
@@ -19549,6 +19754,9 @@
             },
             "description": "Successful Response"
           },
+          "409": {
+            "description": "A material is already in the bill of materials."
+          },
           "422": {
             "content": {
               "application/json": {
@@ -19569,6 +19777,89 @@
           }
         ],
         "summary": "Add single material to product bill of materials",
+        "tags": [
+          "products"
+        ],
+        "x-audience": [
+          "public",
+          "app"
+        ]
+      }
+    },
+    "/v1/products/{product_id}/revisions": {
+      "get": {
+        "description": "Get a page of the product's recorded edits, newest first.\n\nCovers the product's own fields, not its media, components or bill of materials, and\nonly edits made since the history was introduced. Revisions are kept for two years.",
+        "operationId": "get_product_revisions_v1_products__product_id__revisions_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "product_id",
+            "required": true,
+            "schema": {
+              "exclusiveMinimum": 0,
+              "title": "Product Id",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Page number",
+            "in": "query",
+            "name": "page",
+            "required": false,
+            "schema": {
+              "default": 1,
+              "description": "Page number",
+              "minimum": 1,
+              "title": "Page",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Page size",
+            "in": "query",
+            "name": "size",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "description": "Page size",
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Size",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Page_TypeVar_Customized_ProductRevisionRead_"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          },
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "summary": "Get a base product's edit history",
         "tags": [
           "products"
         ],
@@ -21152,6 +21443,44 @@
           }
         ],
         "summary": "Accept the current contributor terms",
+        "tags": [
+          "users"
+        ],
+        "x-audience": [
+          "public",
+          "app"
+        ]
+      }
+    },
+    "/v1/users/me/export": {
+      "get": {
+        "description": "Download your account details, every product you own and their photos and files, as one ZIP.\n\nThe archive holds ``account.json``, ``products.json``, ``products.csv`` (the same\nformats as ``/products/export``, capped at 50,000 products and components together\ninstead of its caps), ``revisions.json``,\n``images/`` and ``files/``, grouped by product id. Uploads the server cannot read are listed in\n``missing-files.txt`` instead. The archive is built while it downloads, so its size\nis not known in advance and an interrupted download starts over.",
+        "operationId": "export_own_account_v1_users_me_export_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/zip": {
+                "schema": {
+                  "format": "binary",
+                  "type": "string"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "413": {
+            "description": "The account has more products and components than one archive takes."
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          },
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "summary": "Download all your data as a ZIP archive",
         "tags": [
           "users"
         ],

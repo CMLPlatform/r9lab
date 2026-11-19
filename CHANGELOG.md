@@ -30,6 +30,9 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Developers: run `docker compose -p relab_dev down` (and `relab_test`, `relab_e2e`) before the
   first `just dev-up`. The old dev database is not carried over, so seed it again. Rebuild the
   devcontainer: the workspace is now `/opt/r9lab`.
+- Before deploying this release, create the erasure ledger directory on each host; the API and the
+  migrator do not start without it:
+  `dir="$(sed -n 's/^BACKUP_HOST_DIR=//p' .env)"; sudo install -d -o 65532 -g 65532 -m 0700 "${dir:-./backups}/erasure-ledger"`.
 - The repository is now `CMLPlatform/r9lab`. Point existing checkouts at it:
   `git remote set-url origin https://github.com/CMLPlatform/r9lab.git`. GitHub redirects the old
   name for now.
@@ -42,6 +45,41 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - The public web app routes (products, a product, a profile, sign-in, sign-up) carry a
   `<meta name="description">`, taken from the product's description on a product page.
   ([#504](https://github.com/CMLPlatform/r9lab/issues/504))
+- Account erasures hold across a database restore. Each erasure is appended to a ledger in
+  `BACKUP_HOST_DIR/erasure-ledger`, outside Postgres, holding only the account id, the content
+  policy and the time, and archived with every database snapshot, so the offsite copy carries
+  it. `just restore` brings the schema to the release's head and replays the live ledger and the
+  newest snapshot's copy before the API starts, so an account erased after the dump was taken is
+  erased again. If the backup disk is lost too, erasures since the last offsite copy (up to a
+  day) are in no copy and come back with a restore. An erasure whose ledger entry cannot be
+  written fails instead of committing; a replay with no ledger file fails unless run with
+  `--empty-ok`.
+  ([#523](https://github.com/CMLPlatform/r9lab/issues/523))
+- Edit the bill of materials of a saved product or component in the app: pick a material from a
+  searchable list, set its quantity and unit (default `g`), change it or remove it. The total
+  material mass shows when every row is in g or kg. A saved record with neither materials nor
+  components, or whose material mass is more than 10% off its weight, gets a warning.
+  ([#63](https://github.com/CMLPlatform/r9lab/issues/63), [#327](https://github.com/CMLPlatform/r9lab/issues/327))
+- Product edit history. Each change to a product's or component's own fields records who made it,
+  the new version, the changed fields and the values it left, read through
+  `GET /v1/products/{id}/revisions` and `GET /v1/components/{id}/revisions`. The values are
+  returned only to the owner and admins. The app lists the edits under the "Last updated" date.
+  History starts with this release, covers neither media, components nor materials, and is kept
+  for two years. Erasing an account clears the history of its products. A schema rollback below this release is refused once any edit is recorded: roll
+  back the code only. ([#361](https://github.com/CMLPlatform/r9lab/issues/361))
+- An Admin section in the app for superusers, under Account: search and filter users, change a
+  role, reset two-step verification, suspend or reactivate, and delete an account (typing its email
+  confirms). A superuser without two-step verification sees a prompt to turn it on first. Other
+  accounts do not see the section.
+- Admin API: `PUT /v1/admin/users/{user_id}/active` with `{"is_active": false}` suspends an
+  account and ends its sessions; `true` reactivates it. Products stay. An admin cannot suspend
+  the last active superuser. Both actions are audited (`deactivate`, `reactivate`); a request
+  for the state the account already has changes and audits nothing.
+- Admin API: the anonymous system account no longer appears in `GET /v1/admin/users`, and every
+  admin write to it (update, role, two-step reset, suspend or reactivate) answers 409. Every
+  admin write to the acting admin's own account, delete included, answers 400: an admin changes
+  their own password, email or two-step verification from their account settings, which ask them
+  to sign in again.
 - r9cam cameras can sign their device tokens with EdDSA (Ed25519) as well as ES256. Each camera
   may use only the algorithm of the key it paired with. The backend now uses r9cam-models
   0.7.0, which accepts Ed25519 public keys at pairing. ([#501](https://github.com/CMLPlatform/r9lab/issues/501))
@@ -65,9 +103,29 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Pull requests fail when they change the public or device OpenAPI document in a breaking way
   (label `breaking-api` marks an intended break), or add a dependency under a licence that cannot
   ship in an AGPL-3.0-or-later project.
+- Download all your data: `GET /v1/users/me/export` streams one ZIP with `account.json`
+  (profile, preferences, linked sign-ins, terms acceptance and cameras, never tokens or keys),
+  `products.json` and `products.csv` (every product you own, with no 100-product cap),
+  `revisions.json` (the edit history of your products, and your edits of other people's products
+  without their values; no other editor is named), and your photos and files under `images/` and
+  `files/`. Uploads the server cannot read are listed in
+  `missing-files.txt`. It is limited to 5 downloads an hour (`API_ACCOUNT_EXPORT_RATE_LIMIT`),
+  and signed-in downloads from one IP to 15 an hour
+  (`API_ACCOUNT_EXPORT_RATE_LIMIT_SIGNED_IN_PER_IP`). An account with more than 50,000 products
+  and components gets 413.
+  The web app has a **Download your data** row on the Account screen; the native app points to
+  the web app. ([#343](https://github.com/CMLPlatform/r9lab/issues/343))
+- The docs have contributor guides for a first product, components, materials and photos, with
+  screenshots of the app. The data collection page is now a checklist.
+  ([#524](https://github.com/CMLPlatform/r9lab/issues/524))
 
 ### Changed
 
+- The docs Operations section is grouped into "Run it" and "Reference". The deployment page is split
+  into Deployment topology, Backups and recovery, Secrets and rotation, and Telemetry and
+  monitoring; the upload limits are on a new Configure uploads page, and the security assurance case
+  has its own page. `/operations/upgrade-backup` now redirects to Backups and recovery.
+  ([#524](https://github.com/CMLPlatform/r9lab/issues/524))
 - The landing page shows the example teardown's six photo plates in two columns on a phone, so
   the "Why" section is not pushed far down. A plate with sub-parts says how many ("258 g · 2
   parts"). Links to the app open in the same tab; links to other sites still open a new one.
@@ -80,6 +138,8 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   ([#506](https://github.com/CMLPlatform/r9lab/issues/506))
 - The docs accessibility scan covers every built page at desktop and phone width, and the
   accessibility statement says it runs on every pull request.
+- Creating a product or component with the same material twice in its bill of materials is now
+  rejected with a validation error. ([#327](https://github.com/CMLPlatform/r9lab/issues/327))
 - The welcome card on the products screen has even inner padding, the mark lines up with the
   text, and "Sign in" is a solid primary button. On wide screens the actions sit beside the text.
 - The `r9lab-backup` image is built on Debian slim with only the PostgreSQL client, not the
@@ -99,11 +159,16 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 - The landing page no longer reads a theme choice stored under the old `relab-theme` key; visitors
   who set one before the rename see the system theme until they choose again.
+- The app no longer ships the CPV category list (2 MB, about 200 KB gzipped). The category picker
+  browses the CPV categories from the API and searches product types on the server, so the app
+  and the API cannot drift apart.
 - The legacy admin path `/v1/admin/plugins/rpi-cam` is no longer served. The device and
   user-facing legacy camera paths stay until 2027-01-31.
-- The docs site's Prerequisites, Configure, Deploy and Upgrade and backup pages. Their URLs
-  redirect to [Install](https://docs.r9lab.io/operations/install/) and
-  [Deployment and operations](https://docs.r9lab.io/operations/deployment/).
+- The docs site's Prerequisites and Deploy pages. Their URLs redirect to
+  [Install](https://docs.r9lab.io/operations/install/) and
+  [Deployment topology](https://docs.r9lab.io/operations/deployment/). The Upgrade and backup page
+  became Backups and recovery, and `/operations/configure` is now the Configure uploads page (see
+  Changed).
 
 ### Fixed
 

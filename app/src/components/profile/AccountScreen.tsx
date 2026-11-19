@@ -21,6 +21,10 @@ import { ProfileHero, ProfileStatsSection } from './HeroStats';
 
 const DANGER_ZONE_KEY = 'danger';
 
+function visibleSections(profile: User) {
+  return ACCOUNT_SECTIONS.filter((section) => section.visible?.(profile) ?? true);
+}
+
 /** Scrollable document body: hero header plus the grouped sections, anchored via useAnchoredSectionNav. */
 function AccountBody({ ctx, profile }: { ctx: AccountSectionContext; profile: User }) {
   const outerNav = useContext(SectionNavContext);
@@ -47,7 +51,7 @@ function AccountBody({ ctx, profile }: { ctx: AccountSectionContext; profile: Us
             statsLoading={ctx.profile.statsLoading}
           />
           <SectionNavContext.Provider value={anchoredNav}>
-            {ACCOUNT_SECTIONS.map((section) => (
+            {visibleSections(profile).map((section) => (
               <Section
                 key={section.key}
                 sectionKey={section.key}
@@ -77,6 +81,7 @@ export function AccountScreen() {
   const scrollRef = useRef<ScrollView>(null);
   const nav = useSectionNav((y) => scrollRef.current?.scrollTo({ y, animated: true }));
   const goToCameras = useCallback(() => router.navigate('/cameras'), [router]);
+  const goToAdminUsers = useCallback(() => router.push('/admin/users'), [router]);
   const logoutTriggerRef = useRef<View>(null);
   const deleteAccountTriggerRef = useRef<View>(null);
   const unlinkTriggerRef = useRef<View>(null);
@@ -91,13 +96,14 @@ export function AccountScreen() {
   // Only hit for the one-render window before useRequireAuth's redirect completes.
   if (!profile.profile) return <CenteredSpinner />;
 
-  const navSections = ACCOUNT_SECTIONS.map((section) => ({
+  const navSections = visibleSections(profile.profile).map((section) => ({
     key: section.key,
     label: section.label,
   }));
   const ctx: AccountSectionContext = {
     ...profileScreen,
     onManageCameras: goToCameras,
+    onOpenAdminUsers: goToAdminUsers,
     onRefetchAuth: refetch,
     logoutTriggerRef,
     deleteAccountTriggerRef,

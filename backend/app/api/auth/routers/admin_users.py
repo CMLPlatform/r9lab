@@ -1,11 +1,17 @@
 """Admin routes for managing users."""
 
-from typing import Annotated, cast
+from typing import Annotated, Any, cast
 
 from fastapi import Depends, HTTPException, Request, Security
 from fastapi_pagination import Page
 from fastapi_users.exceptions import InvalidPasswordException, UserAlreadyExists
+from sqlalchemy import select
 
+from app.api.auth.account_guards import (
+    SYSTEM_ACCOUNT_EMAILS_CANONICAL,
+    require_not_system_account,
+    require_other_active_superuser,
+)
 from app.api.auth.dependencies import (
     CurrentActiveSuperUserDep,
     UserByIDDep,
@@ -16,8 +22,9 @@ from app.api.auth.examples import ADMIN_USERS_RESPONSE_EXAMPLES
 from app.api.auth.filters import UserFilter
 from app.api.auth.models import User
 from app.api.auth.roles import UserRole
-from app.api.auth.schemas import UserRead, UserRoleUpdate, UserUpdate
+from app.api.auth.schemas import UserActiveUpdate, UserRead, UserRoleUpdate, UserUpdate
 from app.api.auth.services import mfa_service
+from app.api.auth.services.account_security import revoke_user_refresh_tokens
 from app.api.common.audiences import AdminAPIRouter
 from app.api.common.audit import AuditAction, AuditContext, audit_event
 from app.api.common.crud.filtering import create_filter_dependency
@@ -26,6 +33,30 @@ from app.api.common.exceptions import BadRequestError
 from app.api.common.routers.dependencies import AsyncSessionDep
 
 router = AdminAPIRouter(prefix="/admin/users", tags=["admin"], dependencies=[Security(current_active_superuser)])
+
+MANAGEABLE_USER_RESPONSES: dict[int | str, dict[str, Any]] = {
+    400: {"description": "The target is the acting administrator's own account."},
+    409: {"description": "The target is the anonymous system account."},
+}
+
+
+async def get_manageable_user(user: UserByIDDep, actor: CurrentActiveSuperUserDep) -> User:
+    """Load a user an admin may write to: any account but their own and the anonymous system account.
+
+    Admin writes skip the re-authentication the self-service flows ask for, so an
+    administrator changes their own account through those flows instead.
+
+    Raises:
+        BadRequestError: when the target is the acting administrator.
+    """
+    if user.id == actor.id:
+        msg = "Change your own account from your account settings."
+        raise BadRequestError(msg)
+    require_not_system_account(user)
+    return user
+
+
+ManageableUserDep = Annotated[User, Depends(get_manageable_user)]
 
 
 ## GET ##
@@ -46,10 +77,11 @@ async def get_users(
     user_filter: Annotated[UserFilter, Depends(create_filter_dependency(UserFilter))],
     session: AsyncSessionDep,
 ) -> Page[UserRead]:
-    """Get a list of all users with optional filtering."""
+    """Get a list of all users with optional filtering, without the anonymous system account."""
+    statement = select(User).where(User.email_canonical.not_in(SYSTEM_ACCOUNT_EMAILS_CANONICAL))
     return cast(
         "Page[UserRead]",
-        await page_models(session, User, filters=user_filter, read_schema=UserRead),
+        await page_models(session, User, filters=user_filter, statement=statement, read_schema=UserRead),
     )
 
 
@@ -68,10 +100,11 @@ async def get_user(user: UserByIDDep) -> User:
     "/{user_id}",  # user_id is bound by the get_user_or_404 dependency
     summary="Update a user by ID",
     response_model=UserRead,
+    responses=MANAGEABLE_USER_RESPONSES,
 )
 async def update_user(
     user_update: UserUpdate,
-    user: UserByIDDep,
+    user: ManageableUserDep,
     user_manager: UserManagerDep,
     actor: CurrentActiveSuperUserDep,
     request: Request,
@@ -97,9 +130,10 @@ async def update_user(
     "/{user_id}/mfa/reset",  # user_id is bound by the get_user_or_404 dependency
     summary="Reset a user's two-step verification",
     status_code=204,
+    responses=MANAGEABLE_USER_RESPONSES,
 )
 async def reset_user_mfa(
-    user: UserByIDDep,
+    user: ManageableUserDep,
     user_manager: UserManagerDep,
     actor: CurrentActiveSuperUserDep,
 ) -> None:
@@ -112,10 +146,11 @@ async def reset_user_mfa(
     "/{user_id}/role",  # user_id is bound by the get_user_or_404 dependency
     summary="Set a user's contributor tier",
     response_model=UserRead,
+    responses=MANAGEABLE_USER_RESPONSES,
 )
 async def set_user_role(
     role_update: UserRoleUpdate,
-    user: UserByIDDep,
+    user: ManageableUserDep,
     user_manager: UserManagerDep,
     actor: CurrentActiveSuperUserDep,
 ) -> User:
@@ -141,4 +176,39 @@ async def set_user_role(
         user.id,
         context=AuditContext(operation=f"set_role_{role_update.role.value}"),
     )
+    return updated
+
+
+@router.put(
+    "/{user_id}/active",  # user_id is bound by the get_user_or_404 dependency
+    summary="Suspend or reactivate a user",
+    response_model=UserRead,
+    responses={
+        **MANAGEABLE_USER_RESPONSES,
+        409: {"description": "The target is the anonymous system account or the last active superuser."},
+    },
+)
+async def set_user_active(
+    active_update: UserActiveUpdate,
+    user: ManageableUserDep,
+    user_manager: UserManagerDep,
+    actor: CurrentActiveSuperUserDep,
+    request: Request,
+) -> User:
+    """Suspend (`is_active: false`) or reactivate a user without erasing anything.
+
+    A suspended account cannot sign in, and its refresh sessions are revoked; its
+    products stay. A dedicated route for the same reason as the role route: the
+    self-service `UserUpdate` schema must never carry `is_active`. A request that
+    matches the current state changes nothing and is not audited.
+    """
+    if user.is_active == active_update.is_active:
+        return user
+    if not active_update.is_active:
+        await require_other_active_superuser(user_manager.user_db.session, user, action="suspended")
+        # Before the write, so a Redis failure aborts rather than leaving a suspended user with live sessions.
+        await revoke_user_refresh_tokens(user.id, request)
+    updated = await user_manager.user_db.update(user, {"is_active": active_update.is_active})
+    action = AuditAction.REACTIVATE if active_update.is_active else AuditAction.DEACTIVATE
+    audit_event(actor.id, action, User, user.id)
     return updated

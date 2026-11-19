@@ -1,7 +1,7 @@
 // Fail when the web export's first-load JavaScript grows past its budget.
 //
 // First load only: the scripts `index.html` itself references. Route chunks and the
-// async ones (the CPV dataset, hls.js) are excluded on purpose: they are already
+// async ones (hls.js) are excluded on purpose: they are already
 // split, and counting them would punish the splitting that keeps them off this path.
 //
 // Gzipped, because that is what crosses the wire. Brotli would be smaller again, but

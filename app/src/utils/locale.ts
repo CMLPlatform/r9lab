@@ -19,3 +19,10 @@ export function decimalSeparatorFor(
   }
   return '.';
 }
+
+/** The number in text typed with `separator` as decimal mark, or undefined for empty or unparseable text. */
+export function parseLocalizedFloat(text: string, separator: string): number | undefined {
+  if (text.trim() === '') return undefined;
+  const value = parseFloat(separator === '.' ? text : text.replace(separator, '.'));
+  return Number.isNaN(value) ? undefined : value;
+}

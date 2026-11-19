@@ -24,7 +24,6 @@ from app.api.auth.services.user_manager import (
     UserManager,
 )
 from app.api.auth.terms import CURRENT_TERMS_VERSION
-from app.api.common.audit import AuditAction
 from app.api.common.rate_limiting import Limiter, RateLimitExceededError
 from app.core.runtime import AppServices
 from tests.fixtures.auth import EMAIL_SPELLING_VARIANTS
@@ -569,50 +568,6 @@ async def test_on_after_reset_password_revokes_refresh_tokens_and_sends_confirma
     mock_session.commit.assert_awaited_once()
 
 
-async def test_on_after_update_logs_deactivation_with_enum_action() -> None:
-    """Deactivation must revoke every live session and audit with the typed AuditAction enum."""
-    manager, _ = _make_manager()
-    user = MagicMock()
-    user.id = "user-id"
-    request = MagicMock()
-    redis = MagicMock(spec=Redis)
-    request.app.state.services = AppServices(redis=redis)
-
-    with (
-        patch(
-            "app.api.auth.services.account_security.refresh_token_service.revoke_all_user_tokens",
-            new_callable=AsyncMock,
-        ) as revoke,
-        patch("app.api.auth.services.user_manager.audit_event") as log_audit,
-    ):
-        await manager.on_after_update(user, {"is_active": False}, request)
-
-    # A deactivated user must not keep usable refresh sessions.
-    revoke.assert_awaited_once_with(redis, "user-id")
-    log_audit.assert_called_once_with("user-id", AuditAction.DEACTIVATE, User, "user-id")
-
-
-async def test_on_after_update_keeps_sessions_when_not_deactivating() -> None:
-    """A non-deactivating update must not revoke sessions or emit a deactivation audit."""
-    manager, _ = _make_manager()
-    user = MagicMock()
-    user.id = "user-id"
-    request = MagicMock()
-    request.app.state.services = AppServices(redis=MagicMock(spec=Redis))
-
-    with (
-        patch(
-            "app.api.auth.services.account_security.refresh_token_service.revoke_all_user_tokens",
-            new_callable=AsyncMock,
-        ) as revoke,
-        patch("app.api.auth.services.user_manager.audit_event") as log_audit,
-    ):
-        await manager.on_after_update(user, {"is_active": True}, request)
-
-    revoke.assert_not_awaited()
-    log_audit.assert_not_called()
-
-
 async def test_delete_revokes_refresh_tokens_before_removing_the_row() -> None:
     """Sessions must be revoked before the row is deleted, so a Redis outage aborts cleanly."""
     manager, _ = _make_manager()
@@ -632,19 +587,15 @@ async def test_delete_revokes_refresh_tokens_before_removing_the_row() -> None:
 
     manager.user_db.delete = AsyncMock(side_effect=_delete_row)
 
-    with (
-        patch(
-            "app.api.auth.services.account_security.refresh_token_service.revoke_all_user_tokens",
-            new_callable=AsyncMock,
-            side_effect=_revoke,
-        ) as mock_revoke,
-        patch("app.api.auth.services.user_manager.audit_event") as log_audit,
-    ):
+    with patch(
+        "app.api.auth.services.account_security.refresh_token_service.revoke_all_user_tokens",
+        new_callable=AsyncMock,
+        side_effect=_revoke,
+    ) as mock_revoke:
         await manager.delete(user, request=request)
 
     assert call_order == ["revoke", "delete_row"]
     mock_revoke.assert_awaited_once_with(redis, "user-id")
-    log_audit.assert_not_called()
 
 
 async def test_delete_aborts_without_removing_the_row_when_revocation_fails() -> None:

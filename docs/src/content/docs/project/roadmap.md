@@ -37,8 +37,8 @@ Work planned for the coming months.
 - separate the material taxonomy from the product taxonomy: Ashby's material classes as
   reference data, CPV for products only, before the bill-of-materials picker and the material
   filter build on it ([#163](https://github.com/CMLPlatform/r9lab/issues/163))
-- re-apply account and upload erasures after a backup restore, so a restored snapshot
-  stays in step with the deletions made since it was taken (added 2026-10-08)
+- re-apply upload erasures after a backup restore, as account erasures already are, so a
+  restored snapshot stays in step with the deletions made since it was taken (added 2026-10-08)
 
 ## Later
 

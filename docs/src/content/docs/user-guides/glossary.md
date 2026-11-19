@@ -27,7 +27,7 @@ A part taken out of a product, such as a battery pack or a motor. A component is
 with a parent, and it can hold components of its own. The tree has no depth limit.
 
 Create a component when the part is worth its own photos and notes. See
-[When to create a child component](/user-guides/data-collection/#when-to-create-a-child-component)
+[When to make a component](/user-guides/components/#when-to-make-a-component)
 for where to draw the line.
 
 ### Teardown

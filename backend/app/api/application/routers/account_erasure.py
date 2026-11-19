@@ -29,6 +29,7 @@ from app.api.auth.services.rate_limiter import LOGIN_IP_RATE_LIMIT
 from app.api.auth.services.session_flow import SESSION_LOGOUT_CLEAR_SITE_DATA
 from app.api.common.audiences import AdminAPIRouter, PublicAPIRouter
 from app.api.common.audit import AuditAction, AuditContext, audit_event
+from app.api.common.exceptions import BadRequestError
 from app.api.common.rate_limiting import limiter
 from app.api.common.routers.dependencies import AsyncSessionDep
 from app.core.redis import RedisDep
@@ -46,6 +47,10 @@ self_service_router = PublicAPIRouter(
     "/{user_id}",  # user_id is bound by the get_user_or_404 dependency
     summary="Delete a user by ID",
     status_code=204,
+    responses={
+        400: {"description": "An administrator deletes their own account through DELETE /users/me."},
+        409: {"description": "The target is the anonymous system account or the last active superuser."},
+    },
 )
 async def delete_user(
     user: UserByIDDep,
@@ -64,6 +69,10 @@ async def delete_user(
     ] = ANONYMIZE,
 ) -> None:
     """Delete a user by ID, anonymizing or deleting the content they own."""
+    if user.id == actor.id:
+        # The self-service route asks for re-authentication; this one does not.
+        msg = "Delete your own account from your account settings."
+        raise BadRequestError(msg)
     # Guard first so a refused erasure has no side effects; revoke before erasing so a
     # Redis failure aborts rather than leaving a deleted user with live sessions.
     await require_erasable_account(session, user)

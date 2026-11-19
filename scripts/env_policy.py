@@ -103,6 +103,11 @@ OPTIONAL_ROOT_OPERATOR_INPUT_NAMES = {
     # A fork publishing its own images sets its registry namespace here.
     "IMAGE_REGISTRY",
     # Upload ceilings and malware scanning, overridable per instance.
+    "MAX_FILE_UPLOAD_SIZE_MB",
+    "MAX_IMAGE_UPLOAD_SIZE_MB",
+    "MAX_IMAGE_UPLOAD_SIZE_LAB_MB",
+    "MAX_IMAGE_UPLOAD_PIXELS",
+    "MAX_IMAGE_UPLOAD_PIXELS_LAB",
     "MAX_UPLOAD_FILES_PER_USER",
     "MAX_UPLOAD_BYTES_PER_USER_MB",
     "MAX_UPLOAD_FILES_PER_LAB_USER",

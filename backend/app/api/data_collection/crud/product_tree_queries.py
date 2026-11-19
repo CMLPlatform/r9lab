@@ -181,13 +181,17 @@ async def load_component_subtree(
     return ProductTreeData(roots=roots, children_by_parent_id=children_by_parent_id)
 
 
-async def load_all_descendants(db: AsyncSession, root_ids: Iterable[int]) -> dict[int, list[Product]]:
+async def load_all_descendants(
+    db: AsyncSession, root_ids: Iterable[int], *, max_components: int | None = None
+) -> dict[int, list[Product]]:
     """Load every component below ``root_ids`` with export relationships, keyed by parent id.
 
     One query batch per tree level, however many roots or components there are. Raises
-    ``ProductExportTooLargeError`` past ``MAX_COMPONENT_DEPTH`` levels or ``EXPORT_MAX_COMPONENTS``
-    components, checked as each level loads.
+    ``ProductExportTooLargeError`` past ``MAX_COMPONENT_DEPTH`` levels or ``max_components``
+    components (default ``EXPORT_MAX_COMPONENTS``), checked as each level loads.
     """
+    if max_components is None:
+        max_components = EXPORT_MAX_COMPONENTS
     # One level past the limit: anything found there means the tree is too deep.
     children_by_parent_id, too_deep = await _load_levels(
         db,
@@ -197,10 +201,10 @@ async def load_all_descendants(db: AsyncSession, root_ids: Iterable[int]) -> dic
             PRODUCT_EXPORT_RELATIONSHIPS,
         ),
         levels=MAX_COMPONENT_DEPTH + 1,
-        max_nodes=EXPORT_MAX_COMPONENTS,
+        max_nodes=max_components,
     )
     if too_deep:
-        raise ProductExportTooLargeError(MAX_COMPONENT_DEPTH, EXPORT_MAX_COMPONENTS)
+        raise ProductExportTooLargeError(MAX_COMPONENT_DEPTH, max_components)
     return children_by_parent_id
 
 

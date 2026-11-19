@@ -21,6 +21,7 @@ from app.api.common.crud.query import require_model
 from app.api.common.exceptions import BadRequestError
 from app.api.common.routers.dependencies import AsyncSessionDep
 from app.api.common.validation import MAX_QUERY_TEXT_LENGTH
+from app.api.data_collection.crud.product_revisions import page_product_revisions
 from app.api.data_collection.crud.product_tree_queries import (
     COMPONENT_TREE_MAX_COMPONENTS,
     EXPORT_MAX_BASE_PRODUCTS,
@@ -33,7 +34,7 @@ from app.api.data_collection.crud.product_tree_queries import (
     load_component_subtree,
     require_product_detail,
 )
-from app.api.data_collection.dependencies import ProductFilterWithRelationshipsDep
+from app.api.data_collection.dependencies import BaseProductDep, ProductFilterWithRelationshipsDep
 from app.api.data_collection.filters import (
     get_brand_search_statement,
     get_model_search_statement,
@@ -53,6 +54,7 @@ from app.api.data_collection.schemas import (
     ProductFacetsRead,
     ProductFacetValue,
     ProductReadWithRelationshipsAndFlatComponents,
+    ProductRevisionRead,
 )
 from app.core.cache import cache
 from app.core.responses import conditional_json_response
@@ -373,6 +375,25 @@ async def get_product_components(
         viewer=current_user,
         schema=ComponentRead,
     )
+
+
+@product_read_router.get(
+    "/{product_id}/revisions",
+    response_model=Page[ProductRevisionRead],
+    summary="Get a base product's edit history",
+    dependencies=[API_READ_RATE_LIMIT_DEPENDENCY],
+)
+async def get_product_revisions(
+    db_product: BaseProductDep,
+    session: AsyncSessionDep,
+    current_user: OptionalCurrentActiveUserDep,
+) -> Page[ProductRevisionRead]:
+    """Get a page of the product's recorded edits, newest first.
+
+    Covers the product's own fields, not its media, components or bill of materials, and
+    only edits made since the history was introduced. Revisions are kept for two years.
+    """
+    return await page_product_revisions(session, db_product, current_user)
 
 
 ### Ancillary search/facet routes ###

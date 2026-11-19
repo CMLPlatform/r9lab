@@ -75,7 +75,7 @@ config:
 
 graph TD
     accTitle: R9lab request flow
-    accDescr: Researchers enter data in the Expo app; public visitors browse products in the Expo app, read the Astro landing page, and read the Starlight docs. Researchers and admins authenticate through OAuth (GitHub, Google) and bearer or cookie auth. The Expo app sends API requests to the FastAPI backend, and admins call its admin API directly.
+    accDescr: Researchers enter data in the Expo app; public visitors browse products in the Expo app, read the Astro landing page, and read the Starlight docs. Researchers and admins authenticate through OAuth (GitHub, Google) and bearer or cookie auth. The Expo app sends API requests to the FastAPI backend, and admins manage users from the app's admin section or call the admin API directly.
     Researcher["Researcher"] -->|Data entry| FrontendApp
     PublicUser["Public visitor"] -->|Browses products| FrontendApp
     PublicUser -->|Reads landing page| FrontendWeb

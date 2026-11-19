@@ -1,0 +1,128 @@
+"""Unit tests for the account archive stream and route."""
+
+import io
+import logging
+import os
+import zipfile
+from pathlib import Path
+from typing import TYPE_CHECKING
+from unittest.mock import MagicMock
+
+import pytest
+
+from app.api.application import account_export
+from app.api.application.account_export import (
+    AccountArchive,
+    AccountArchiveTooLargeError,
+    ArchiveUpload,
+    load_account_archive,
+    stream_account_archive,
+)
+from app.api.application.routers import account_export as account_export_router
+from app.api.data_collection.exceptions import ProductExportTooLargeError
+
+if TYPE_CHECKING:
+    from typing import Any, Self
+
+
+async def test_route_closes_the_session_before_streaming(mock_session: Any, monkeypatch: pytest.MonkeyPatch) -> None:
+    """The session is released before the body streams, so no connection idles for a whole download."""
+
+    async def load(*_: object) -> AccountArchive:
+        return AccountArchive(data_files={"account.json": b"{}"}, uploads=[])
+
+    monkeypatch.setattr(account_export_router, "load_account_archive", load)
+    user = MagicMock(username="ada")
+
+    response = await account_export_router.export_own_account(user, mock_session)
+
+    mock_session.close.assert_awaited_once()
+    assert response.headers["content-disposition"].startswith('attachment; filename="r9lab-export-ada-')
+
+
+class _FailingRead:
+    """A file that opens fine and then fails on the second read, like a disk error mid-copy."""
+
+    def __init__(self) -> None:
+        self._reads = 0
+
+    def read(self, _size: int) -> bytes:
+        self._reads += 1
+        if self._reads > 1:
+            msg = "I/O error"
+            raise OSError(msg)
+        return b"x" * 10
+
+    def __enter__(self) -> Self:
+        return self
+
+    def __exit__(self, *_: object) -> None:
+        return None
+
+
+def test_a_read_error_mid_copy_is_logged_with_the_file_and_stops_the_stream(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
+) -> None:
+    """A file failing part-way is logged by name and aborts the stream instead of ending it cleanly."""
+    photo = tmp_path / "photo.gif"
+    photo.write_bytes(b"x" * 20)
+    monkeypatch.setattr(Path, "open", lambda *_args, **_kwargs: _FailingRead())
+    archive = AccountArchive(data_files={}, uploads=[ArchiveUpload(arcname="images/7/abc.gif", path=photo)])
+    caplog.set_level(logging.ERROR, logger=account_export.__name__)
+
+    with pytest.raises(OSError, match="I/O error"):
+        list(stream_account_archive(archive))
+
+    assert "images/7/abc.gif" in caplog.text
+
+
+def test_a_file_dated_before_1980_is_archived(tmp_path: Path) -> None:
+    """ZIP cannot store a pre-1980 time; the entry gets 1980-01-01 instead of failing the download."""
+    photo = tmp_path / "old.jpg"
+    photo.write_bytes(b"old photo")
+    os.utime(photo, (0, 0))  # 1970-01-01
+    archive = AccountArchive(data_files={}, uploads=[ArchiveUpload(arcname="images/7/old.jpg", path=photo)])
+
+    with zipfile.ZipFile(io.BytesIO(b"".join(stream_account_archive(archive)))) as zf:
+        assert zf.read("images/7/old.jpg") == b"old photo"
+        assert zf.getinfo("images/7/old.jpg").date_time[0] == 1980
+
+
+def _roots_result(count: int) -> MagicMock:
+    result = MagicMock()
+    result.scalars.return_value.unique.return_value.all.return_value = [MagicMock(id=i) for i in range(count)]
+    return result
+
+
+async def test_an_account_past_the_product_cap_gets_413(mock_session: Any, monkeypatch: pytest.MonkeyPatch) -> None:
+    """More base products than the cap is refused before any component tree loads."""
+    monkeypatch.setattr(account_export, "ACCOUNT_EXPORT_MAX_PRODUCTS", 2)
+    mock_session.execute.return_value = _roots_result(3)
+    descendants = MagicMock()
+    monkeypatch.setattr(account_export, "load_all_descendants", descendants)
+
+    with pytest.raises(AccountArchiveTooLargeError) as raised:
+        await load_account_archive(mock_session, MagicMock())
+
+    assert raised.value.http_status_code == 413
+    descendants.assert_not_called()
+
+
+async def test_components_share_the_cap_with_their_base_products(
+    mock_session: Any, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The component walk gets what the base products left of the cap, and its overflow is a 413 too."""
+    monkeypatch.setattr(account_export, "ACCOUNT_EXPORT_MAX_PRODUCTS", 5)
+    mock_session.execute.return_value = _roots_result(2)
+    budgets: list[int] = []
+
+    async def descendants(_session: object, _root_ids: object, *, max_components: int) -> dict[int, list[Any]]:
+        budgets.append(max_components)
+        raise ProductExportTooLargeError(10, max_components)
+
+    monkeypatch.setattr(account_export, "load_all_descendants", descendants)
+
+    with pytest.raises(AccountArchiveTooLargeError):
+        await load_account_archive(mock_session, MagicMock())
+
+    assert budgets == [3]

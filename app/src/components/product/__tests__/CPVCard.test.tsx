@@ -13,10 +13,7 @@ const mockCPV: CPVCategory = {
   id: 1,
   name: '03000000-1',
   description: 'Agricultural products',
-  allChildren: [],
-  directChildren: [],
-  updatedAt: '2024-01-01',
-  createdAt: '2024-01-01',
+  childCount: 0,
 };
 
 describe('CPVCard', () => {

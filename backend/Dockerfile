@@ -92,7 +92,9 @@ WORKDIR $WORKDIR
 RUN install -d -o "$APP_UID" -g 0 -m 0775 \
     data/uploads \
     data/uploads/files \
-    data/uploads/images
+    data/uploads/images \
+    # Docker seeds the erasure_ledger volume from this, so the app user can append to it.
+    && install -d -o "$APP_UID" -g "$APP_UID" -m 0700 data/erasure-ledger
 
 COPY --link --from=build --chown=$APP_UID:$APP_UID $WORKDIR/.venv $WORKDIR/.venv
 COPY --link --from=build --chown=$APP_UID:$APP_UID $WORKDIR/app $WORKDIR/app

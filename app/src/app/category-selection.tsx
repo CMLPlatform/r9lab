@@ -20,7 +20,7 @@ import type { CPVCategory } from '@/types/CPVCategory';
 export default function CategorySelection() {
   const {
     user,
-    cpvClass,
+    loading,
     loadFailed,
     selectFailed,
     retryLoad,
@@ -45,7 +45,7 @@ export default function CategorySelection() {
   const keyExtractor = useCallback((item: CPVCategory) => String(item.id), []);
 
   // Shortcut sections show only at the taxonomy root with no active search.
-  const atRoot = history.length <= 1 && !searchQuery;
+  const atRoot = history.length === 0 && !searchQuery;
   const showCommon = atRoot && commonTypes.length > 0;
   const showRecents = atRoot && recents.length > 0;
   const listHeader =
@@ -55,7 +55,7 @@ export default function CategorySelection() {
           <View className="gap-3">
             <AppText variant="eyebrow">Common types</AppText>
             {commonTypes.map((item) => (
-              <RecentCategoryCard key={item.id} item={item} onSelectType={selectType} />
+              <RecentCategoryCard key={item.name} item={item} onSelectType={selectType} />
             ))}
           </View>
         ) : null}
@@ -63,7 +63,7 @@ export default function CategorySelection() {
           <View className="gap-3">
             <AppText variant="eyebrow">Recent</AppText>
             {recents.map((item) => (
-              <RecentCategoryCard key={item.id} item={item} onSelectType={selectType} />
+              <RecentCategoryCard key={item.name} item={item} onSelectType={selectType} />
             ))}
           </View>
         ) : null}
@@ -74,11 +74,6 @@ export default function CategorySelection() {
   // useRequireAuth fires the redirect, but a session that expires while the
   // picker is open can leave this screen visible for more than one render.
   if (!user) return <SignedOutState />;
-  if (!cpvClass) {
-    if (loadFailed)
-      return <ErrorState message="Couldn't load the category list." onRetry={retryLoad} />;
-    return <CenteredSpinner />;
-  }
 
   return (
     // phoneFullBleed: the search bar, blurb, and list own their own px-4 spacing.
@@ -108,7 +103,7 @@ export default function CategorySelection() {
               Couldn't select that type. Try again.
             </AppText>
           ) : null}
-          {history.length > 1 && <CPVHistory history={history} onPress={moveUp} />}
+          {history.length > 0 && <CPVHistory history={history} onPress={moveUp} />}
         </View>
         <FlatList
           contentContainerClassName="gap-4 p-4"
@@ -117,8 +112,19 @@ export default function CategorySelection() {
           keyExtractor={keyExtractor}
           ListHeaderComponent={listHeader}
           ListEmptyComponent={
-            // debouncedSearchQuery is what `filtered` was computed from.
-            debouncedSearchQuery ? (
+            loadFailed ? (
+              <ErrorState
+                message={
+                  debouncedSearchQuery
+                    ? "Couldn't search the categories."
+                    : "Couldn't load the category list."
+                }
+                onRetry={retryLoad}
+              />
+            ) : loading ? (
+              <CenteredSpinner />
+            ) : debouncedSearchQuery ? (
+              // debouncedSearchQuery is what `filtered` was computed from.
               <View className="items-center gap-2 p-8">
                 <AppText className="text-center text-muted-foreground">
                   No categories match &ldquo;{debouncedSearchQuery}&rdquo;. Try a broader term.
@@ -138,10 +144,10 @@ function CategoryListItem({
   onSelectBranch,
 }: {
   item: CPVCategory;
-  onSelectType: (id: CPVCategory['id']) => void | Promise<void>;
+  onSelectType: (item: CPVCategory) => void | Promise<void>;
   onSelectBranch: (item: CPVCategory) => void;
 }) {
-  const handleSelect = useCallback(() => onSelectType(item.id), [onSelectType, item.id]);
+  const handleSelect = useCallback(() => onSelectType(item), [onSelectType, item]);
   const handleBranch = useCallback(() => onSelectBranch(item), [onSelectBranch, item]);
   return (
     <View>
@@ -159,9 +165,9 @@ function RecentCategoryCard({
   onSelectType,
 }: {
   item: CPVCategory;
-  onSelectType: (id: CPVCategory['id']) => void | Promise<void>;
+  onSelectType: (item: CPVCategory) => void | Promise<void>;
 }) {
-  const handleSelect = useCallback(() => onSelectType(item.id), [onSelectType, item.id]);
+  const handleSelect = useCallback(() => onSelectType(item), [onSelectType, item]);
   return <CPVCard CPV={item} onPress={handleSelect} />;
 }
 
@@ -207,7 +213,7 @@ function CPVHistory({ history, onPress }: { history: CPVCategory[]; onPress?: ()
 function CPVLink({ CPV, onPress }: { CPV: CPVCategory; onPress?: () => void }) {
   const { colors } = useAppTheme();
 
-  if (CPV.directChildren.length <= 0) {
+  if (CPV.childCount <= 0) {
     return <View style={{ height: MIN_TAP_TARGET }} />;
   }
 
@@ -217,11 +223,11 @@ function CPVLink({ CPV, onPress }: { CPV: CPVCategory; onPress?: () => void }) {
       style={styles.link}
       onPress={onPress}
       accessibilityRole="button"
-      accessibilityLabel={`Browse ${CPV.directChildren.length} subcategories`}
+      accessibilityLabel={`Browse ${CPV.childCount} subcategories`}
     >
       <AppText variant="caption" className="text-right" style={{ color: colors.primary }}>
         <AppText variant="data" style={{ color: colors.primary }}>
-          {CPV.directChildren.length}
+          {CPV.childCount}
         </AppText>{' '}
         subcategories
       </AppText>

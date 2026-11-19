@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { useRouter } from 'expo-router';
-import { HttpResponse, http } from 'msw';
+import { delay, HttpResponse, http } from 'msw';
 import { StyleSheet } from 'react-native';
 import CategorySelection from '@/app/category-selection';
 import { API_URL } from '@/config';
@@ -9,13 +9,11 @@ import { MIN_TAP_TARGET } from '@/constants';
 import { setPendingTypeSelection } from '@/features/products/pendingTypeSelection';
 import { useCategorySelection } from '@/features/products/useCategorySelection';
 import { useRecentCategories } from '@/features/products/useRecentCategories';
-import { loadCPV } from '@/services/cpv';
 import { mockPlatform, renderWithProviders, restorePlatform } from '@/test-utils/index';
 import { server } from '@/test-utils/server';
 import type { User } from '@/types/User';
 
 const mockUseAuth = jest.fn();
-const mockedLoadCPV = jest.mocked(loadCPV);
 const mockedSetPending = jest.mocked(setPendingTypeSelection);
 const SUBCATEGORY_COUNT_PATTERN = /1 subcategor/;
 const TYPING_NOW_PATTERN = /typing-now/;
@@ -26,17 +24,13 @@ jest.mock('@/context/auth', () => ({
   useAuth: () => mockUseAuth(),
 }));
 
-jest.mock('@/services/cpv', () => ({
-  loadCPV: jest.fn(),
-}));
-
 jest.mock('@/features/products/pendingTypeSelection', () => ({
   setPendingTypeSelection: jest.fn(),
   takePendingTypeSelection: jest.fn(),
 }));
 
-// Every other test in this file exercises the real hook (loadCPV mocked below
-// it) end to end, so wrap (don't replace) it: jest.fn() defaults to calling
+// Every other test in this file exercises the real hook (the API stubbed with
+// MSW) end to end, so wrap (don't replace) it: jest.fn() defaults to calling
 // straight through to the real implementation, and only the one test below
 // overrides it (mockReturnValueOnce, self-restoring) to force a searchQuery
 // vs debouncedSearchQuery mismatch that the real 300ms debounce makes
@@ -54,13 +48,27 @@ const mockReplace = jest.fn();
 
 const PETROLEUM_RECENT = {
   id: 2,
-  name: '09000000-3',
+  name: 'CPV: 09',
   description: 'Petroleum products',
-  allChildren: [],
-  directChildren: [],
-  updatedAt: '',
-  createdAt: '',
+  childCount: 0,
 };
+
+// The tree API returns the padded CPV code in external_id; the product type row
+// stores it trimmed as `CPV: <code>` under a database id of its own.
+const treeNode = (id: number, externalId: string, name: string, subcategories: unknown[] = []) => ({
+  id,
+  name,
+  external_id: externalId,
+  subcategories,
+});
+const AGRI_CHILD = treeNode(3, '03100000', 'Agricultural and horticultural products');
+// The API's paginated envelope.
+const page = (items: unknown[]) => ({ items, page: 1, pages: 1, size: 100, total: items.length });
+const PRODUCT_TYPES = [
+  { id: 66, name: 'CPV: 03', description: 'Agricultural products' },
+  { id: 77, name: 'CPV: 09', description: 'Petroleum products' },
+  { id: 88, name: 'CPV: 031', description: 'Agricultural and horticultural products' },
+];
 
 describe('CategorySelection', () => {
   beforeEach(() => {
@@ -69,44 +77,6 @@ describe('CategorySelection', () => {
     // any single test's render; reset it here rather than letting one test's
     // recordRecent leak a duplicate "Petroleum products" node into the next.
     useRecentCategories.setState({ recents: [] });
-    mockedLoadCPV.mockResolvedValue({
-      root: {
-        id: 0,
-        name: 'root',
-        description: 'All categories',
-        allChildren: [1, 2],
-        directChildren: [1, 2],
-        updatedAt: '',
-        createdAt: '',
-      },
-      '1': {
-        id: 1,
-        name: '03000000-1',
-        description: 'Agricultural products',
-        allChildren: [3],
-        directChildren: [3],
-        updatedAt: '',
-        createdAt: '',
-      },
-      '2': {
-        id: 2,
-        name: '09000000-3',
-        description: 'Petroleum products',
-        allChildren: [],
-        directChildren: [],
-        updatedAt: '',
-        createdAt: '',
-      },
-      '3': {
-        id: 3,
-        name: '03100000-2',
-        description: 'Agricultural and horticultural products',
-        allChildren: [],
-        directChildren: [],
-        updatedAt: '',
-        createdAt: '',
-      },
-    });
     (useRouter as jest.Mock).mockReturnValue({
       push: jest.fn(),
       replace: mockReplace,
@@ -115,14 +85,34 @@ describe('CategorySelection', () => {
       dismissTo: jest.fn(),
     });
     mockUseAuth.mockReturnValue({ user: { id: '1', username: 'testuser' } as Partial<User> });
-    // DB ids deliberately differ from the bundled snapshot ids (2 and 3).
     server.use(
+      http.get(`${API_URL}/categories/tree`, ({ request }) => {
+        const url = new URL(request.url);
+        expect(url.searchParams.get('taxonomy_name[ilike]')).toBe(
+          'Common Procurement Vocabulary (CPV)',
+        );
+        expect(url.searchParams.get('size')).toBe('100');
+        return HttpResponse.json(
+          page([
+            treeNode(1, '03000000', 'Agricultural products', [AGRI_CHILD]),
+            treeNode(2, '09000000', 'Petroleum products'),
+          ]),
+        );
+      }),
+      http.get(`${API_URL}/categories/1/subcategories/tree`, () =>
+        HttpResponse.json(page([AGRI_CHILD])),
+      ),
       http.get(`${API_URL}/product-types`, ({ request }) => {
-        const names = new URL(request.url).searchParams.getAll('name[in]');
-        const dbIds: Record<string, number> = { '09000000-3': 77, '03100000-2': 88 };
-        return HttpResponse.json({
-          items: names.flatMap((name) => (name in dbIds ? [{ id: dbIds[name], name }] : [])),
-        });
+        const params = new URL(request.url).searchParams;
+        const search = params.get('search')?.toLowerCase();
+        const names = params.getAll('name[in]');
+        return HttpResponse.json(
+          page(
+            PRODUCT_TYPES.filter((type) =>
+              search ? type.description.toLowerCase().includes(search) : names.includes(type.name),
+            ),
+          ),
+        );
       }),
     );
   });
@@ -136,11 +126,6 @@ describe('CategorySelection', () => {
         pathname: '/login',
         params: { redirectTo: '/products' },
       });
-    });
-
-    // Flush the pending loadCPV promise so it doesn't leak into the next test
-    await waitFor(() => {
-      expect(mockedLoadCPV).toHaveBeenCalled();
     });
   });
 
@@ -158,7 +143,7 @@ describe('CategorySelection', () => {
   });
 
   it('shows a retryable error instead of spinning when the category list fails to load', async () => {
-    mockedLoadCPV.mockRejectedValueOnce(new Error('chunk failed'));
+    server.use(http.get(`${API_URL}/categories/tree`, () => HttpResponse.error(), { once: true }));
     await renderWithProviders(<CategorySelection />);
 
     expect(await screen.findByText("Couldn't load the category list.")).toBeOnTheScreen();
@@ -300,8 +285,57 @@ describe('CategorySelection', () => {
     await fireEvent.press(screen.getByText('Petroleum products'));
 
     await waitFor(() => {
-      expect(useRecentCategories.getState().recents.map((c) => c.id)).toEqual([2]);
+      expect(useRecentCategories.getState().recents.map((c) => c.name)).toEqual(['CPV: 09']);
     });
+  });
+
+  it('keys recents by stored name, so ids from different sources cannot collide', async () => {
+    // A category id and a product type id can be equal; both cards must render.
+    useRecentCategories.setState({
+      recents: [
+        { id: 2, name: 'CPV: 09', description: 'Petroleum products', childCount: 0 },
+        { id: 2, name: 'CPV: 03', description: 'Old bundle entry', childCount: 0 },
+      ],
+    });
+    const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => undefined);
+    await renderWithProviders(<CategorySelection />);
+    await screen.findByText('Recent');
+    expect(screen.getByText('Old bundle entry')).toBeOnTheScreen();
+    // React logs "two children with the same key" when ids collide.
+    expect(errorSpy.mock.calls.flat().join(' ')).not.toContain('same key');
+    errorSpy.mockRestore();
+  });
+
+  it('keeps the previous results on screen while the next search loads', async () => {
+    await renderWithProviders(<CategorySelection />);
+    await screen.findByPlaceholderText('Search');
+    await fireEvent.changeText(screen.getByPlaceholderText('Search'), 'petroleum');
+    await act(async () => {
+      jest.advanceTimersByTime(300);
+    });
+    await screen.findByText('Petroleum products');
+    server.use(
+      http.get(`${API_URL}/product-types`, async () => {
+        await delay(1000);
+        return HttpResponse.json(page([]));
+      }),
+    );
+    await fireEvent.changeText(screen.getByPlaceholderText('Search'), 'petroleum p');
+    await act(async () => {
+      jest.advanceTimersByTime(300);
+    });
+    expect(screen.getByText('Petroleum products')).toBeOnTheScreen();
+  });
+
+  it('words a failed search as a search error, not a category list error', async () => {
+    server.use(http.get(`${API_URL}/product-types`, () => HttpResponse.error()));
+    await renderWithProviders(<CategorySelection />);
+    await screen.findByPlaceholderText('Search');
+    await fireEvent.changeText(screen.getByPlaceholderText('Search'), 'petroleum');
+    await act(async () => {
+      jest.advanceTimersByTime(300);
+    });
+    expect(await screen.findByText("Couldn't search the categories.")).toBeOnTheScreen();
   });
 
   it('shows the plain-language blurb and contextual CPV help tooltip', async () => {
@@ -335,7 +369,7 @@ describe('CategorySelection', () => {
     await act(async () => {
       jest.advanceTimersByTime(300);
     });
-    expect(screen.getByText('Agricultural and horticultural products')).toBeOnTheScreen();
+    expect(await screen.findByText('Agricultural and horticultural products')).toBeOnTheScreen();
     expect(screen.queryByText('Petroleum products')).toBeNull();
   });
 
@@ -347,7 +381,7 @@ describe('CategorySelection', () => {
     await act(async () => {
       jest.advanceTimersByTime(300);
     });
-    expect(screen.getByText('Petroleum products')).toBeOnTheScreen();
+    expect(await screen.findByText('Petroleum products')).toBeOnTheScreen();
   });
 
   it('lists the most-used types under "Common types" above the tree', async () => {
@@ -358,7 +392,7 @@ describe('CategorySelection', () => {
           limit: 10,
           scope: 'all',
           categories: [
-            { name: '03100000-2', count: 7 },
+            { name: 'CPV: 031', count: 7 },
             { name: 'not-in-cpv', count: 3 },
           ],
         }),
@@ -393,7 +427,7 @@ describe('CategorySelection', () => {
     await act(async () => {
       jest.advanceTimersByTime(300);
     });
-    expect(screen.getByText('Petroleum products')).toBeOnTheScreen();
+    expect(await screen.findByText('Petroleum products')).toBeOnTheScreen();
     expect(screen.queryByText('Agricultural products')).toBeNull();
   });
 
@@ -401,6 +435,9 @@ describe('CategorySelection', () => {
     await renderWithProviders(<CategorySelection />);
     await screen.findByPlaceholderText('Search');
     await fireEvent.changeText(screen.getByPlaceholderText('Search'), 'nonexistent-widget');
+    await act(async () => {
+      jest.advanceTimersByTime(300);
+    });
     await waitFor(() => {
       expect(
         screen.getByText('No categories match “nonexistent-widget”. Try a broader term.'),
@@ -416,9 +453,12 @@ describe('CategorySelection', () => {
   it('quotes the debounced query, not the in-flight keystroke, in the empty state', async () => {
     (useCategorySelection as jest.Mock).mockReturnValueOnce({
       user: { id: '1', username: 'testuser' },
-      cpvClass: { id: 0, name: 'root', description: 'root', directChildren: [], allChildren: [] },
       history: [],
       filtered: [],
+      loading: false,
+      loadFailed: false,
+      retryLoad: jest.fn(),
+      selectFailed: false,
       commonTypes: [],
       recents: [],
       searchQuery: 'typing-now',

@@ -2,8 +2,10 @@
 
 The steps that take an empty prod or staging host to a running stack. Then continue with Part 1 of
 [DEPLOY-PROD.md](DEPLOY-PROD.md) or [DEPLOY-STAGING.md](DEPLOY-STAGING.md) for backups, scheduled
-jobs and telemetry. [Deployment and operations](https://docs.r9lab.io/operations/deployment/)
-describes the topology these steps produce.
+jobs and telemetry. [Deployment topology](https://docs.r9lab.io/operations/deployment/)
+describes what these steps produce. The docs also describe
+[backups](https://docs.r9lab.io/operations/backups/) and
+[monitoring](https://docs.r9lab.io/operations/monitoring/).
 
 The stack runs on one host behind a Cloudflare Tunnel, so the host needs no public ports. Every
 command runs as `just stack <prod|staging> <command>`. A command that changes state takes `YES` to

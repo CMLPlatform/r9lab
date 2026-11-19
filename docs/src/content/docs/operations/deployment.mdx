@@ -1,10 +1,11 @@
 ---
-title: Deployment and operations
-description: The R9lab deployment topology and its operational trade-offs.
+title: Deployment topology
+description: The R9lab Compose services, networks, edge and transport security, as a reference.
 ---
 
 R9lab runs as a self-hosted Docker Compose stack sized for a single VPS. This page describes how
-that stack is put together.
+that stack is put together. For running it, see [Backups and recovery](/operations/backups/),
+[Secrets and rotation](/operations/secrets/) and [Telemetry and monitoring](/operations/monitoring/).
 
 ## Compose service topology
 
@@ -112,66 +113,4 @@ See [Security and hardening](/operations/security/) for the trust-boundary model
 
 Supported browsers must implement HTTPS, HSTS, Content Security Policy, host-prefixed secure cookies, SameSite cookies, CORS preflight enforcement, `Cross-Origin-Opener-Policy`, and `Cross-Origin-Resource-Policy`. There is no fallback security mode: unsupported browsers may fail to authenticate, fail to load protected media, or be blocked by browser policy.
 
-## Storage and backups
-
-- PostgreSQL stores the primary application state.
-- Uploaded files and images are stored on disk and served by the backend.
-- Database dumps and user-uploaded files are backed up into an encrypted local restic repository under `BACKUP_HOST_DIR`. The backup container runs as UID/GID `65532`.
-- Backups are host systemd timers, not Compose services. The hourly job takes a snapshot (`r9lab-backup@.timer`). The daily job runs retention, the integrity check, and the optional offsite copy (`r9lab-backup-maintenance@.timer`), so the repository is repacked once a day, not 24 times. Losing the host still costs up to a day of data.
-- Offsite copies use `restic copy` over restic's rclone backend, to the one remote defined in `secrets/<env>/rclone.conf`.
-- A backup refuses to archive a dump or an uploads tree smaller than half the newest stored snapshot of the same tag. Otherwise an empty one could become the newest snapshot and age out the good copies. `RESTIC_MIN_DUMP_RATIO` tunes it; `0` disables it.
-- The uploads volume carries a `.relab-volume` marker naming the environment it belongs to. A backup refuses to archive it if the marker is missing or names another environment. The check is skipped when `R9LAB_ENVIRONMENT` is unset, which is the case in dev and CI. Restoring one environment's uploads into another's volume carries the source environment's marker along with it. Rewrite the marker for the target afterwards, or every backup there will refuse.
-- Alembic runs each migration revision in one transaction. A failed migration leaves the last successful revision in place, and a re-run resumes from there. `just stack <env> rollback YES <tag> [<revision>]` returns to an earlier release's published images. It downgrades the schema only when no migration in the range destroyed data. Otherwise, restore a backup. It cannot return to a release from before the R9lab rename.
-- `just restore-check <env>` restores the latest database dump into a disposable Postgres container and verifies that it can be read. It also restores the latest uploads snapshot into a scratch directory to verify it carries real data.
-
-App-owned services run with dropped Linux capabilities, `no-new-privileges`, PID and file descriptor limits, and read-only root filesystems where supported. CI checks Dockerfiles with Trivy and validates the Cloudflare edge IaC with `just cloudflare-check`.
-
-## Secrets and encrypted fields
-
-Access control, not application-level encryption, protects most R9lab data. Passwords are hashed. Public research records, uploaded media, public r9cam keys, request IDs, and cache keys are not application-encrypted.
-
-`deploy/env/variables.toml` is the source-controlled runtime secret inventory: the secret files Compose renders under `secrets/<env>/`. Run `just env-inventory` from the repo root when onboarding a host or reviewing secret-file changes.
-
-`DATA_ENCRYPTION_KEY` encrypts only values the backend must recover later, such as OAuth provider tokens and active YouTube broadcast keys. `CACHE_SIGNING_SECRET` signs cache payloads and `OAUTH_STATE_SECRET` signs OAuth state; each key has one purpose.
-
-Backend app secrets, database role passwords, the Redis password, the restic repository password, and optional rclone config live in gitignored Compose secret files under `secrets/<env>/`, never in committed files or backend env files. The rendered Compose overlays declare the required files, and each service mounts only the ones its process reads: the API does not get the migration or backup role password or the bootstrap superuser password.
-
-The application, migration, and backup roles are separate PostgreSQL users; the application role does not own the schema. `just stack prod up` and `just stack staging up` run `deploy/postgres/initdb/provision.sh` against the live database before starting the API: it creates the roles, transfers table ownership to the migration role, and installs the superuser-only extensions. The same script runs from `/docker-entrypoint-initdb.d` on an empty volume, so an existing volume needs no rebuild.
-
-Configuration ownership: `infra/cloudflare/` holds public edge configuration, `deploy/` committed
-non-secret runtime identity, the root `.env` host-local operator inputs, `secrets/` uncommitted
-secret material, and `scripts/` repo-wide operational helpers too large for the root `justfile`.
-Backend dotenv files are local and test inputs only; prod and staging do not use backend
-`.env.<env>` files.
-
-### Rotation and break-glass
-
-To rotate an app secret, replace the file under `secrets/<env>/`, restart the affected service, and verify `/livez` and `/readyz`. Rotating `AUTH_TOKEN_SECRET` invalidates existing login, reset, and verification tokens. For OAuth or email provider secrets, rotate the upstream credential first, update the matching file, then restart `api`.
-
-To rotate a database role password, change the PostgreSQL role password, then update the matching file under `secrets/<env>/` and restart the affected service (`api`, `migrator`, or `backup`). Redis rotation requires restarting `redis` and its consumers such as `api`.
-
-`DATA_ENCRYPTION_KEY` is break-glass material. Older encrypted values and backups depend on the previous key, so rotating it needs a planned re-encryption path and a backup-retention review.
-
-If a secret leaks outside the intended host, treat it as compromised: revoke or rotate it upstream, update the host file or root `.env` value, restart affected services, run health checks, and record what was exposed and when. Existing encrypted backups depend on the old key until their retention window passes.
-
-## Telemetry
-
-Prod and staging can ship logs, traces, and metrics to a central monitoring stack outside this repo. Dev and CI ship nothing.
-
-- `OTEL_EXPORTER_OTLP_ENDPOINT` switches on the whole path: the backend's OTLP traces, metrics, and logs, plus the `compose.telemetry.yml` overlay.
-- `OTLP_AUTH_TOKEN` is the collector's bearer token. Compose folds it into the SDK's header format for the backend; Alloy reads it directly.
-- `TELEMETRY_EDGE_KEY` is a second credential the edge in front of the collector expects. All three must be set together; `just deploy-secrets-check` enforces this.
-- `OTEL_EXPORTER_OTLP_PROTOCOL` defaults to `http/protobuf`; the collector sits behind a tunnel that routes HTTPS only.
-
-Hosts without these variables ship nothing. Keep monitoring endpoints behind a tunnel or private network; never expose the monitoring stack to the public internet.
-
-The Alloy overlay ships container stdout from every other service and host metrics (CPU, memory, load, disk, network, `hwmon` temperatures). Alloy never touches the Docker socket: a `docker-socket-proxy` container holds it and exposes only the read-only endpoints discovery and log tailing need, with POST refused. Alloy mounts the host's `/proc`, `/sys`, and `/` read-only for node metrics, running as root with capabilities dropped to `SYSLOG` and `DAC_READ_SEARCH`. On a host with an NVIDIA card, `GPU_METRICS=1` adds `compose.telemetry.gpu.yml` and GPU metrics under the same `host_name`.
-
-## Operational considerations
-
-- Redis serves caching and parts of the authentication and token flow. Partial Redis outages have user-facing effects.
-- Uploaded media is primary research data, not a disposable asset.
-- The backend enforces stricter secret, origin, and host checks outside development.
-- With telemetry enabled, only the authenticated OTLP endpoint is reachable; no Loki push hostname is exposed.
-- Scaling and secret rotation are manual; the Compose setup trades automation for a single VPS.
-- Scheduled work (hourly backup, daily backup maintenance, hourly watchdog, monthly restore check) runs from systemd timers, which catch up on runs missed while the host was off. Each job pings a per-job dead-man's switch that bypasses the telemetry collector, so it still reports when the telemetry path itself is broken. `just watchdog <env>` is the local triage command; it exits non-zero with an `ALERT[...]` line per failure.
+The backend enforces stricter secret, origin and host checks outside development.

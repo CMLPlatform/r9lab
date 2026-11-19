@@ -13,6 +13,9 @@ ______________________________________________________________________
 Once per machine, not per release. `just watchdog prod` reports each missing piece as a distinct
 alert.
 
+Commands in this runbook read `BACKUP_HOST_DIR` from the shell. Load it from the host's `.env`
+first: `export BACKUP_HOST_DIR="$(sed -n 's/^BACKUP_HOST_DIR=//p' .env)"`.
+
 ### 1.0 Docker daemon log rotation (fallback)
 
 The Compose files cap every stack service's logs (`max-size: 10m`, `max-file: 3`). Set the same
@@ -35,8 +38,16 @@ start without it (`create_host_path: false`), so Docker cannot create an empty d
 like a real mount. **The repository is never created automatically**, and backup runs never create
 one. Never run `backup-init` on a host that already has backups.
 
+The `erasure-ledger` directory beside it holds the account erasure ledger, which the API appends to
+on every account deletion. It lives outside Postgres so that `just restore` can erase those
+accounts again after loading an older dump. The API and the migrator refuse to start without it,
+for the same reason as the restic directory. Never delete or truncate it: an entry lost there is an
+erased account that a restore brings back. Every database snapshot archives it with the dump, so
+the offsite copy carries it; if this disk is lost, erasures since the last offsite copy (up to a
+day) are in no copy.
+
 ```bash
-mkdir -p "${BACKUP_HOST_DIR:-./backups}/restic"
+mkdir -p "${BACKUP_HOST_DIR:-./backups}/restic" "${BACKUP_HOST_DIR:-./backups}/erasure-ledger"
 sudo chown -R 65532:65532 "${BACKUP_HOST_DIR:-./backups}"
 just backup-init prod     # creates the repository, marks the uploads volume
 just backup prod          # takes the first snapshot
@@ -528,8 +539,46 @@ For a real restore, pick the snapshot and restore it into the live database:
 
 ```bash
 just snapshots prod           # read-only; ids, dates, and dump sizes
-just restore prod YES <id>    # stops the api, restores, restarts it; a failed restore leaves it stopped
+just restore prod YES <id>    # stops the api, restores, replays erasures, restarts it; a failure leaves it stopped
 ```
+
+Before the API starts again, the restore runs `scripts.maintenance.replay_erasures` in the migrator
+image. The migrator entrypoint first brings the schema to the release's head. The replay then reads
+the live erasure ledger together with the copy in the newest snapshot, and erases again every account
+in either that the restored database still holds, through the same code path as a deletion in the
+API. Accounts already gone are skipped, so running it again is harmless. An unreadable ledger line,
+an account it cannot erase, or no ledger file at all fails the restore and leaves the API stopped;
+the log names the line or the account id. An entry is written before its erasure commits, so an
+erasure whose commit failed still has one, and a later restore erases that account.
+
+A last line with no newline at its end is an append cut short by a power cut or a full disk. Its
+erasure never committed, so the replay skips it with a warning. The next erasure ends that line,
+and from then on it is reported like any other unreadable line. To clear a reported line:
+
+1. Read it, with the line number from the log:
+   `sudo sed -n '<line>p' "${BACKUP_HOST_DIR:-./backups}/erasure-ledger/erasures.jsonl"`. A bad
+   line reported in the backup copy (`/run/erasure-ledger-backup/...`) is in the live ledger too;
+   fix the live one.
+2. Keep a copy: `sudo cp -p erasures.jsonl erasures.jsonl.bak` in that directory.
+3. If the line holds a whole account id, rewrite it as a full record, so the replay erases that
+   account: `{"user_id": "<id>", "content": "<anonymize or delete, as the line shows; anonymize if
+   it does not>", "erased_at": "<the time on the next record>"}`. That person asked for the
+   erasure, so erasing again is the safe side. With no whole id there is no account to name:
+   delete the line.
+4. Re-run the replay by hand as below (without `--empty-ok`), then `just stack prod up YES`.
+
+On a host where no account was ever erased there is no ledger file yet, and the restore stops at the
+replay. Confirm the ledger directory is the mounted backup disk (`findmnt -T
+"${BACKUP_HOST_DIR:-./backups}/erasure-ledger"`), then finish by hand:
+
+```bash
+just stack prod compose --profile migrations run --rm --no-deps -T migrator \
+    .venv/bin/python -m scripts.maintenance.replay_erasures --empty-ok
+just stack prod up YES
+```
+
+Drop `--empty-ok` to re-run the replay by hand on any host, with `just stack prod compose stop api`
+first.
 
 These restore Postgres only. User uploads need a separate manual restore; see "Marker missing, and
 the volume is genuinely empty" in 1.1.
@@ -580,3 +629,34 @@ just stack prod migrate YES
 
 The watchdog's schema-drift check (1.4) reports both states, so neither reaches a deploy
 unnoticed.
+
+### Rotating secrets
+
+Secret files live under `secrets/prod/` (inventory: `deploy/env/variables.toml`, printed by
+`just env-inventory`). Each service mounts only the files its process reads.
+
+**An app secret:** replace the file under `secrets/prod/`, restart the affected service, and check
+`/livez` and `/readyz`. Rotating `AUTH_TOKEN_SECRET` invalidates existing login, reset and
+verification tokens. For an OAuth or email provider secret, rotate the upstream credential first,
+then update the file, then restart `api`.
+
+**A database role password:** change the PostgreSQL role password, update the matching file under
+`secrets/prod/`, and restart the affected service (`api`, `migrator` or `backup`). To rotate the
+Redis password, restart `redis` and its consumers, such as `api`.
+
+**`DATA_ENCRYPTION_KEY` is break-glass material.** Older encrypted values and backups depend on the
+previous key. Rotating it needs a planned re-encryption path and a check of backup retention.
+
+**A secret that leaked outside its host:**
+
+1. Revoke or rotate it upstream.
+1. Update the host file or the root `.env` value.
+1. Restart the affected services and run the health checks.
+1. Record what was exposed and when.
+
+Existing encrypted backups depend on the old key until their retention window passes. Never rotate
+`restic_password` (1.1).
+
+**Database roles:** `just stack prod up` runs `deploy/postgres/initdb/provision.sh`
+against the live database before the API starts. It creates the roles, moves table ownership to the
+migration role and installs the superuser-only extensions, so an existing volume needs no rebuild.

@@ -6,11 +6,18 @@ import { FormFieldError } from '@/components/base/FormField';
 import { TextInput } from '@/components/base/TextInput';
 import { MIN_TAP_TARGET, radius } from '@/constants';
 import { describedBy } from '@/utils/a11y';
-import { decimalSeparatorFor } from '@/utils/locale';
+import { decimalSeparatorFor, parseLocalizedFloat } from '@/utils/locale';
 
 interface LocalizedFloatInputProps {
   value: number | undefined;
+  /** Called on blur with the parsed value. */
   onChange?: (value: number | undefined) => void;
+  /**
+   * Called on every accepted keystroke with the raw text; parse it with `parseLocalizedFloat`
+   * and `decimalSeparatorFor()`.
+   * For a form whose submit button can be pressed while the field still has focus.
+   */
+  onChangeText?: (text: string) => void;
   editable?: boolean;
   placeholder?: string;
   unit?: string;
@@ -24,11 +31,6 @@ interface LocalizedFloatInputProps {
 // The locale is fixed for the session.
 const DECIMAL_SEPARATOR = decimalSeparatorFor();
 const DECIMAL_PATTERN = new RegExp(`^\\d*[${DECIMAL_SEPARATOR.replace('.', '\\.')}]?\\d*$`);
-
-/** Localized number string to dot-decimal. */
-function normalizeDecimalString(text: string, decimalSeparator: string): string {
-  return decimalSeparator === '.' ? text : text.replace(decimalSeparator, '.');
-}
 
 /** Number to localized display format. */
 function toLocalizedString(value: number | undefined, decimalSeparator: string): string {
@@ -65,6 +67,7 @@ function ReadOnlySpecRow({
 export default function LocalizedFloatInput({
   value,
   onChange,
+  onChangeText,
   editable = true,
   placeholder = 'e.g. 12',
   unit,
@@ -111,10 +114,9 @@ export default function LocalizedFloatInput({
       return;
     }
 
-    const normalizedText = normalizeDecimalString(text, DECIMAL_SEPARATOR);
-    const numValue = parseFloat(normalizedText);
+    const numValue = parseLocalizedFloat(text, DECIMAL_SEPARATOR);
 
-    if (!Number.isNaN(numValue) && numValue >= min) {
+    if (numValue !== undefined && numValue >= min) {
       onChange?.(numValue);
     } else {
       setText(toLocalizedString(normalizedValue, DECIMAL_SEPARATOR));
@@ -124,6 +126,7 @@ export default function LocalizedFloatInput({
   const handleChangeText = (s: string) => {
     if (DECIMAL_PATTERN.test(s) || s === '') {
       setText(s);
+      onChangeText?.(s);
     }
   };
 

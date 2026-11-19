@@ -1,12 +1,15 @@
 """Database models for data collection on products."""
 
-from typing import TYPE_CHECKING
+from datetime import datetime  # noqa: TC003 # Used at runtime for ORM mapping
+from typing import Any  # noqa: TC003 # SQLAlchemy evaluates Mapped[...] annotations at runtime
 
 from pydantic import UUID4
 from sqlalchemy import (
     REAL,
+    BigInteger,
     CheckConstraint,
     Computed,
+    DateTime,
     Double,
     FetchedValue,
     ForeignKey,
@@ -18,7 +21,7 @@ from sqlalchemy import (
     select,
     text,
 )
-from sqlalchemy.dialects.postgresql import TSVECTOR
+from sqlalchemy.dialects.postgresql import JSONB, TSVECTOR
 from sqlalchemy.orm import (
     Mapped,
     MappedSQLExpression,
@@ -36,9 +39,6 @@ from app.api.file_storage.models import File, Image, MediaParentType, Video
 from app.api.file_storage.parents import register_media_parent
 from app.api.reference_data.models import Material, ProductType
 from app.api.reference_data.usage import register_reference_usage
-
-if TYPE_CHECKING:
-    from typing import Any
 
 
 class Product(ProductFieldsMixin, TimeStampMixinBare, Base):
@@ -229,6 +229,35 @@ class MaterialProductLink(MaterialProductLinkBase, TimeStampMixinBare, Base):
 
     def __str__(self) -> str:
         return f"{self.quantity} {self.unit} of {self.material.name} in {self.product.name}"
+
+
+class ProductRevision(Base):
+    """One changing edit of a product's own fields: who made it and the row it left.
+
+    Written by ``update_product`` in the edit's own transaction. Media, components and
+    the bill of materials are not covered. Rows older than ``REVISION_RETENTION`` are
+    pruned; account erasure removes or detaches them (see ``account_erasure``).
+    """
+
+    __tablename__ = "product_revision"
+    __table_args__ = (
+        # The history list reads one product's revisions newest first.
+        Index("ix_product_revision_product_id_created_at", "product_id", text("created_at DESC")),
+        # Erasing an editor nulls their id here through the foreign key.
+        Index("ix_product_revision_editor_id", "editor_id"),
+    )
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    product_id: Mapped[int] = mapped_column(ForeignKey("product.id", ondelete="CASCADE"))
+    # NULL once the editor's account is erased. Only another user's edits (a moderator's)
+    # can outlive their author: an erased owner's products lose their revisions or go.
+    editor_id: Mapped[UUID4 | None] = mapped_column(ForeignKey("user.id", ondelete="SET NULL"))
+    version: Mapped[int]
+    changed_fields: Mapped[list[str]] = mapped_column(JSONB)
+    snapshot: Mapped[dict[str, Any]] = mapped_column(JSONB)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+    editor: Mapped[User | None] = relationship(lazy="raise", foreign_keys="[ProductRevision.editor_id]")
 
 
 # Media parents this context owns; registered here so file_storage never imports it.

@@ -12,7 +12,7 @@ from alembic import command
 from psycopg.errors import InsufficientPrivilege
 from sqlalchemy import inspect, text
 from sqlalchemy.dialects import postgresql
-from sqlalchemy.exc import ProgrammingError
+from sqlalchemy.exc import DBAPIError, ProgrammingError
 from sqlalchemy.schema import CreateIndex
 
 from app.api.common.models.base import Base
@@ -41,6 +41,7 @@ EXPECTED_TABLES = {
     # Data collection
     "product",
     "materialproductlink",
+    "product_revision",
     # File storage
     "file",
     "image",
@@ -167,6 +168,45 @@ def test_migrations_downgrade_upgrade(relab_alembic_config: Config, migration_he
     assert migration_helper.current_revision() == head, "upgrade did not restore head"
 
 
+@pytest.mark.migration
+def test_downgrade_refuses_to_drop_recorded_edit_history(
+    relab_alembic_config: Config, migration_helper: MigrationHelper
+) -> None:
+    """With revisions recorded, stepping below the history table raises and keeps them."""
+    migration_helper.execute_sql(
+        'INSERT INTO "user" (id, email, email_canonical, hashed_password, is_active, is_superuser, is_verified,'
+        " mfa_enabled) VALUES ('00000000-0000-4000-8000-0000000b0001', 'history@example.com',"
+        " 'history@example.com', 'x', true, false, true, false)"
+    )
+    migration_helper.execute_sql(
+        "WITH p AS (INSERT INTO product (name, owner_id) VALUES ('history-kettle',"
+        " '00000000-0000-4000-8000-0000000b0001') RETURNING id)"
+        " INSERT INTO product_revision (product_id, version, changed_fields, snapshot)"
+        " SELECT id, 2, '[\"name\"]', '{}' FROM p"
+    )
+    try:
+        with pytest.raises(DBAPIError, match="edit history"):
+            command.downgrade(relab_alembic_config, "d8b3a6f0e1c5")
+        assert migration_helper.table_exists("product_revision")
+    finally:
+        migration_helper.execute_sql("DELETE FROM product WHERE name = 'history-kettle'")
+        migration_helper.execute_sql("DELETE FROM \"user\" WHERE email = 'history@example.com'")
+        command.upgrade(relab_alembic_config, "head")
+
+    assert migration_helper.current_revision() == "d7fb0e59e51f"
+
+
+@pytest.mark.migration
+def test_offline_downgrade_sql_keeps_the_edit_history_guard(
+    relab_alembic_config: Config, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """A downgrade rendered as SQL cannot count rows up front, so the script carries the check."""
+    command.downgrade(relab_alembic_config, "d7fb0e59e51f:d8b3a6f0e1c5", sql=True)
+
+    script = capsys.readouterr().out
+    assert script.index("RAISE EXCEPTION") < script.index("DROP TABLE product_revision")
+
+
 def _index_is_valid(migration_helper: MigrationHelper, name: str) -> bool | None:
     # name is always an index-name literal from this module.
     rows = migration_helper.execute_sql(f"SELECT indisvalid FROM pg_index WHERE indexrelid = to_regclass('{name}')")  # noqa: S608
@@ -259,7 +299,8 @@ def test_recommended_rank_index_survives_a_lost_revision_stamp(
         assert migration_helper.current_revision() == "d8b3a6f0e1c5"
         assert _index_is_valid(migration_helper, "ix_product_recommended_rank") is True
     finally:
-        command.upgrade(relab_alembic_config, "head")
+        # Only the stamp moved down; the schema above it is still at head.
+        command.stamp(relab_alembic_config, "head")
 
 
 @pytest.mark.migration
@@ -282,7 +323,8 @@ def test_recommended_rank_index_rebuilds_over_a_failed_build(
 
         assert _index_is_valid(migration_helper, "ix_product_recommended_rank") is True
     finally:
-        command.upgrade(relab_alembic_config, "head")
+        # Only the stamp moved down; the schema above it is still at head.
+        command.stamp(relab_alembic_config, "head")
 
 
 @pytest.mark.migration

@@ -137,6 +137,9 @@ const defaultUser = {
   preferences: { profile_visibility: 'public', theme_mode: 'auto', email_updates_enabled: false },
 };
 
+// The admin row is named "title, subtitle".
+const ADMIN_USERS_ROW = /^Users,/;
+
 const SECTION_LABELS = ['Preferences', 'Integrations', 'Security & sessions', 'Danger zone'];
 
 // Both modules are require()d lazily, not imported: a top-level import pulls in
@@ -230,6 +233,25 @@ describe('AccountScreen', () => {
     const chips = screen.getByTestId('section-nav-chips');
     await fireEvent.press(within(chips).getByText('Danger zone'));
     expect(mockScrollTo).toHaveBeenCalledWith('danger');
+  });
+
+  it('shows no admin section to an account that is not a superuser', async () => {
+    await renderAccount();
+    expect(screen.queryByText('Admin')).toBeNull();
+    expect(screen.queryByLabelText(ADMIN_USERS_ROW)).toBeNull();
+  });
+
+  it('gives a superuser an admin section that opens the users screen', async () => {
+    const { useAuth } = require('@/context/auth.ts');
+    (useAuth as jest.Mock).mockReturnValue({
+      user: { ...defaultUser, isSuperuser: true, mfaEnabled: true },
+      refetch: mockRefetch,
+    });
+    await renderAccount();
+    const chips = screen.getByTestId('section-nav-chips');
+    expect(within(chips).getByText('Admin')).toBeOnTheScreen();
+    await fireEvent.press(screen.getByLabelText(ADMIN_USERS_ROW));
+    expect(mockRouterPush).toHaveBeenCalledWith('/admin/users');
   });
 
   it('still opens the edit-username dialog', async () => {

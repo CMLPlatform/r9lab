@@ -40,7 +40,8 @@ user details, and owner-scoped workflows require a valid token.
 ## Interactive tooling and admin tasks
 
 Point a client at the API and authenticate with a bearer token from `POST /v1/auth/bearer/login`.
-The same path covers superuser tasks like `POST /v1/admin/cache/clear/{namespace}`.
+The same path covers superuser tasks like `POST /v1/admin/cache/clear/{namespace}`. User
+administration also has a screen in the app; see [Managing users](../admin/).
 
 - **Postman, Bruno, Insomnia**: import the OpenAPI schema (`app/src/types/openapi.json`) for the
   full endpoint collection, then set auth to *Bearer*.
@@ -111,6 +112,28 @@ components nested at most 10 levels deep. Past any of these limits the request f
 response that asks you to narrow the filters. An invalid filter parameter returns a `422` instead. For the whole dataset, use the
 [dataset release](../../project/dataset/).
 :::
+
+## Downloading all your data
+
+`GET /v1/users/me/export` returns everything your account holds as one ZIP file, named
+`r9lab-export-<username>-<date>.zip`. It needs a signed-in session and only ever contains your own
+data. In the web app, the same download is **Download your data** under **Your data** on the
+Account screen. The native app does not offer it; use the web app.
+
+- `account.json`: your profile, preferences, linked Google or GitHub sign-ins, contributor-terms
+  acceptance and cameras. No passwords, tokens or keys.
+- `products.json` and `products.csv`: every base product you own with its components, in the
+  export shapes above.
+- `revisions.json`: the edit history of your products and components (time, product id, version,
+  the fields changed and what they said afterwards), and the edits you made to other people's
+  products (time, product id, version and the fields changed). It never names another editor.
+- `images/<id>/` and `files/<id>/`: the photos and research files of product or component `<id>`,
+  as uploaded, one file per image or file id.
+- `missing-files.txt`: present only when some uploads could not be read; it lists them.
+
+The export limits above do not apply: the archive holds up to 50,000 products and components
+together, and answers `413` past that. Its size is bounded by your upload quota. The ZIP is built while it downloads, so the browser shows no total size, and an
+interrupted download starts over. You can download it 5 times an hour.
 
 ## Integration advice
 

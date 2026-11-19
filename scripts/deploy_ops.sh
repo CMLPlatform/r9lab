@@ -613,8 +613,8 @@ mount_writability_alert() {
                 "busybox chown -R $DEPLOY_APP_UID:$DEPLOY_APP_UID /mnt" >&2
             ;;
         host:*)
-            echo "Docker creates a missing bind-mount directory root-owned." >&2
-            echo "Fix with: sudo chown -R $DEPLOY_APP_UID:$DEPLOY_APP_UID ${target#host:}" >&2
+            echo "The host directory must exist (the stack does not create it) and belong to that uid." >&2
+            echo "Fix with: mkdir -p ${target#host:} && sudo chown -R $DEPLOY_APP_UID:$DEPLOY_APP_UID ${target#host:}" >&2
             ;;
     esac
     return 1
@@ -631,6 +631,7 @@ assert_deploy_mounts_writable() {
     backup_dir="$(dotenv_value BACKUP_HOST_DIR)"
     local -a mounts=(
         "api /opt/r9lab/backend/data/uploads volume:user_uploads"
+        "api /opt/r9lab/backend/data/erasure-ledger host:${backup_dir:-./backups}/erasure-ledger"
         "backup /var/cache/restic volume:restic_cache"
         "backup /restic host:${backup_dir:-./backups}/restic"
     )

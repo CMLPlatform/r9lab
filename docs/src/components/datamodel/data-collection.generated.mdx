@@ -3,7 +3,7 @@
 ```mermaid
 erDiagram
     accTitle: Data collection entities
-    accDescr: The data collection tables are MATERIALPRODUCTLINK, PRODUCT. Each MATERIALPRODUCTLINK row names exactly one MATERIAL as its material. Each MATERIALPRODUCTLINK row names exactly one PRODUCT as its product. Each PRODUCT row names exactly one USER as its owner. Each PRODUCT row names zero or one PRODUCT as its parent. Each PRODUCT row names zero or one PRODUCTTYPE as its product type.
+    accDescr: The data collection tables are MATERIALPRODUCTLINK, PRODUCT, PRODUCT_REVISION. Each MATERIALPRODUCTLINK row names exactly one MATERIAL as its material. Each MATERIALPRODUCTLINK row names exactly one PRODUCT as its product. Each PRODUCT row names exactly one USER as its owner. Each PRODUCT row names zero or one PRODUCT as its parent. Each PRODUCT row names zero or one PRODUCTTYPE as its product type. Each PRODUCT_REVISION row names zero or one USER as its editor. Each PRODUCT_REVISION row names exactly one PRODUCT as its product.
 
     MATERIALPRODUCTLINK {
         integer material_id PK, FK
@@ -37,9 +37,21 @@ erDiagram
         timestamptz updated_at
     }
 
+    PRODUCT_REVISION {
+        bigint id PK
+        uuid editor_id FK
+        integer product_id FK
+        jsonb changed_fields
+        jsonb snapshot
+        integer version
+        timestamptz created_at
+    }
+
     MATERIAL ||--o{ MATERIALPRODUCTLINK : "material"
     PRODUCT ||--o{ MATERIALPRODUCTLINK : "product"
     USER ||--o{ PRODUCT : "owner"
     PRODUCT |o--o{ PRODUCT : "parent"
     PRODUCTTYPE |o--o{ PRODUCT : "product type"
+    USER |o--o{ PRODUCT_REVISION : "editor"
+    PRODUCT ||--o{ PRODUCT_REVISION : "product"
 ```

@@ -99,6 +99,13 @@ Security-sensitive areas:
     than 10 levels is refused as well.
     Owner attribution follows the same profile-visibility redaction as the product page. CSV cells
     that a spreadsheet would read as a formula are prefixed with `'`.
+  - The account archive (`GET /users/me/export`) streams every product, photo and file the
+    signed-in user owns. It holds at most 50,000 products and components together, ten times the
+    export component cap, and answers `413` past that; the upload quota bounds the files. It needs
+    a session, reads only rows owned by that user or edits they made, and carries its own budget of
+    5 an hour per user (`API_ACCOUNT_EXPORT_RATE_LIMIT`) under a per-IP ceiling of 15 an hour for
+    signed-in requests (`API_ACCOUNT_EXPORT_RATE_LIMIT_SIGNED_IN_PER_IP`). `account.json` is built from `UserRead`, so no password
+    hash, MFA material or OAuth token reaches it; camera entries carry no keys.
   - Component reads carry the per-IP read limit, as do the product search and facet routes. The
     direct list (`/products/{id}/components`) is paged; the tree (`/products/{id}/components/tree`)
     returns at most 1,000 components across all levels and fails with a `400` past that, checked
@@ -106,6 +113,21 @@ Security-sensitive areas:
     `/categories/{id}/subcategories/tree`, `/taxonomies/{id}/categories/tree`) page their
     top-level categories and carry the same limit. `test_dos_rate_limit_routes.py` requires the
     read limit on every public route that lists components or returns a tree.
+- product edit history (`product_revision`): every changing update of a product's own fields
+  stores a snapshot of those fields, the editor and the resulting version, written in the update's
+  transaction under the owner and product row locks. It can hold text the owner later removed, so
+  it is not kept for ever:
+  - Revisions older than two years (`REVISION_RETENTION`) are pruned hourly by each API worker.
+  - Erasing an account in anonymize mode deletes the history of that account's products before
+    they move to the system account; in delete mode the history goes with the products. Edits the
+    account made to other people's products stay, with the editor cleared.
+  - `GET /products/{id}/revisions` and `GET /components/{id}/revisions` are as public as the
+    product, but return the `snapshot` only to the owner and to admins (`has_admin_access`);
+    everyone else gets `null`, with the time, the editor and the changed field names. An owner's
+    edits follow the product's owner redaction; a moderator's edits are marked as such and name
+    the moderator to admins only.
+  - The migration's downgrade refuses while the table holds rows, in SQL, so a script rendered
+    with `--sql` refuses too.
 - cookie-authenticated writes: an unsafe `/v1` request carrying the session cookies, and every
   session login, is refused with 403 when `Sec-Fetch-Site` is `cross-site` or the `Origin` is not
   in the CORS allow-list (`app/core/middleware/cross_site.py`). Requests without either header
@@ -128,6 +150,17 @@ Security-sensitive areas:
   blocks the loads, the policy is `cross-origin` for `/uploads` alone. The relaxation is derived
   from the environment, not configured, so staging and production cannot opt into it.
 - admin APIs
+  - Every `/v1/admin` route needs an active superuser with TOTP enrolled
+    (`current_active_superuser`), and every write is audited with the acting admin's id. The app's
+    admin section is hidden from other accounts, but that is presentation only.
+  - Suspending an account (`PUT /v1/admin/users/{user_id}/active`) revokes its refresh sessions
+    before the write, and refuses the acting admin's own account and the last active superuser.
+    The last-superuser guard locks every active superuser in id order, so two admins acting on
+    each other queue instead of deadlocking.
+  - The anonymous system account, which owns anonymized content, refuses every admin write
+    (`409`) and is left out of `GET /v1/admin/users` (`account_guards.py`).
+  - No admin route sets `is_verified` or `is_superuser`: verification proves control of the
+    mailbox, and OAuth sign-in links by email only to verified accounts.
 - RPi camera device APIs and WebSocket relay
   - A camera acts for its owner. Device-signed HTTP routes and the relay accept a camera only when
     its credential is active and its owner account is active and verified
@@ -138,6 +171,18 @@ Security-sensitive areas:
     authenticated with, or its owner fails the bar above. A re-check that errors or takes over 5 s
     keeps the socket once; two in a row close it with 1011, and the device authenticates again.
 - backups, secrets, logs, and telemetry
+  - Every account erasure is appended to a ledger file on the backup disk, outside Postgres
+    (`erasure_ledger_path`). A line holds the account's UUID, the content policy (`anonymize` or
+    `delete`) and the UTC time: no email address, name or other account field. The entry is
+    fsynced before the erasure commits, and a failed write fails the erasure, so no committed
+    erasure is missing from it. Each database snapshot archives the ledger with the dump, so the
+    offsite copy carries it. `just restore` replays the union of the live ledger and the newest
+    snapshot's copy through `erase_user` before the API starts, so a restored dump does not bring
+    an erased account back. The limit: if the backup disk is lost with the live ledger on it,
+    erasures made since the last offsite copy (up to a day) are in no copy, and a restore from
+    offsite brings those accounts back. The file is mode 0600 and owned by the app uid; only the
+    API appends to it, and the migrator and the backup job mount it read-only. Entries are kept
+    indefinitely.
 - release and security artifacts: the GHCR images the hosts pull, and the landing page and docs
   deploy, whose Cloudflare API token is a GitHub Environment secret holding only Workers
   Scripts: Edit. A token granted on all Workers is not scoped to one environment, so every

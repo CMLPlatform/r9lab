@@ -1,80 +1,75 @@
-import { useQuery } from '@tanstack/react-query';
+import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { useDebounce } from 'use-debounce';
-import { topCategoriesQueryOptions } from '@/features/products/queries';
+import {
+  cpvChildrenQueryOptions,
+  productTypeLabelsQueryOptions,
+  productTypesSearchQueryOptions,
+  topCategoriesQueryOptions,
+} from '@/features/products/queries';
 import { useRequireAuth } from '@/hooks/useRequireAuth';
-import { fetchProductTypesByName } from '@/services/api/productTypes';
-import { loadCPV } from '@/services/cpv';
+import { fetchProductTypesByName, type ProductTypeOption } from '@/services/api/productTypes';
 import type { CPVCategory } from '@/types/CPVCategory';
 import { setPendingTypeSelection } from './pendingTypeSelection';
 import { useRecentCategories } from './useRecentCategories';
+
+const asItem = (type: ProductTypeOption): CPVCategory => ({
+  id: type.id,
+  name: type.name,
+  description: type.description ?? '',
+  childCount: 0,
+});
 
 export function useCategorySelection() {
   const router = useRouter();
   // Safe redirect if the session expired while the picker was open.
   const { user } = useRequireAuth('/products');
 
-  const [cpv, setCpv] = useState<Record<string, CPVCategory> | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedSearchQuery] = useDebounce(searchQuery, 300);
-  const [cpvClass, setCpvClass] = useState<CPVCategory | null>(null);
+  // The branches entered so far; empty at the top level.
   const [history, setHistory] = useState<CPVCategory[]>([]);
-  const [loadFailed, setLoadFailed] = useState(false);
   const [selectFailed, setSelectFailed] = useState(false);
-  const [loadAttempt, setLoadAttempt] = useState(0);
   const { recents, recordRecent } = useRecentCategories();
   // Public aggregate; a failure just hides the shortcut section.
   const { data: topCategories } = useQuery(topCategoriesQueryOptions);
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: loadAttempt is a re-run trigger, not a value read here; retryLoad bumps it to load again.
-  useEffect(() => {
-    let isMounted = true;
-    loadCPV()
-      .then((data) => {
-        if (!isMounted) return;
-        setCpv(data);
-        setCpvClass(data.root);
-        setHistory([data.root]);
-      })
-      .catch(() => {
-        if (isMounted) setLoadFailed(true);
-      });
-    return () => {
-      isMounted = false;
-    };
-  }, [loadAttempt]);
+  const browse = useQuery({
+    ...cpvChildrenQueryOptions(history.at(-1)?.id),
+    retry: false,
+  });
+  // Search runs on the server across every level, whatever branch is open. The previous
+  // results stay up while the next keystroke loads, so the list does not flash a spinner.
+  const search = useQuery({
+    ...productTypesSearchQueryOptions(debouncedSearchQuery),
+    enabled: debouncedSearchQuery !== '',
+    placeholderData: keepPreviousData,
+    select: (types) => types.map(asItem),
+  });
+  const active = debouncedSearchQuery ? search : browse;
 
-  const retryLoad = () => {
-    setLoadFailed(false);
-    setLoadAttempt((n) => n + 1);
-  };
+  // Stats report a type by stored name (the CPV code); resolve it to the product type row.
+  const commonNames = useMemo(() => topCategories?.map(({ name }) => name) ?? [], [topCategories]);
+  const { data: commonTypes = [] } = useQuery({
+    ...productTypeLabelsQueryOptions(commonNames),
+    select: (rows) =>
+      commonNames.flatMap((name) => rows.filter((row) => row.name === name).map(asItem)),
+  });
 
-  const selectBranch = (item: CPVCategory) => {
-    setHistory((h) => [...h, item]);
-    setCpvClass(item);
-  };
-
-  const moveUp = () => {
-    setHistory((h) => {
-      const next = h.slice(0, -1);
-      setCpvClass(next.at(-1) ?? null);
-      return next;
-    });
-  };
+  const selectBranch = (item: CPVCategory) => setHistory((h) => [...h, item]);
+  const moveUp = () => setHistory((h) => h.slice(0, -1));
 
   const selectType = useCallback(
-    async (typeId: number) => {
-      const category = cpv?.[String(typeId)];
-      if (!category) return;
+    async (item: CPVCategory) => {
       setSelectFailed(false);
       try {
-        // The snapshot's id is not the database's: resolve the row by its stored name.
-        const row = (await fetchProductTypesByName([category.name])).find(
-          (option) => option.name === category.name,
+        // Browse rows carry a category id, not the database product type id: resolve by stored name.
+        const row = (await fetchProductTypesByName([item.name])).find(
+          (option) => option.name === item.name,
         );
-        if (!row) throw new Error(`No product type named ${category.name}`);
-        recordRecent(category);
+        if (!row) throw new Error(`No product type named ${item.name}`);
+        recordRecent(item);
         // Hand the pick back through the module slot; the detail screen reads it on focus.
         setPendingTypeSelection(row.id);
         router.back();
@@ -82,30 +77,17 @@ export function useCategorySelection() {
         setSelectFailed(true);
       }
     },
-    [cpv, recordRecent, router],
+    [recordRecent, router],
   );
-
-  const filtered = useMemo((): CPVCategory[] => {
-    if (!(cpv && cpvClass)) return [];
-    if (!debouncedSearchQuery) return cpvClass.directChildren.map((childId) => cpv[childId]);
-    return filterCategories(cpv, debouncedSearchQuery);
-  }, [cpv, debouncedSearchQuery, cpvClass]);
-
-  // Stats report a type by stored name (the CPV code); resolve it to the bundled node.
-  const commonTypes = useMemo((): CPVCategory[] => {
-    if (!(cpv && topCategories?.length)) return [];
-    const byName = new Map(Object.values(cpv).map((item) => [item.name, item]));
-    return topCategories.flatMap(({ name }) => byName.get(name) ?? []);
-  }, [cpv, topCategories]);
 
   return {
     user,
-    cpvClass,
-    loadFailed,
-    selectFailed,
-    retryLoad,
     history,
-    filtered,
+    filtered: active.data ?? [],
+    loading: active.isPending,
+    loadFailed: active.isError,
+    retryLoad: active.refetch,
+    selectFailed,
     commonTypes,
     recents,
     searchQuery,
@@ -115,14 +97,4 @@ export function useCategorySelection() {
     moveUp,
     selectType,
   };
-}
-
-/** Name/description match across the whole taxonomy, whatever level is being browsed. */
-export function filterCategories(cpv: Record<string, CPVCategory>, query: string): CPVCategory[] {
-  const needle = query.toLowerCase();
-  return Object.values(cpv).filter(
-    (item) =>
-      item !== cpv.root &&
-      (item.description.toLowerCase().includes(needle) || item.name.toLowerCase().includes(needle)),
-  );
 }

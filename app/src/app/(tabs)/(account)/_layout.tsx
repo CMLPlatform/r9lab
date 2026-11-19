@@ -4,12 +4,15 @@ import { HeaderBackButton } from '@/components/base/HeaderBackButton';
 import { PlainHeaderTitle } from '@/components/base/PlainHeaderTitle';
 import { useBreakpoint } from '@/hooks/useBreakpoint';
 
-/** Account tab stack: one screen, so it keeps the same native stack header as every other tab. */
+/** Account tab stack: the account screen, plus the admin screens a superuser opens from it. */
 export default function AccountTabLayout() {
   const router = useRouter();
   const { isLg } = useBreakpoint();
   // Cross-tab target: replace() would reset every tab's trail.
   const goToProducts = useCallback(() => router.navigate('/products'), [router]);
+  // Same-stack targets, so replace is safe.
+  const goToAccount = useCallback(() => router.replace('/account'), [router]);
+  const goToUsers = useCallback(() => router.replace('/admin/users'), [router]);
   return (
     <Stack
       screenOptions={{
@@ -25,6 +28,20 @@ export default function AccountTabLayout() {
         options={{
           title: 'Account',
           headerLeft: (props) => <HeaderBackButton {...props} onPress={goToProducts} />,
+        }}
+      />
+      <Stack.Screen
+        name="admin/users/index"
+        options={{
+          title: 'Users',
+          headerLeft: (props) => <HeaderBackButton {...props} onPress={goToAccount} />,
+        }}
+      />
+      <Stack.Screen
+        name="admin/users/[id]"
+        options={{
+          title: 'User',
+          headerLeft: (props) => <HeaderBackButton {...props} onPress={goToUsers} />,
         }}
       />
     </Stack>

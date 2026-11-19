@@ -89,6 +89,7 @@ services:
         required: false
     volumes:
       - user_uploads:/opt/r9lab/backend/data/uploads
+      - erasure_ledger:/opt/r9lab/backend/data/erasure-ledger
     environment:
       DATABASE_HOST: postgres # Point to the database service
       DATABASE_PORT: 5432
@@ -247,6 +248,7 @@ services:
 volumes:
   database_data:
   user_uploads:
+  erasure_ledger:
 
 networks:
   edge:

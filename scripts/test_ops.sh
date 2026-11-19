@@ -196,10 +196,10 @@ Docker sets a named volume's ownership only when it first creates the volume, so
 r9lab_prod_user_uploads still belongs to whichever uid created it.
 Fix with: docker run --rm --user 0 -v r9lab_prod_user_uploads:/mnt busybox chown -R 65532:65532 /mnt" \
     "$(mount_alert api /opt/r9lab/backend/data/uploads volume:user_uploads no)"
-assert_eq "an unwritable bind mount asks for a host chown, not a docker one" \
+assert_eq "an unwritable or missing bind mount asks for a host mkdir and chown, not a docker one" \
     "1|error: the prod stack's backup service cannot write /restic as uid 65532.
-Docker creates a missing bind-mount directory root-owned.
-Fix with: sudo chown -R 65532:65532 /srv/backups/restic" \
+The host directory must exist (the stack does not create it) and belong to that uid.
+Fix with: mkdir -p /srv/backups/restic && sudo chown -R 65532:65532 /srv/backups/restic" \
     "$(mount_alert backup /restic host:/srv/backups/restic no)"
 
 # An unreadable .env reads back as an empty ENVIRONMENT, so without its own branch the
@@ -1016,6 +1016,45 @@ assert_eq "a failed pg_dump archives nothing, prunes nothing, and stays retryabl
 assert_eq "a failed restic backup of the dump prunes nothing and stays retryable" "1|1|0|0" \
     "$(db_cycle 0 1)"
 assert_eq "a restic exit 3 on the dump is a step error, not a refusal" "1|1|0|0" "$(db_cycle 0 3)"
+
+# The erasure ledger rides in the dump's snapshot; a missing directory archives nothing.
+# Output: exit status | the `restic backup` line names the ledger directory (yes/no).
+ledger_cycle() {
+    local tmp status
+    tmp="$(mktemp -d)"
+    mkdir -p "$tmp/bin" "$tmp/work"
+    [[ "$1" == present ]] && mkdir -p "$tmp/ledger"
+    cat >"$tmp/bin/pg_dump" <<'EOS'
+#!/usr/bin/env bash
+for arg; do [[ "$arg" == --file=* ]] && head -c 4096 /dev/zero >"${arg#--file=}"; done
+exit 0
+EOS
+    cat >"$tmp/bin/restic" <<EOS
+#!/usr/bin/env bash
+printf '%s\n' "\$*" >>"$tmp/args"
+[[ "\$1" == stats ]] && printf %s '{"total_size":4096,"snapshots_count":1}'
+exit 0
+EOS
+    chmod +x "$tmp/bin/pg_dump" "$tmp/bin/restic"
+    touch "$tmp/args"
+    PATH="$tmp/bin:$PATH" BACKUP_WORK_DIR="$tmp/work" ERASURE_LEDGER_DIR="$tmp/ledger" \
+        POSTGRES_DB=relab DATABASE_BACKUP_USER=backup DATABASE_BACKUP_PASSWORD=x bash -c '
+        set -euo pipefail
+        # shellcheck source=/dev/null
+        . backend/scripts/backup/backup_r9lab_restic.sh
+        backup_database
+    ' >/dev/null 2>&1
+    status=$?
+    if grep -q "^backup .* $tmp/ledger " "$tmp/args"; then
+        printf '%s|yes' "$status"
+    else
+        printf '%s|no' "$status"
+    fi
+    rm -rf "$tmp"
+}
+
+assert_eq "the database snapshot carries the erasure ledger" "0|yes" "$(ledger_cycle present)"
+assert_eq "a missing erasure ledger directory fails the database snapshot" "1|no" "$(ledger_cycle missing)"
 
 # ---------------------------------------------------------------------------
 # The hourly-vs-daily split: BACKUP_MAINTENANCE decides which steps run. Every step is

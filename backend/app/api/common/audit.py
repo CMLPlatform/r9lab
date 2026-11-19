@@ -18,6 +18,7 @@ class AuditAction(StrEnum):
     DELETE = "delete"
     UPDATE = "update"
     DEACTIVATE = "deactivate"
+    REACTIVATE = "reactivate"
     SUPERUSER_ACCESS = "superuser_access"
     LOGIN_SUCCESS = "login_success"
     LOGIN_FAILURE = "login_failure"

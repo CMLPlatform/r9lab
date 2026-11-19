@@ -8,6 +8,7 @@ import {
 import { useEffect } from 'react';
 import { useDialog } from '@/components/base/dialogContext';
 import { baseProductQueryOptions, componentQueryOptions } from '@/features/product-entity/queries';
+import { fetchCpvChildren } from '@/services/api/categories';
 import { ApiError } from '@/services/api/errors';
 import { getComponentTree, type ProductsQuery, products } from '@/services/api/products';
 import {
@@ -132,6 +133,14 @@ export const productTypesSearchQueryOptions = (search: string) =>
     queryKey: ['productTypes', 'search', search] as const,
     queryFn: () => searchProductTypes(search || undefined, 1, 50),
     staleTime: 2 * 60_000,
+  });
+
+/** One level of the CPV category tree; the tree changes with a reseed, so it stays fresh for a day. */
+export const cpvChildrenQueryOptions = (parentId: number | undefined) =>
+  queryOptions({
+    queryKey: ['productTypes', 'cpvTree', parentId ?? 'root'] as const,
+    queryFn: () => fetchCpvChildren(parentId),
+    staleTime: 24 * 60 * 60_000,
   });
 
 /** The most-used product types, for the picker's "Common types" shortcut. */

@@ -1003,6 +1003,29 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/v1/products/{product_id}/revisions': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get a base product's edit history
+     * @description Get a page of the product's recorded edits, newest first.
+     *
+     *     Covers the product's own fields, not its media, components or bill of materials, and
+     *     only edits made since the history was introduced. Revisions are kept for two years.
+     */
+    get: operations['get_product_revisions_v1_products__product_id__revisions_get'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/v1/products/suggestions/brands': {
     parameters: {
       query?: never;
@@ -1168,6 +1191,26 @@ export interface paths {
      * @description Update a component. Response is the lean :class:`ComponentRead` shape (no relationships).
      */
     patch: operations['update_component_v1_components__component_id__patch'];
+    trace?: never;
+  };
+  '/v1/components/{component_id}/revisions': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get a component's edit history
+     * @description Get a page of the component's recorded edits, newest first, as ``GET /products/{id}/revisions`` does.
+     */
+    get: operations['get_component_revisions_v1_components__component_id__revisions_get'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
     trace?: never;
   };
   '/v1/components/{component_id}/components': {
@@ -2196,7 +2239,7 @@ export interface paths {
     };
     /**
      * View all users
-     * @description Get a list of all users with optional filtering.
+     * @description Get a list of all users with optional filtering, without the anonymous system account.
      */
     get: operations['get_users_v1_admin_users_get'];
     put?: never;
@@ -2287,6 +2330,31 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/v1/admin/users/{user_id}/active': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    /**
+     * Suspend or reactivate a user
+     * @description Suspend (`is_active: false`) or reactivate a user without erasing anything.
+     *
+     *     A suspended account cannot sign in, and its refresh sessions are revoked; its
+     *     products stay. A dedicated route for the same reason as the role route: the
+     *     self-service `UserUpdate` schema must never carry `is_active`. A request that
+     *     matches the current state changes nothing and is not audited.
+     */
+    put: operations['set_user_active_v1_admin_users__user_id__active_put'];
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/v1/profiles/{username}': {
     parameters: {
       query?: never;
@@ -2301,6 +2369,33 @@ export interface paths {
      *     Returns 404 if the user is not found or if the profile is marked as private (and you are not the user).
      */
     get: operations['get_public_profile_v1_profiles__username__get'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/v1/users/me/export': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Download all your data as a ZIP archive
+     * @description Download your account details, every product you own and their photos and files, as one ZIP.
+     *
+     *     The archive holds ``account.json``, ``products.json``, ``products.csv`` (the same
+     *     formats as ``/products/export``, capped at 50,000 products and components together
+     *     instead of its caps), ``revisions.json``,
+     *     ``images/`` and ``files/``, grouped by product id. Uploads the server cannot read are listed in
+     *     ``missing-files.txt`` instead. The archive is built while it downloads, so its size
+     *     is not known in advance and an interrupted download starts over.
+     */
+    get: operations['export_own_account_v1_users_me_export_get'];
     put?: never;
     post?: never;
     delete?: never;
@@ -4720,6 +4815,20 @@ export interface components {
       pages: number;
       readonly links: components['schemas']['Links'];
     };
+    /** Page[TypeVar]Customized[ProductRevisionRead] */
+    Page_TypeVar_Customized_ProductRevisionRead_: {
+      /** Items */
+      items: components['schemas']['ProductRevisionRead'][];
+      /** Total */
+      total: number;
+      /** Page */
+      page: number;
+      /** Size */
+      size: number;
+      /** Pages */
+      pages: number;
+      readonly links: components['schemas']['Links'];
+    };
     /** Page[TypeVar]Customized[str] */
     Page_TypeVar_Customized_str_: {
       /** Items */
@@ -5130,6 +5239,46 @@ export interface components {
        * @description List of component products
        */
       components?: components['schemas']['ComponentRead'][];
+    };
+    /**
+     * ProductRevisionRead
+     * @description One recorded edit of a product's own fields, newest first in the history list.
+     */
+    ProductRevisionRead: {
+      /** Id */
+      id: number;
+      /**
+       * Version
+       * @description The product's version after this edit.
+       */
+      version: number;
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string;
+      /**
+       * Changed Fields
+       * @description Names of the fields this edit changed.
+       */
+      changed_fields: string[];
+      /**
+       * Snapshot
+       * @description The product's editable fields as this edit left them. Only for the owner and admins: it can hold text the owner later removed.
+       */
+      snapshot?: {
+        [key: string]: unknown;
+      } | null;
+      /**
+       * By Moderator
+       * @description Whether someone other than the owner made the edit.
+       */
+      by_moderator: boolean;
+      /**
+       * Editor Username
+       * @description Hidden when the viewer may not see the editor's profile, for a moderator's edit unless the viewer is an admin, and once the editor's account is deleted.
+       */
+      editor_username?: string | null;
     };
     /**
      * ProductSummary
@@ -5670,6 +5819,17 @@ export interface components {
      * @enum {string}
      */
     Unit: 'kg' | 'g' | 'm' | 'cm';
+    /**
+     * UserActiveUpdate
+     * @description Administrator request to suspend or reactivate one account.
+     */
+    UserActiveUpdate: {
+      /**
+       * Is Active
+       * @description False suspends the account and ends its sessions; true reactivates it.
+       */
+      is_active: boolean;
+    };
     /**
      * UserPreferences
      * @description Typed user preferences persisted as JSONB.
@@ -8554,6 +8714,42 @@ export interface operations {
       };
     };
   };
+  get_product_revisions_v1_products__product_id__revisions_get: {
+    parameters: {
+      query?: {
+        /** @description Page number */
+        page?: number;
+        /** @description Page size */
+        size?: number;
+      };
+      header?: never;
+      path: {
+        product_id: number;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['Page_TypeVar_Customized_ProductRevisionRead_'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
   get_brand_suggestions_v1_products_suggestions_brands_get: {
     parameters: {
       query?: {
@@ -9042,6 +9238,42 @@ export interface operations {
       };
     };
   };
+  get_component_revisions_v1_components__component_id__revisions_get: {
+    parameters: {
+      query?: {
+        /** @description Page number */
+        page?: number;
+        /** @description Page size */
+        size?: number;
+      };
+      header?: never;
+      path: {
+        component_id: number;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['Page_TypeVar_Customized_ProductRevisionRead_'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
   add_component_to_component_v1_components__component_id__components_post: {
     parameters: {
       query?: never;
@@ -9461,6 +9693,13 @@ export interface operations {
           'application/json': components['schemas']['MaterialProductLinkReadWithinProduct'][];
         };
       };
+      /** @description A material is already in the bill of materials. */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
       /** @description Validation Error */
       422: {
         headers: {
@@ -9562,6 +9801,13 @@ export interface operations {
         content: {
           'application/json': components['schemas']['MaterialProductLinkReadWithinProduct'];
         };
+      };
+      /** @description A material is already in the bill of materials. */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
       };
       /** @description Validation Error */
       422: {
@@ -9880,6 +10126,13 @@ export interface operations {
           'application/json': components['schemas']['MaterialProductLinkReadWithinProduct'][];
         };
       };
+      /** @description A material is already in the bill of materials. */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
       /** @description Validation Error */
       422: {
         headers: {
@@ -9981,6 +10234,13 @@ export interface operations {
         content: {
           'application/json': components['schemas']['MaterialProductLinkReadWithinProduct'];
         };
+      };
+      /** @description A material is already in the bill of materials. */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
       };
       /** @description Validation Error */
       422: {
@@ -11449,6 +11709,20 @@ export interface operations {
         };
         content?: never;
       };
+      /** @description An administrator deletes their own account through DELETE /users/me. */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description The target is the anonymous system account or the last active superuser. */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
       /** @description Validation Error */
       422: {
         headers: {
@@ -11485,6 +11759,20 @@ export interface operations {
           'application/json': components['schemas']['UserRead'];
         };
       };
+      /** @description The target is the acting administrator's own account. */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description The target is the anonymous system account. */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
       /** @description Validation Error */
       422: {
         headers: {
@@ -11510,6 +11798,20 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description The target is the acting administrator's own account. */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description The target is the anonymous system account. */
+      409: {
         headers: {
           [name: string]: unknown;
         };
@@ -11551,6 +11853,70 @@ export interface operations {
           'application/json': components['schemas']['UserRead'];
         };
       };
+      /** @description The target is the acting administrator's own account. */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description The target is the anonymous system account. */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  set_user_active_v1_admin_users__user_id__active_put: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The user's ID */
+        user_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['UserActiveUpdate'];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['UserRead'];
+        };
+      };
+      /** @description The target is the acting administrator's own account. */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description The target is the anonymous system account or the last active superuser. */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
       /** @description Validation Error */
       422: {
         headers: {
@@ -11590,6 +11956,33 @@ export interface operations {
         content: {
           'application/json': components['schemas']['HTTPValidationError'];
         };
+      };
+    };
+  };
+  export_own_account_v1_users_me_export_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/zip': string;
+        };
+      };
+      /** @description The account has more products and components than one archive takes. */
+      413: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
       };
     };
   };

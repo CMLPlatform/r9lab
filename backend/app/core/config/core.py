@@ -225,6 +225,11 @@ class CoreSettings(RelabBaseSettings):
     # Signed-in exports also share a per-IP ceiling, so throwaway accounts on one IP cannot
     # each claim the per-user budget. 3x the per-user rate leaves room for a shared room.
     api_export_rate_limit_signed_in_per_ip: str = "90/minute"
+    # The personal archive streams every photo the account uploaded (up to its quota), so
+    # a few downloads an hour are enough; the budget is per user, or per IP before sign-in.
+    api_account_export_rate_limit: str = "5/hour"
+    # Signed-in archive downloads also share a per-IP ceiling, 3x the per-user rate as for exports.
+    api_account_export_rate_limit_signed_in_per_ip: str = "15/hour"
     r9cam_ws_auth_rate_limit: str = "10/minute"
     r9cam_ws_binary_frame_limit_bytes: int = Field(default=10 * 1024 * 1024, ge=1024, le=50 * 1024 * 1024)
     trusted_proxy_cidrs: tuple[str, ...] = ("127.0.0.0/8", "::1/128")
@@ -268,6 +273,9 @@ class CoreSettings(RelabBaseSettings):
     image_storage_path: Path = uploads_path / "images"
     static_files_path: Path = BACKEND_DIR / "app" / "static"
     log_path: Path = BACKEND_DIR / "logs"
+    # Outside Postgres on purpose, so a database restore cannot roll it back; deploys bind
+    # it from the backup disk (compose.deploy.yaml).
+    erasure_ledger_path: Path = BACKEND_DIR / "data" / "erasure-ledger" / "erasures.jsonl"
 
     @property
     def debug(self) -> bool:

@@ -4,7 +4,9 @@ import { act, waitFor } from '@testing-library/react-native';
 import { baseProductQueryOptions, componentQueryOptions } from '@/features/product-entity/queries';
 import {
   brandsSearchQueryOptions,
+  cpvChildrenQueryOptions,
   productsInfiniteQueryOptions,
+  productTypeLabelsQueryOptions,
   productTypesSearchQueryOptions,
 } from '@/features/products/queries';
 import { serializePersistedClient, shouldDehydrateQuery } from '@/services/persistedQueryCache';
@@ -46,6 +48,9 @@ describe('shouldDehydrateQuery (persisted-cache allowlist)', () => {
       componentQueryOptions(1).queryKey,
       brandsSearchQueryOptions('').queryKey,
       productTypesSearchQueryOptions('').queryKey,
+      productTypeLabelsQueryOptions(['CPV: 03']).queryKey,
+      cpvChildrenQueryOptions(undefined).queryKey,
+      cpvChildrenQueryOptions(5).queryKey,
     ];
 
     for (const queryKey of queryKeys) {

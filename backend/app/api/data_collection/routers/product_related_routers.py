@@ -1,6 +1,6 @@
 """Routers for product-related resources like videos and materials."""
 
-from typing import TYPE_CHECKING, Annotated
+from typing import TYPE_CHECKING, Annotated, Any
 
 from fastapi import Body, Depends, Path
 from pydantic import PositiveInt
@@ -57,6 +57,9 @@ if TYPE_CHECKING:
     from sqlalchemy import Select
 
 product_related_router = PublicAPIRouter(prefix="/products", tags=["products"])
+_MATERIAL_ALREADY_ASSIGNED: dict[int | str, dict[str, Any]] = {
+    409: {"description": "A material is already in the bill of materials."}
+}
 _VIDEO_FILTER_DEPENDENCY = create_filter_dependency(VideoFilter)
 
 
@@ -195,6 +198,7 @@ async def get_material_in_product_bill_of_materials(
     response_model=list[MaterialProductLinkReadWithinProduct],
     status_code=201,
     summary="Add multiple materials to product bill of materials",
+    responses=_MATERIAL_ALREADY_ASSIGNED,
     dependencies=[API_WRITE_RATE_LIMIT_DEPENDENCY],
 )
 async def add_materials_to_product(
@@ -217,6 +221,7 @@ async def add_materials_to_product(
     response_model=MaterialProductLinkReadWithinProduct,
     status_code=201,
     summary="Add single material to product bill of materials",
+    responses=_MATERIAL_ALREADY_ASSIGNED,
     dependencies=[API_WRITE_RATE_LIMIT_DEPENDENCY],
 )
 async def add_material_to_product(

@@ -4,19 +4,22 @@ from typing import Annotated
 
 from fastapi import Body, HTTPException
 from fastapi.responses import JSONResponse
+from fastapi_pagination.links import Page
 from pydantic import PositiveInt
 
 from app.api.auth.dependencies import CurrentActiveVerifiedUserDep, OptionalCurrentActiveUserDep
-from app.api.auth.services.rate_limiter import API_WRITE_RATE_LIMIT_DEPENDENCY
+from app.api.auth.services.rate_limiter import API_READ_RATE_LIMIT_DEPENDENCY, API_WRITE_RATE_LIMIT_DEPENDENCY
 from app.api.common.audiences import PublicAPIRouter
 from app.api.common.idempotency import IDEMPOTENCY_RESPONSES, IdempotencyKeyDep, idempotent_request
 from app.api.common.routers.dependencies import AsyncSessionDep
 from app.api.data_collection.crud.product_commands import create_component
 from app.api.data_collection.crud.product_commands import delete_product as delete_product_record
 from app.api.data_collection.crud.product_commands import update_product as update_product_record
+from app.api.data_collection.crud.product_revisions import page_product_revisions
 from app.api.data_collection.crud.product_tree_queries import require_product_detail
 from app.api.data_collection.dependencies import (
     IF_MATCH_OPENAPI_EXTRA,
+    ComponentDep,
     ModeratableComponentDep,
     ProductIfMatchVersionDep,
     UserOwnedComponentDep,
@@ -28,6 +31,7 @@ from app.api.data_collection.schemas import (
     ComponentRead,
     ComponentReadWithRecursiveComponents,
     ComponentReadWithRelationshipsAndFlatComponents,
+    ProductRevisionRead,
     ProductUpdate,
 )
 from app.core.redis import RedisDep
@@ -53,6 +57,21 @@ async def get_component(
             detail=f"ID {component_id} belongs to a base product; use /products/{{id}} instead.",
         )
     return to_read_model(product, ComponentReadWithRelationshipsAndFlatComponents, current_user)
+
+
+@component_core_router.get(
+    "/{component_id}/revisions",
+    response_model=Page[ProductRevisionRead],
+    summary="Get a component's edit history",
+    dependencies=[API_READ_RATE_LIMIT_DEPENDENCY],
+)
+async def get_component_revisions(
+    db_component: ComponentDep,
+    session: AsyncSessionDep,
+    current_user: OptionalCurrentActiveUserDep,
+) -> Page[ProductRevisionRead]:
+    """Get a page of the component's recorded edits, newest first, as ``GET /products/{id}/revisions`` does."""
+    return await page_product_revisions(session, db_component, current_user)
 
 
 @component_core_router.post(
