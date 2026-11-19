@@ -60,6 +60,8 @@ export function useProductMaterials(product: Product, enabled: boolean) {
     onError: onError("Couldn't add material"),
   });
   const update = useMutation({
+    // One at a time: two quick unit changes sent together could land in either order.
+    scope: { id: `product-materials:${productId}` },
     mutationFn: (v: { materialID: number; quantity?: number; unit?: ApiMaterialUnit }) =>
       updateProductMaterial(product, v.materialID, {
         ...(v.quantity === undefined ? {} : { quantity: v.quantity }),

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { AccessibilityInfo, Platform, View } from 'react-native';
 import Animated, { LayoutAnimationConfig } from 'react-native-reanimated';
 import { AppButton } from '@/components/base/AppButton';
@@ -191,6 +191,14 @@ function MaterialRow({
   );
 }
 
+// Arrow keys of the WAI-ARIA radio group pattern, as a step through UNITS.
+const UNIT_KEY_STEP: Record<string, number> = {
+  ArrowRight: 1,
+  ArrowDown: 1,
+  ArrowLeft: -1,
+  ArrowUp: -1,
+};
+
 function UnitChoice({
   label,
   value,
@@ -200,15 +208,49 @@ function UnitChoice({
   value: ApiMaterialUnit;
   onChange: (unit: ApiMaterialUnit) => void;
 }) {
+  const buttons = useRef<(View | null)[]>([]);
+  const web = Platform.OS === 'web';
+  // Web only: native screen readers move between radios with their own gestures.
+  // Arrow keys move and select, and only the checked unit is a Tab stop (roving tabindex).
+  // The unit last asked for: `value` only catches up once the save lands, and a second
+  // arrow press before then must step on from the first.
+  const requested = useRef(value);
+  useEffect(() => {
+    requested.current = value;
+  }, [value]);
+  const handleKeyDown = (event: {
+    key: string;
+    altKey?: boolean;
+    ctrlKey?: boolean;
+    metaKey?: boolean;
+    shiftKey?: boolean;
+    preventDefault: () => void;
+  }) => {
+    const step = UNIT_KEY_STEP[event.key];
+    // Modified arrows belong to the browser (Alt+Left is Back) and to text selection.
+    if (!step || event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
+    event.preventDefault();
+    const next = (UNITS.indexOf(requested.current) + step + UNITS.length) % UNITS.length;
+    requested.current = UNITS[next];
+    onChange(UNITS[next]);
+    buttons.current[next]?.focus();
+  };
   return (
     <View
       accessibilityRole="radiogroup"
       accessibilityLabel={label}
       className="flex-row flex-wrap gap-2"
+      // Spread: RN's TypeScript types omit onKeyDown on View; react-native-web takes it.
+      {...(web ? { onKeyDown: handleKeyDown } : {})}
     >
-      {UNITS.map((unit) => (
+      {UNITS.map((unit, index) => (
         <AppButton
           key={unit}
+          // biome-ignore lint/performance/noJsxPropsBind: four short buttons, re-rendered only on a data change.
+          ref={(node) => {
+            buttons.current[index] = node;
+          }}
+          tabIndex={web ? (unit === value ? 0 : -1) : undefined}
           variant={unit === value ? 'tonal' : 'outline'}
           role="radio"
           // aria-checked, not only accessibilityState: react-native-web drops the latter.
