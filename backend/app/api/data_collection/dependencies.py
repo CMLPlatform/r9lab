@@ -26,15 +26,28 @@ ProductFilterWithRelationshipsDep = Annotated[
 
 
 ### Optimistic concurrency ###
+_IF_MATCH_DESCRIPTION = (
+    'The `version` field from the product\'s last read, quoted: `"3"`. '
+    "Not the `ETag` a GET returns: that one also changes with media. "
+    "A missing header is refused with 428, a stale or malformed value with 412."
+)
+# The parameter is optional in Python so a missing header answers 428, so the schema
+# declares it here as required instead of from the signature.
+IF_MATCH_OPENAPI_EXTRA = {
+    "parameters": [
+        {
+            "name": "if-match",
+            "in": "header",
+            "required": True,
+            "schema": {"type": "string", "title": "If-Match"},
+            "description": _IF_MATCH_DESCRIPTION,
+        }
+    ]
+}
+
+
 def product_if_match_version(
-    if_match: Annotated[
-        str | None,
-        Header(
-            description='Required. The `version` field from the product\'s last read, quoted: `"3"`. '
-            "Not the `ETag` a GET returns: that one also changes with media. "
-            "A missing header is refused with 428, a stale or malformed value with 412.",
-        ),
-    ] = None,
+    if_match: Annotated[str | None, Header(include_in_schema=False)] = None,
 ) -> int:
     """Parse the required ``If-Match: "<version>"`` header on product updates."""
     # Optional in the signature so a missing header answers 428 (RFC 6585), not a 422.

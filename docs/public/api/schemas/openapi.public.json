@@ -9499,21 +9499,13 @@
             }
           },
           {
-            "description": "Required. The `version` field from the product's last read, quoted: `\"3\"`. Not the `ETag` a GET returns: that one also changes with media. A missing header is refused with 428, a stale or malformed value with 412.",
+            "description": "The `version` field from the product's last read, quoted: `\"3\"`. Not the `ETag` a GET returns: that one also changes with media. A missing header is refused with 428, a stale or malformed value with 412.",
             "in": "header",
             "name": "if-match",
-            "required": false,
+            "required": true,
             "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "description": "Required. The `version` field from the product's last read, quoted: `\"3\"`. Not the `ETag` a GET returns: that one also changes with media. A missing header is refused with 428, a stale or malformed value with 412.",
-              "title": "If-Match"
+              "title": "If-Match",
+              "type": "string"
             }
           }
         ],
@@ -16728,21 +16720,13 @@
             }
           },
           {
-            "description": "Required. The `version` field from the product's last read, quoted: `\"3\"`. Not the `ETag` a GET returns: that one also changes with media. A missing header is refused with 428, a stale or malformed value with 412.",
+            "description": "The `version` field from the product's last read, quoted: `\"3\"`. Not the `ETag` a GET returns: that one also changes with media. A missing header is refused with 428, a stale or malformed value with 412.",
             "in": "header",
             "name": "if-match",
-            "required": false,
+            "required": true,
             "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "description": "Required. The `version` field from the product's last read, quoted: `\"3\"`. Not the `ETag` a GET returns: that one also changes with media. A missing header is refused with 428, a stale or malformed value with 412.",
-              "title": "If-Match"
+              "title": "If-Match",
+              "type": "string"
             }
           }
         ],

@@ -25,6 +25,7 @@ from app.api.data_collection.crud.product_commands import create_product as crea
 from app.api.data_collection.crud.product_commands import delete_product as delete_product_record
 from app.api.data_collection.crud.product_commands import update_product as update_product_record
 from app.api.data_collection.dependencies import (
+    IF_MATCH_OPENAPI_EXTRA,
     BaseProductDep,
     ModeratableBaseProductDep,
     ProductIfMatchVersionDep,
@@ -115,6 +116,7 @@ async def create_product(
         412: {"description": "The record changed since the `version` sent in `If-Match`."},
         428: {"description": "The `If-Match` header is missing."},
     },
+    openapi_extra=IF_MATCH_OPENAPI_EXTRA,
 )
 async def update_product(
     product_update: ProductUpdate,

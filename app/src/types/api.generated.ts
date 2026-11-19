@@ -8213,9 +8213,9 @@ export interface operations {
   update_product_v1_products__product_id__patch: {
     parameters: {
       query?: never;
-      header?: {
-        /** @description Required. The `version` field from the product's last read, quoted: `"3"`. Not the `ETag` a GET returns: that one also changes with media. A missing header is refused with 428, a stale or malformed value with 412. */
-        'if-match'?: string | null;
+      header: {
+        /** @description The `version` field from the product's last read, quoted: `"3"`. Not the `ETag` a GET returns: that one also changes with media. A missing header is refused with 428, a stale or malformed value with 412. */
+        'if-match': string;
       };
       path: {
         product_id: number;
@@ -8993,9 +8993,9 @@ export interface operations {
   update_component_v1_components__component_id__patch: {
     parameters: {
       query?: never;
-      header?: {
-        /** @description Required. The `version` field from the product's last read, quoted: `"3"`. Not the `ETag` a GET returns: that one also changes with media. A missing header is refused with 428, a stale or malformed value with 412. */
-        'if-match'?: string | null;
+      header: {
+        /** @description The `version` field from the product's last read, quoted: `"3"`. Not the `ETag` a GET returns: that one also changes with media. A missing header is refused with 428, a stale or malformed value with 412. */
+        'if-match': string;
       };
       path: {
         component_id: number;
