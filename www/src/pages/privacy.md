@@ -52,7 +52,7 @@ External videos are the exception, which is why they never load on their own. Ch
 
 **Updates:** Project updates may be shared on GitHub and LinkedIn. Optional account update emails follow your account preferences.
 
-**Account holders:** You can view, update, and delete your account in the app. Deleting it erases your account details: your email address, username, sign-ins, and cameras. Your products, photos, and any text you wrote in product records stay public without your name. That includes the original file names of your photos. To have your uploads removed as well, email us.
+**Account holders:** You can view, update, and delete your account in the app. In the web app, **Download your data** on the Account screen gives you your account details, products, photos, and files as one ZIP file. Deleting it erases your account details: your email address, username, sign-ins, and cameras. Your products, photos, and any text you wrote in product records stay public without your name. That includes the original file names of your photos. To have your uploads removed as well, email us.
 
 **Backups:** Deleting your account or your uploads removes them from the live platform straight away. Copies stay in our encrypted backups until those backups expire, which takes up to 13 months. Backups we take by hand before maintenance are kept until we delete them. We use backups only to restore the service. To keep a restore from bringing a deleted account back, we keep a list of the internal ids of deleted accounts, with no names or email addresses, indefinitely, and delete those accounts again after every restore.
 

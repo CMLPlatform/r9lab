@@ -112,6 +112,25 @@ response that asks you to narrow the filters. An invalid filter parameter return
 [dataset release](../../project/dataset/).
 :::
 
+## Downloading all your data
+
+`GET /v1/users/me/export` returns everything your account holds as one ZIP file, named
+`r9lab-export-<username>-<date>.zip`. It needs a signed-in session and only ever contains your own
+data. In the web app, the same download is **Download your data** under **Your data** on the
+Account screen. The native app does not offer it; use the web app.
+
+- `account.json`: your profile, preferences, linked Google or GitHub sign-ins, contributor-terms
+  acceptance and cameras. No passwords, tokens or keys.
+- `products.json` and `products.csv`: every base product you own with its components, in the
+  export shapes above.
+- `images/<id>/` and `files/<id>/`: the photos and research files of product or component `<id>`,
+  as uploaded, one file per image or file id.
+- `missing-files.txt`: present only when some uploads could not be read; it lists them.
+
+The export limits above do not apply: the archive holds all your products, and its size is bounded
+by your upload quota. The ZIP is built while it downloads, so the browser shows no total size, and an
+interrupted download starts over. You can download it 5 times an hour.
+
 ## Integration advice
 
 - Build against the generated OpenAPI schema, not copied examples, which drift.

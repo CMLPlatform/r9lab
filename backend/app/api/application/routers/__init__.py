@@ -2,10 +2,12 @@
 
 from .account_erasure import router as account_erasure_router
 from .account_erasure import self_service_router as account_self_erasure_router
+from .account_export import router as account_export_router
 from .public_profile import router as public_profile_router
 
 all_routers = [
     public_profile_router,
     account_erasure_router,
     account_self_erasure_router,
+    account_export_router,
 ]

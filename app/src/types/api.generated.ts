@@ -2309,6 +2309,32 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/v1/users/me/export': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Download all your data as a ZIP archive
+     * @description Download your account details, every product you own and their photos and files, as one ZIP.
+     *
+     *     The archive holds ``account.json``, ``products.json``, ``products.csv`` (the same
+     *     formats as ``/products/export``, without its size caps), ``images/`` and ``files/``,
+     *     grouped by product id. Uploads the server cannot read are listed in
+     *     ``missing-files.txt`` instead. The archive is built while it downloads, so its size
+     *     is not known in advance and an interrupted download starts over.
+     */
+    get: operations['export_own_account_v1_users_me_export_get'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/v1/plugins/r9cam/cameras': {
     parameters: {
       query?: never;
@@ -11589,6 +11615,26 @@ export interface operations {
         };
         content: {
           'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  export_own_account_v1_users_me_export_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/zip': string;
         };
       };
     };

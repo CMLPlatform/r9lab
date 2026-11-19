@@ -202,6 +202,7 @@ def test_dos_hardening_defaults_are_conservative() -> None:
     assert settings.api_write_rate_limit == "120/minute"
     assert settings.api_upload_rate_limit == "30/minute"
     assert settings.api_export_rate_limit == "10/minute"
+    assert settings.api_account_export_rate_limit == "5/hour"
     assert settings.r9cam_ws_auth_rate_limit == "10/minute"
     assert settings.r9cam_ws_binary_frame_limit_bytes == 10_485_760
     assert settings.trusted_proxy_cidrs == ("127.0.0.0/8", "::1/128")

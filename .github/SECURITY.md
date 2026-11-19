@@ -99,6 +99,11 @@ Security-sensitive areas:
     than 10 levels is refused as well.
     Owner attribution follows the same profile-visibility redaction as the product page. CSV cells
     that a spreadsheet would read as a formula are prefixed with `'`.
+  - The account archive (`GET /users/me/export`) is the one export without those caps: it streams
+    every product, photo and file the signed-in user owns, bounded by their upload quota. It needs
+    a session, reads only rows owned by that user, and carries its own budget of 5 an hour per
+    user (`API_ACCOUNT_EXPORT_RATE_LIMIT`). `account.json` is built from `UserRead`, so no password
+    hash, MFA material or OAuth token reaches it; camera entries carry no keys.
   - Component reads carry the per-IP read limit, as do the product search and facet routes. The
     direct list (`/products/{id}/components`) is paged; the tree (`/products/{id}/components/tree`)
     returns at most 1,000 components across all levels and fails with a `400` past that, checked

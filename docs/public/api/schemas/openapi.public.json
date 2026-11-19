@@ -21161,6 +21161,41 @@
         ]
       }
     },
+    "/v1/users/me/export": {
+      "get": {
+        "description": "Download your account details, every product you own and their photos and files, as one ZIP.\n\nThe archive holds ``account.json``, ``products.json``, ``products.csv`` (the same\nformats as ``/products/export``, without its size caps), ``images/`` and ``files/``,\ngrouped by product id. Uploads the server cannot read are listed in\n``missing-files.txt`` instead. The archive is built while it downloads, so its size\nis not known in advance and an interrupted download starts over.",
+        "operationId": "export_own_account_v1_users_me_export_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/zip": {
+                "schema": {
+                  "format": "binary",
+                  "type": "string"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          },
+          {
+            "APIKeyCookie": []
+          }
+        ],
+        "summary": "Download all your data as a ZIP archive",
+        "tags": [
+          "users"
+        ],
+        "x-audience": [
+          "public",
+          "app"
+        ]
+      }
+    },
     "/v1/users/{user_id}/products": {
       "get": {
         "description": "Get base products collected by a specific user.",

@@ -8,6 +8,7 @@ import {
   ProfileLinkedAccountsSection,
 } from '@/components/profile/AccountSections';
 import { ContributorTermsAction } from '@/components/profile/ContributorTermsAction';
+import { DataExportAction } from '@/components/profile/DataExportAction';
 import { ProfileIntegrationsSection } from '@/components/profile/Integrations';
 import {
   ProfileAppearanceSection,
@@ -17,7 +18,13 @@ import {
 import { ProfileSecuritySection } from '@/components/profile/SecuritySection';
 import type { useProfileScreen } from '@/features/profile/useProfileScreen';
 
-export type AccountSectionKey = 'preferences' | 'integrations' | 'security' | 'about' | 'danger';
+export type AccountSectionKey =
+  | 'preferences'
+  | 'integrations'
+  | 'security'
+  | 'data'
+  | 'about'
+  | 'danger';
 
 export type AccountSectionContext = ReturnType<typeof useProfileScreen> & {
   onManageCameras: () => void;
@@ -121,6 +128,12 @@ export const ACCOUNT_SECTIONS: AccountSectionDef[] = [
         </>
       );
     },
+  },
+  {
+    key: 'data',
+    label: 'Your data',
+    title: 'Your data',
+    render: () => <DataExportAction />,
   },
   {
     key: 'about',

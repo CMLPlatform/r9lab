@@ -48,6 +48,12 @@ API_EXPORT_RATE_LIMIT_DEPENDENCY = limiter.dependency(
     per_user=(core_settings.api_export_rate_limit_per_user, request_access_token_owner_id),
     signed_in_ip_ceiling=core_settings.api_export_rate_limit_signed_in_per_ip,
 )
+API_ACCOUNT_EXPORT_RATE_LIMIT_DEPENDENCY = limiter.dependency(
+    core_settings.api_account_export_rate_limit,
+    name="api_account_export_rate_limit",
+    scope="account_export",
+    per_user=(core_settings.api_account_export_rate_limit, request_access_token_owner_id),
+)
 
 
 @asynccontextmanager

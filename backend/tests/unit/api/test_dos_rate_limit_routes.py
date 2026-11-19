@@ -10,6 +10,7 @@ from fastapi.routing import APIRoute, iter_route_contexts
 from httpx import ASGITransport
 
 from app.api.application.routers.account_erasure import self_service_router as account_self_service_router
+from app.api.application.routers.account_export import router as account_export_router
 from app.api.common.rate_limiting import Limiter, RateLimitExceededError, rate_limit_exceeded_handler
 from app.api.data_collection.routers.component_core_routers import component_core_router
 from app.api.data_collection.routers.component_media_routers import component_media_router
@@ -68,6 +69,11 @@ def test_product_export_routes_have_the_export_rate_limit() -> None:
     """Exports assemble whole product trees, so they carry a stricter limit than ordinary reads."""
     _assert_rate_limited(_route(product_read_router, "/products/export", "GET"), "api_export_rate_limit")
     _assert_rate_limited(_route(product_read_router, "/products/{product_id}/export", "GET"), "api_export_rate_limit")
+
+
+def test_account_archive_route_has_its_own_rate_limit() -> None:
+    """The account archive streams every upload the user owns, so it gets an hourly budget of its own."""
+    _assert_rate_limited(_route(account_export_router, "/users/me/export", "GET"), "api_account_export_rate_limit")
 
 
 def test_product_and_component_upload_routes_are_rate_limited() -> None:
