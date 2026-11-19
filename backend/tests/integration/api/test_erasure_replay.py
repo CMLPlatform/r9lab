@@ -9,7 +9,7 @@ from sqlalchemy import Table, insert, select, update
 
 from app.api.application.account_erasure import ANONYMOUS_USER_EMAIL, erase_user, replay_erasures
 from app.api.auth.models import OAuthAccount, User
-from app.api.data_collection.models.product import Product
+from app.api.data_collection.models.product import Product, ProductRevision
 from app.api.plugins.r9cam.models import Camera
 from scripts.seed.factories.models import CameraFactory
 from tests.integration.api.auth.shared import create_password_user, link_google
@@ -27,6 +27,7 @@ EMAIL = "leaving@example.com"
 USERS = cast("Table", User.__table__)
 OAUTH_ACCOUNTS = cast("Table", OAuthAccount.__table__)
 CAMERAS = cast("Table", Camera.__table__)
+REVISIONS = cast("Table", ProductRevision.__table__)
 
 
 async def _rows(session: AsyncSession, table: Table, column: str, value: object) -> list[dict[str, Any]]:
@@ -40,6 +41,8 @@ async def _snapshot(session: AsyncSession, user_id: object) -> dict[Table, list[
         USERS: await _rows(session, USERS, "id", user_id),
         OAUTH_ACCOUNTS: await _rows(session, OAUTH_ACCOUNTS, "user_id", user_id),
         CAMERAS: await _rows(session, CAMERAS, "owner_id", user_id),
+        # The owner's edits of their own products; a dump holds the text those edits left.
+        REVISIONS: await _rows(session, REVISIONS, "editor_id", user_id),
     }
 
 
@@ -65,6 +68,12 @@ async def test_replay_erases_an_account_a_restore_brought_back(
     await link_google(db_session, user)
     await CameraFactory.create_async(session=db_session, owner_id=user.id)
     await db_session.flush()
+    db_session.add(
+        ProductRevision(
+            product_id=product.id, editor_id=user.id, version=1, changed_fields=["name"], snapshot={"name": "Old"}
+        )
+    )
+    await db_session.flush()
     user_id, product_id = user.id, product.id
     before = await _snapshot(db_session, user_id)
     assert all(before.values())
@@ -79,7 +88,7 @@ async def test_replay_erases_an_account_a_restore_brought_back(
         await db_session.execute(insert(table), rows)
     await db_session.execute(update(Product).where(Product.id == product_id).values(owner_id=user_id))
     await db_session.commit()
-    assert await _personal_rows(db_session, user_id) == 3
+    assert await _personal_rows(db_session, user_id) == 4
 
     assert await replay_erasures(db_session, [erasure_ledger_path]) is True
 

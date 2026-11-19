@@ -17,6 +17,7 @@ from app.api.file_storage.models import Image
 from app.api.plugins.r9cam.models import Camera
 from tests.constants import IF_MATCH_FRESH
 from tests.fixtures.client import override_authenticated_user
+from tests.integration.api.auth.shared import link_google
 
 if TYPE_CHECKING:
     from fastapi import FastAPI
@@ -26,6 +27,31 @@ if TYPE_CHECKING:
     from app.api.auth.models import User
 
 pytestmark = pytest.mark.api
+
+ACCOUNT_KEYS = {
+    "id",
+    "email",
+    "username",
+    "is_active",
+    "is_superuser",
+    "is_verified",
+    "role",
+    "preferences",
+    "has_usable_password",
+    "mfa_enabled",
+    "oauth_accounts",
+    "terms_acceptance_required",
+    "terms_accepted_at",
+    "terms_accepted_version",
+    "image_upload_max_bytes",
+    "image_upload_max_pixels",
+    "upload_file_count",
+    "upload_quota_bytes",
+    "upload_quota_files",
+    "upload_total_bytes",
+    "created_at",
+    "cameras",
+}
 
 # 1x1 pixel GIF
 GIF_BYTES = (
@@ -91,7 +117,7 @@ async def test_export_holds_the_account_its_products_and_their_photos(
             relay_key_id="key-2",
         )
     )
-    await db_session.flush()
+    await link_google(db_session, db_user)
     with override_authenticated_user(test_app, db_user):
         product_image = await _upload_image(api_client, f"/v1/products/{product_id}/images")
         component_image = await _upload_image(api_client, f"/v1/components/{component_id}/images")
@@ -114,10 +140,11 @@ async def test_export_holds_the_account_its_products_and_their_photos(
     assert account["id"] == str(db_user.id)
     assert account["email"] == db_user.email
     assert [camera["name"] for camera in account["cameras"]] == ["Bench camera"]
-    # No secrets: no password hash, MFA material, camera keys or OAuth tokens.
-    raw_account = archive.read("account.json").decode()
-    for secret_field in ("hashed_password", "mfa_totp_secret", "mfa_recovery_codes", "relay_", "access_token"):
-        assert secret_field not in raw_account
+    # An allowlist, so a new column cannot reach the archive unreviewed: no password hash,
+    # MFA material, camera keys or OAuth tokens.
+    assert set(account) == ACCOUNT_KEYS
+    assert [set(oauth) for oauth in account["oauth_accounts"]] == [{"oauth_name", "account_id", "account_email"}]
+    assert [set(camera) for camera in account["cameras"]] == [{"id", "name", "description", "created_at"}]
 
     [exported] = json.loads(archive.read("products.json"))
     assert exported["id"] == product_id

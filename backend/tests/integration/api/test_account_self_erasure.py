@@ -18,7 +18,7 @@ from app.api.auth.services import mfa_service
 from app.api.auth.services.account_security import RECENT_SIGN_IN_WINDOW
 from app.api.auth.services.session_flow import SESSION_LOGOUT_CLEAR_SITE_DATA
 from app.api.common.audit import AuditAction, AuditContext
-from app.api.data_collection.models.product import Product
+from app.api.data_collection.models.product import Product, ProductRevision
 from app.api.plugins.r9cam.models import Camera
 from scripts.seed.factories.models import CameraFactory, UserFactory
 from tests.fixtures.auth import totp_code
@@ -65,6 +65,14 @@ async def test_self_deletion_anonymizes_content_and_erases_the_account(
     await link_google(db_session, user)
     camera = await CameraFactory.create_async(session=db_session, owner_id=user.id)
     await db_session.flush()
+    # The values an edit left are the owner's text, so the history goes with the account.
+    db_session.add_all(
+        ProductRevision(
+            product_id=row.id, editor_id=user.id, version=1, changed_fields=["name"], snapshot={"name": row.name}
+        )
+        for row in (product, component)
+    )
+    await db_session.flush()
     user_id = user.id
     headers, refresh_token = await _login(api_client, user)
 
@@ -82,6 +90,9 @@ async def test_self_deletion_anonymizes_content_and_erases_the_account(
         .all()
     )
     assert list(owners) == [anonymous_id, anonymous_id]
+    assert not await _row_exists(
+        db_session, select(ProductRevision.id).where(ProductRevision.product_id.in_([product.id, component.id]))
+    )
     assert not await _row_exists(db_session, select(User.id).where(User.id == user_id))
     assert not await _row_exists(db_session, select(Camera.id).where(Camera.id == camera.id))
     assert not await _row_exists(db_session, select(OAuthAccount.id).where(OAuthAccount.user_id == user_id))
