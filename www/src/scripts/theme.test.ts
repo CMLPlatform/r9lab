@@ -49,9 +49,9 @@ afterEach(() => {
 });
 
 describe('getStoredTheme', () => {
-  it('falls back to the pre-rename storage key', () => {
+  it('ignores the pre-rename storage key', () => {
     window.localStorage.setItem('relab-theme', 'dark');
-    expect(getStoredTheme()).toBe('dark');
+    expect(getStoredTheme()).toBe('system');
     window.localStorage.setItem(STORAGE_KEY, 'light');
     expect(getStoredTheme()).toBe('light');
   });
@@ -105,6 +105,10 @@ describe('applyTheme', () => {
 });
 
 describe('initThemeControl', () => {
+  afterEach(() => {
+    (document as unknown as { startViewTransition?: unknown }).startViewTransition = undefined;
+  });
+
   function buildControl() {
     document.body.innerHTML = `
       <div data-theme-control>
@@ -189,10 +193,6 @@ describe('initThemeControl', () => {
       startViewTransition;
     return startViewTransition;
   }
-
-  afterEach(() => {
-    (document as unknown as { startViewTransition?: unknown }).startViewTransition = undefined;
-  });
 
   it('crossfades the theme swap through a View Transition', () => {
     mockQueries({ prefersReducedMotion: false });

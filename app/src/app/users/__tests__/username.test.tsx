@@ -1,7 +1,7 @@
 import { fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { useGlobalSearchParams } from 'expo-router';
 import { HttpResponse, http } from 'msw';
-import type { ReactNode } from 'react';
+import { Children, isValidElement, type ReactElement, type ReactNode } from 'react';
 import { AccessibilityInfo } from 'react-native';
 import UserProfileScreen from '@/app/users/[username]';
 import { API_URL } from '@/config';
@@ -10,6 +10,24 @@ import type { PublicProfileView } from '@/services/api/profiles';
 import { getPublicProfile } from '@/services/api/profiles';
 import { mockPlatform, renderWithProviders, restorePlatform } from '@/test-utils/index';
 import { server } from '@/test-utils/server';
+
+// Capture the head children: the test renderer cannot mount <title> or <meta>.
+let mockHeadChildren: ReactNode;
+jest.mock('expo-router/head', () => ({
+  __esModule: true,
+  default: ({ children }: { children: ReactNode }) => {
+    mockHeadChildren = children;
+    return null;
+  },
+}));
+
+function headDescription(): string | undefined {
+  const meta = Children.toArray(mockHeadChildren).find(
+    (child): child is ReactElement<{ content: string }> =>
+      isValidElement(child) && child.type === 'meta',
+  );
+  return meta?.props.content;
+}
 
 jest.mock('@/services/api/profiles');
 jest.mock('expo-router', () => {
@@ -49,6 +67,15 @@ describe('UserProfileScreen', () => {
     await renderWithProviders(<UserProfileScreen />, { withAuth: true });
     await waitFor(() => expect(screen.getByRole('progressbar')).toBeOnTheScreen());
     expect(screen.queryByText('alice')).toBeNull();
+  });
+
+  it('sets a meta description only once the profile exists', async () => {
+    mockGetPublicProfile.mockResolvedValue(profileFixture);
+    await renderWithProviders(<UserProfileScreen />, { withAuth: true });
+    expect(headDescription()).toBeUndefined();
+
+    await waitFor(() => expect(screen.getByText('alice')).toBeOnTheScreen());
+    expect(headDescription()).toBe('Products documented by alice on R9lab.');
   });
 
   it('renders the profile card with all stats on success', async () => {

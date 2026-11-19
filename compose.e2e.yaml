@@ -30,7 +30,7 @@ services:
       REDIS_HOST: redis
     env_file: ./backend/.env.test
     healthcheck:
-      test: [ "CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/live', timeout=5)" ]
+      test: [ "CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/livez', timeout=5)" ]
       interval: 10s
       timeout: 5s
       start_period: 30s

@@ -1,11 +1,11 @@
 ---
-title: RPi camera plugin architecture
+title: r9cam architecture
 description: How the R9lab Raspberry Pi camera plugin talks to the backend and app clients.
 ---
 
-The optional RPi camera plugin connects camera devices to R9lab for remote capture, HLS preview streaming, and YouTube streaming. The backend is the control plane and default relay path. When the camera and client share a LAN, the app can switch to direct local access for lower-latency preview and capture.
+The optional r9cam plugin (the Raspberry Pi camera) connects camera devices to R9lab for remote capture, HLS preview streaming, and YouTube streaming. The backend is the control plane and default relay path. When the camera and client share a LAN, the app can switch to direct local access for lower-latency preview and capture.
 
-For setup and usage, see the [RPi camera user guide](../../user-guides/r9cam/). For endpoints, see the [API reference overview](/api-reference/). For device installation, see the [r9cam repository](https://github.com/CMLPlatform/r9cam).
+For setup and usage, see the [r9cam setup guide](../../user-guides/r9cam/). For endpoints, see the [API reference overview](/api-reference/). For device installation, see the [r9cam repository](https://github.com/CMLPlatform/r9cam).
 
 ## System diagram
 
@@ -15,12 +15,12 @@ config:
     layout: elk
 ---
 graph TD
-    accTitle: RPi camera plugin system diagram
-    accDescr: The Expo app calls the FastAPI backend, which relays commands to the RPi camera API over a WebSocket tunnel and receives HLS preview and image uploads back; the app can also reach the camera API directly over the LAN; the backend stores metadata in PostgreSQL, images in file storage, and session state in Redis, and coordinates YouTube streaming through Google OAuth.
+    accTitle: r9cam plugin system diagram
+    accDescr: The Expo app calls the FastAPI backend, which relays commands to the r9cam API over a WebSocket tunnel and receives HLS preview and image uploads back; the app can also reach the camera API directly over the LAN; the backend stores metadata in PostgreSQL, images in file storage, and session state in Redis, and coordinates YouTube streaming through Google OAuth.
     Researcher["Researcher"] -->|Capture workflow| FrontendApp["Expo app"]
     FrontendApp -->|API requests| MainAPI["FastAPI backend"]
 
-    MainAPI -->|WebSocket relay| R9camAPI["RPi camera API"]
+    MainAPI -->|WebSocket relay| R9camAPI["r9cam API"]
     FrontendApp -.->|LAN direct| R9camAPI
     R9camAPI -->|Controls| Camera["Camera hardware"]
 
@@ -64,7 +64,7 @@ graph TD
 
 ```mermaid
 sequenceDiagram
-    accTitle: RPi camera pairing, capture, and streaming flow
+    accTitle: r9cam pairing, capture, and streaming flow
     accDescr: Shows camera pairing through a claimed code, image capture relayed from the app through the backend to the camera and back, optional LAN-direct preview and capture once paired, YouTube live streaming started through backend-mediated OAuth, local HLS preview streaming, and how each flow is stopped.
     participant Researcher
     participant App as Expo App

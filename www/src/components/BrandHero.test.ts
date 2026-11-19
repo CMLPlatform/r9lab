@@ -47,8 +47,9 @@ describe('BrandHero', () => {
     expect(html).toContain('https://app.r9lab.io/new-account');
     expect(html).toMatch(/Browse the records/);
     expect(html).toMatch(/Contribute a teardown/);
-    // Both leave the site, and each says so to a screen reader.
-    expect(html.match(/\(opens in new tab\)/g)).toHaveLength(2);
+    // The app is the same product: no new tab.
+    expect(html).not.toContain('target=');
+    expect(html).not.toContain('opens in new tab');
   });
 
   it('states each door’s precondition on the button itself', async () => {

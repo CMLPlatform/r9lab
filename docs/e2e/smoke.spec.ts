@@ -72,3 +72,25 @@ test('diagrams fit their frame and open full size in a new tab', async ({ page }
   const popup = await popupPromise;
   await expect(popup.locator('svg').first()).toBeVisible();
 });
+
+// The accessibility statement lives on the main site; the directive asks for a
+// link on every page, so the footer override must carry it everywhere.
+test('every page links the accessibility statement from the footer', async ({ page }) => {
+  for (const path of [
+    '/',
+    '/user-guides/getting-started/',
+    '/architecture/r9cam/',
+    '/api/public/',
+  ]) {
+    await page.goto(path);
+    await expect(
+      page.getByRole('link', { name: 'Accessibility statement' }),
+      `footer link on ${path}`,
+    ).toHaveAttribute('href', 'https://r9lab.io/accessibility/');
+  }
+});
+
+test('the 404 page links back into the docs', async ({ page }) => {
+  await page.goto('/no-such-page/');
+  await expect(page.getByRole('main').getByRole('link', { name: 'Getting started' })).toBeVisible();
+});

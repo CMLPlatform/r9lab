@@ -666,11 +666,6 @@ images-verify env tag:
     . scripts/deploy_ops.sh
     require_image_tag "$tag"
     repo="${GITHUB_REPOSITORY:-CMLPlatform/r9lab}"
-    # Built under the r9lab image names but before the repository rename, so signed by
-    # CMLPlatform/relab. Only these exact tags trust the old name, which anyone could
-    # now re-create.
-    # TODO(drop-by 2027-01-13): remove once no host runs or can roll back to these tags.
-    case "$tag" in sha-8697ebf) [[ -n "${GITHUB_REPOSITORY:-}" ]] || repo=CMLPlatform/relab ;; esac
     registry="${IMAGE_REGISTRY:-ghcr.io/cmlplatform}"
     # Staging deliberately accepts a manual publish of any branch. A release publishes
     # from the event of its tag; a manual prod publish runs on main.
@@ -853,7 +848,7 @@ docker-orchestration-smoke:
     set -euo pipefail
     trap 'just _docker-smoke-down "postgres redis api migrator"' EXIT
     just _docker-smoke-up "postgres redis api migrator" 120
-    {{ ci_compose }} exec -T api python -c 'import json; from urllib.request import urlopen; resp = urlopen("http://localhost:8000/health", timeout=5); data = json.load(resp); assert resp.status == 200, resp.status; assert data["status"] == "healthy", data; assert data["checks"]["database"]["status"] == "healthy", data; assert data["checks"]["redis"]["status"] == "healthy", data' >/dev/null
+    {{ ci_compose }} exec -T api python -c 'import json; from urllib.request import urlopen; resp = urlopen("http://localhost:8000/readyz", timeout=5); data = json.load(resp); assert resp.status == 200, resp.status; assert data["status"] == "healthy", data; assert data["checks"]["database"]["status"] == "healthy", data; assert data["checks"]["redis"]["status"] == "healthy", data' >/dev/null
 
 # Run all Docker smoke tests sequentially (CI runs them in parallel per-service)
 [group('verify')]

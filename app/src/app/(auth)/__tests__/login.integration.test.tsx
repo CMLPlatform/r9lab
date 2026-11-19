@@ -3,6 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { openAuthSessionAsync, WebBrowserResultType } from 'expo-web-browser';
+import { Children, isValidElement, type ReactElement, type ReactNode } from 'react';
 import Login from '@/app/(auth)/login';
 import { login } from '@/services/api/auth/authLogin';
 import { claimOAuthMfaHandoff, setPendingMfaLogin } from '@/services/api/auth/authMfa';
@@ -22,6 +23,30 @@ const mockDialogApi = {
   toast: jest.fn(),
 };
 const mockAuthRefetch = jest.fn<() => Promise<void>>();
+
+// Capture the head children: the test renderer cannot mount <title> or <meta>.
+let mockHeadChildren: ReactNode;
+jest.mock('expo-router/head', () => ({
+  __esModule: true,
+  default: ({ children }: { children: ReactNode }) => {
+    mockHeadChildren = children;
+    return null;
+  },
+}));
+
+function headDescription(): string | undefined {
+  const meta = Children.toArray(mockHeadChildren).find(
+    (child): child is ReactElement<{ name: string; content: string }> =>
+      isValidElement(child) && child.type === 'meta',
+  );
+  return meta?.props.content;
+}
+
+// EXPO_PUBLIC_WEBSITE_URL is unset under Jest, which would leave the legal links as plain text.
+jest.mock('@/config', () => ({
+  ...(jest.requireActual('@/config') as object),
+  WEBSITE_URL: 'https://r9lab.example',
+}));
 
 jest.mock('expo-router', () => ({
   // The toast reads it to clear BottomNav.
@@ -187,6 +212,12 @@ describe('Login screen', () => {
     expect(screen.getByText('Continue with Google')).toBeOnTheScreen();
     expect(screen.getByRole('link', { name: 'Terms' })).toBeOnTheScreen();
     expect(screen.getByRole('link', { name: 'Privacy Policy' })).toBeOnTheScreen();
+    expect(screen.getByRole('link', { name: 'Accessibility statement' })).toBeOnTheScreen();
+  });
+
+  it('describes the page for search results', async () => {
+    await renderWithProviders(<Login />, { withDialog: true });
+    expect(headDescription()).toContain('Sign in to R9lab');
   });
 
   it('shows Sign in button', async () => {
@@ -652,7 +683,7 @@ describe('Login screen', () => {
 
   it('navigates back to browsing on button press', async () => {
     await renderWithProviders(<Login />, { withDialog: true });
-    await fireEvent.press(screen.getByText('Browse'));
+    await fireEvent.press(screen.getByText('Browse products'));
     expect(mockReplace).toHaveBeenCalledWith('/products');
   });
 

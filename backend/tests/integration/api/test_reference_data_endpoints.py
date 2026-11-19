@@ -1,5 +1,6 @@
 """Integration tests for reference-data HTTP contracts."""
 
+import logging
 from typing import TYPE_CHECKING
 
 import pytest
@@ -7,11 +8,12 @@ from dirty_equals import IsInt, IsPositive, IsStr
 from fastapi import status
 
 from app.api.data_collection.models.product import MaterialProductLink
+from app.api.file_storage.models import Image, MediaParentType
 from app.api.reference_data.models import TaxonomyDomain
-from scripts.seed.factories.models import CategoryFactory, TaxonomyFactory
+from scripts.seed.factories.models import CategoryFactory, ProductTypeFactory, TaxonomyFactory
 
 if TYPE_CHECKING:
-    from httpx import AsyncClient
+    from httpx import AsyncClient, Response
     from sqlalchemy.ext.asyncio import AsyncSession
 
     from app.api.data_collection.models.product import Product
@@ -287,8 +289,120 @@ async def test_product_type_in_use_cannot_be_deleted(
     assert "product" in response.json()["detail"].lower()
 
 
+def _audit_records(caplog: pytest.LogCaptureFixture) -> list[tuple[object, ...]]:
+    return [
+        tuple(getattr(r, field, None) for field in ("action", "resource_type", "resource_id", "operation"))
+        for r in caplog.records
+        if getattr(r, "audit", False) and r.name == "audit"
+    ]
+
+
+async def test_admin_reference_data_writes_are_audited(
+    api_client_superuser: AsyncClient, db_material: Material, caplog: pytest.LogCaptureFixture
+) -> None:
+    """Every completed admin write, the cache clear included, leaves one audit event."""
+    with caplog.at_level(logging.INFO, logger="audit"):
+        create = await api_client_superuser.post(
+            "/v1/admin/taxonomies", json={"name": TAXONOMY_NAME, "version": TAXONOMY_VERSION, "domains": ["materials"]}
+        )
+        update = await api_client_superuser.patch(f"/v1/admin/materials/{db_material.id}", json={"name": "Renamed"})
+        delete = await api_client_superuser.delete(f"/v1/admin/materials/{db_material.id}")
+        clear = await api_client_superuser.post("/v1/admin/cache/clear/reference-data")
+
+    assert [create.status_code, update.status_code, delete.status_code, clear.status_code] == [201, 200, 204, 200]
+    assert _audit_records(caplog) == [
+        ("create", "taxonomies", None, "create_taxonomy_endpoint"),
+        ("update", "materials", str(db_material.id), "update_material"),
+        ("delete", "materials", str(db_material.id), "delete_material"),
+        ("delete", "cache", "reference-data", "clear_cache_by_namespace"),
+    ]
+
+
+async def test_nested_admin_write_audits_the_child_it_changed(
+    api_client_superuser: AsyncClient,
+    db_session: AsyncSession,
+    db_material: Material,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """Deleting a material's image records the image as the target, with the material in the context."""
+    image = Image(
+        filename="m.png",
+        file="m.png",
+        upload_size_bytes=1,
+        parent_type=MediaParentType.MATERIAL,
+        parent_id=db_material.id,
+    )
+    db_session.add(image)
+    await db_session.flush()
+
+    with caplog.at_level(logging.INFO, logger="audit"):
+        response = await api_client_superuser.delete(f"/v1/admin/materials/{db_material.id}/images/{image.id}")
+
+    assert response.status_code == status.HTTP_204_NO_CONTENT
+    assert _audit_records(caplog) == [("delete", "images", str(image.id), "delete_material_image")]
+    record = next(r for r in caplog.records if getattr(r, "audit", False))
+    assert getattr(record, "path_params", None) == {"material_id": str(db_material.id), "image_id": str(image.id)}
+
+
+async def test_category_link_writes_audit_the_links_not_the_material(
+    api_client_superuser: AsyncClient,
+    db_session: AsyncSession,
+    db_material: Material,
+    db_category: Category,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """Linking and unlinking categories records the category links, with the material in the context."""
+    material_id, category_ids = db_material.id, [db_category.id]
+    path = f"/v1/admin/materials/{material_id}/categories"
+    with caplog.at_level(logging.INFO, logger="audit"):
+        link = await api_client_superuser.post(path, json=category_ids)
+        # The client shares this session; a real request would load the new link fresh.
+        db_session.expire(db_material)
+        unlink = await api_client_superuser.request("DELETE", path, json=category_ids)
+
+    assert [link.status_code, unlink.status_code] == [201, 204]
+    assert _audit_records(caplog) == [
+        ("create", "categories", None, "add_categories_to_material"),
+        ("delete", "categories", None, "remove_categories_from_material"),
+    ]
+    records = [r for r in caplog.records if getattr(r, "audit", False)]
+    assert [getattr(r, "path_params", None) for r in records] == [{"material_id": str(material_id)}] * 2
+
+
+async def test_refused_admin_write_is_not_audited(
+    api_client_superuser: AsyncClient, caplog: pytest.LogCaptureFixture
+) -> None:
+    """A write the route refuses is not recorded as done."""
+    with caplog.at_level(logging.INFO, logger="audit"):
+        response = await api_client_superuser.delete(f"/v1/admin/materials/{NONEXISTENT_ID}")
+
+    assert response.status_code == status.HTTP_404_NOT_FOUND
+    assert _audit_records(caplog) == []
+
+
 async def test_units_endpoint_returns_available_units(api_client: AsyncClient) -> None:
     """The units endpoint should return the supported unit values."""
     response = await api_client.get("/v1/units")
     assert response.status_code == status.HTTP_200_OK
     assert "g" in response.json() or "kg" in response.json()
+
+
+async def test_cached_product_type_list_varies_by_search_and_filter(
+    api_client_light: AsyncClient, db_session: AsyncSession
+) -> None:
+    """Filtered lists with the same page size must not share one cache entry.
+
+    The endpoint declares no ``Request`` and its filter set's repr leaves out the search
+    term, so the key must come from the query string the cache reads for every endpoint.
+    """
+    for name in ("Laptop", "Refrigerator"):
+        await ProductTypeFactory.create_async(db_session, name=name)
+
+    def names(response: Response) -> list[str]:
+        assert response.status_code == status.HTTP_200_OK
+        return [item["name"] for item in response.json()["items"]]
+
+    assert names(await api_client_light.get("/v1/product-types?size=10&search=laptop")) == ["Laptop"]
+    assert names(await api_client_light.get("/v1/product-types?size=10&search=refrigerator")) == ["Refrigerator"]
+    assert names(await api_client_light.get("/v1/product-types?size=10&name[ilike]=%25lap%25")) == ["Laptop"]
+    assert names(await api_client_light.get("/v1/product-types?size=10&name[ilike]=%25refr%25")) == ["Refrigerator"]

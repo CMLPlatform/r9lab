@@ -64,20 +64,10 @@ export function ProductsWelcomeCard({
                 Browse products freely. Sign in when you are ready to add your own.
               </AppText>
             ) : (
-              <View className="flex-row flex-wrap items-center">
-                <AppText className="text-muted-foreground" style={styles.welcomeBodyText}>
-                  You can browse products and manage your
-                </AppText>
-                <ProfilePill />
-                <AppText className="text-muted-foreground" style={styles.welcomeBodyText}>
-                  . Once your email is verified, you can use the{' '}
-                </AppText>
-                <NewProductPill />
-                <AppText className="text-muted-foreground" style={styles.welcomeBodyText}>
-                  {' '}
-                  button to create products.
-                </AppText>
-              </View>
+              <AppText className="text-muted-foreground" style={styles.welcomeBodyText}>
+                You can browse products and manage your <ProfilePill />. Once your email is
+                verified, you can use the <NewProductPill /> button to create products.
+              </AppText>
             )}
           </View>
 

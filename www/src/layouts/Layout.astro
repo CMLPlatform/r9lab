@@ -13,6 +13,8 @@ interface Props {
   title: string;
   description?: string;
   image?: string;
+  /** Alt text for `image`; the default card is the R9lab wordmark. */
+  imageAlt?: string;
   noIndex?: boolean;
   /** True when this page's hero carries the mark; see SiteHeader's `heroBrand`. */
   heroBrand?: boolean;
@@ -24,6 +26,7 @@ const {
   title,
   description = siteMeta.defaultDescription,
   image = '/images/og.png',
+  imageAlt = `${siteMeta.name}: Open product data for the circular economy`,
   noIndex = false,
   heroBrand = false,
   structuredData,
@@ -56,10 +59,12 @@ const currentYear = new Date().getFullYear();
     <meta property="og:url" content={canonicalUrl} />
     <meta property="og:site_name" content={siteMeta.title} />
     <meta property="og:image" content={socialImage} />
+    <meta property="og:image:alt" content={imageAlt} />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content={pageTitle} />
     <meta name="twitter:description" content={description} />
     <meta name="twitter:image" content={socialImage} />
+    <meta name="twitter:image:alt" content={imageAlt} />
     <link rel="icon" type="image/svg+xml" href="/images/favicon.svg" />
     <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon.png" />
     <link rel="icon" type="image/x-icon" href="/favicon.ico" />
@@ -77,13 +82,14 @@ const currentYear = new Date().getFullYear();
     <title>{pageTitle}</title>
   </head>
   <body>
+    <a class="skip-link" href="#main">Skip to content</a>
     <SiteHeader
       appUrl={publicSiteConfig.appUrl}
       docsUrl={publicSiteConfig.docsUrl}
       heroBrand={heroBrand}
     />
 
-    <main class="page-shell">
+    <main id="main" class="page-shell">
       <slot />
     </main>
 

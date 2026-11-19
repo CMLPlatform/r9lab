@@ -7,6 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AppButton } from '@/components/base/AppButton';
 import { AppText } from '@/components/base/AppText';
 import { BrandWordmark } from '@/components/base/BrandWordmark';
+import { ExternalTextLink } from '@/components/base/ExternalTextLink';
 import { FormFieldError } from '@/components/base/FormField';
 import { Icon } from '@/components/base/Icon';
 import { PRESS_TINT } from '@/components/base/pressFeedback';
@@ -17,7 +18,6 @@ import {
   type NewAccountFormValues,
   PASSWORD_MIN_LENGTH,
 } from '@/services/api/validation/userSchema';
-import { openExternalUrl } from '@/services/externalLinks';
 import { useAppTheme } from '@/theme/appThemeContext';
 import { getStatusTone } from '@/theme/color';
 import { describedBy, heading, requiredField } from '@/utils/a11y';
@@ -106,47 +106,32 @@ type SharedStepProps = {
   mutedColor: string;
 };
 
+function WebsiteLink({ path, children }: { path: string; children: string }) {
+  const theme = useAppTheme();
+  return (
+    <ExternalTextLink
+      variant="caption"
+      url={WEBSITE_URL ? new URL(path, WEBSITE_URL).toString() : undefined}
+      style={{ color: theme.colors.onBackground }}
+    >
+      {children}
+    </ExternalTextLink>
+  );
+}
+
 // No checkbox: creating the account is the acceptance, recorded server-side as
 // terms_accepted_version / terms_accepted_at.
 export function PrivacyPolicy() {
-  const theme = useAppTheme();
-  const termsUrl = WEBSITE_URL ? new URL('/terms', WEBSITE_URL).toString() : '';
-  const privacyUrl = WEBSITE_URL ? new URL('/privacy', WEBSITE_URL).toString() : '';
-  const textColor = theme.colors.onBackground;
-  const openTerms = useCallback(() => {
-    if (termsUrl) {
-      void openExternalUrl(termsUrl);
-    }
-  }, [termsUrl]);
-  const openPrivacy = useCallback(() => {
-    if (privacyUrl) {
-      void openExternalUrl(privacyUrl);
-    }
-  }, [privacyUrl]);
-
   return (
-    <AppText variant="caption" className="text-center text-muted-foreground">
-      By creating an account, you agree to our{' '}
-      <AppText
-        variant="caption"
-        className="underline"
-        style={{ color: textColor }}
-        onPress={openTerms}
-        accessibilityRole="link"
-      >
-        Terms
-      </AppText>{' '}
-      and{' '}
-      <AppText
-        variant="caption"
-        className="underline"
-        style={{ color: textColor }}
-        onPress={openPrivacy}
-        accessibilityRole="link"
-      >
-        Privacy Policy
+    <View className="gap-1">
+      <AppText variant="caption" className="text-center text-muted-foreground">
+        By creating an account, you agree to our <WebsiteLink path="/terms">Terms</WebsiteLink> and{' '}
+        <WebsiteLink path="/privacy">Privacy Policy</WebsiteLink>
       </AppText>
-    </AppText>
+      <AppText variant="caption" className="text-center text-muted-foreground">
+        <WebsiteLink path="/accessibility">Accessibility statement</WebsiteLink>
+      </AppText>
+    </View>
   );
 }
 

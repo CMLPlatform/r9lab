@@ -39,5 +39,5 @@ A partial record with good photos beats a perfect one that never gets finished. 
 
 - [Data collection guide](../data-collection/): how to build a thorough record
 - [Hardware](../hardware/): simple and advanced capture setups
-- [RPi camera](../r9cam/): if you are using a camera device
+- [r9cam](../r9cam/): if you are using a Raspberry Pi camera
 - [API guide](../api/): for scripts and technical integrations

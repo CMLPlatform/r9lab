@@ -119,12 +119,35 @@
   color: var(--sl-color-red-high);
 }
 
-/* Starlight draws the dark-theme menu button as a white disc with a drop
-   shadow, the brightest thing in the header. It takes the surface token and a
-   hairline instead, open or closed. */
-:root[data-theme="dark"] .sl-menu-button {
+/* Starlight draws the menu button as a white disc with a drop shadow, the
+   brightest thing in the header. It takes the surface token and a hairline
+   instead, open or closed, in both themes. */
+.sl-menu-button {
   border: 1px solid var(--r9lab-brand-divider);
   background-color: var(--r9lab-brand-surface);
   color: var(--r9lab-brand-text);
   box-shadow: none;
+}
+
+/* Footer link to the accessibility statement, in the colophon's register. */
+.r9lab-footer-note {
+  margin: 1.5rem 0 0;
+  font-size: var(--sl-text-sm);
+}
+
+/* Wide tables scroll inside their own box; the box takes focus so a keyboard
+   user can scroll it (see src/integrations/table-scroll.ts). */
+.table-scroll {
+  overflow-x: auto;
+}
+
+/* Starlight makes the table itself the scroller (display: block); here the box
+   around it scrolls, so the table takes its natural width again. */
+.table-scroll > table {
+  display: table;
+}
+
+.table-scroll:focus-visible {
+  outline: 2px solid var(--sl-color-accent);
+  outline-offset: 2px;
 }

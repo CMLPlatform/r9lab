@@ -102,12 +102,13 @@ test.describe('Landing page content', () => {
 
     const browse = page.getByRole('link', { name: BROWSE_RECORDS_LINK_NAME });
     expect(await browse.getAttribute('href')).toMatch(/^https?:\/\/.+\/products$/);
-    await expect(browse).toHaveAttribute('rel', 'noopener noreferrer');
+    // The app is the same product: no new tab (DESIGN.md, The New-Tab Rule).
+    await expect(browse).not.toHaveAttribute('target', /.+/);
 
     // Contributing is the door that needs an account, and it says so.
     const contribute = page.getByRole('link', { name: CONTRIBUTE_LINK_NAME });
     expect(await contribute.getAttribute('href')).toMatch(/^https?:\/\/.+\/new-account$/);
-    await expect(contribute).toHaveAttribute('rel', 'noopener noreferrer');
+    await expect(contribute).not.toHaveAttribute('target', /.+/);
   });
 
   test('the colophon states who runs the platform, how to cite it, and its licence', async ({
@@ -146,7 +147,7 @@ test.describe('Landing page content', () => {
 
     // The ladder itself lives in the docs beside its definition tables.
     await expect(page.locator('.nine-r')).toHaveCount(0);
-    const link = page.getByRole('link', { name: /see the ladder in the docs/i });
+    const link = page.getByRole('link', { name: /read about the 9R framework in the docs/i });
     expect(await link.getAttribute('href')).toMatch(/\/project\/9r-framework\/$/);
   });
 

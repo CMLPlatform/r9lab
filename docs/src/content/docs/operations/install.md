@@ -75,7 +75,7 @@ and Node and pnpm at the versions pinned in `.node-version` and `package.json`.
 1. Verify the backend is healthy.
 
    ```bash
-   curl http://127.0.0.1:8010/health
+   curl http://127.0.0.1:8010/readyz
    ```
 
 1. To run the checks:

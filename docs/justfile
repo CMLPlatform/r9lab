@@ -50,7 +50,9 @@ fix:
 test:
     pnpm run test
 
-# Run the browser E2E tests against a fresh build: smoke, a11y, visual, and theme
+# Run the browser E2E tests against a fresh build: smoke, a11y, visual, and theme.
+# The accessibility spec lists its pages from dist/ and throws at import without a build,
+# so a bare `pnpm exec playwright test` needs `just build` first.
 test-e2e: build (_browsers "chromium")
     pnpm run test:e2e
 

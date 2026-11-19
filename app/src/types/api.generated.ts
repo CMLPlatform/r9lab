@@ -8214,7 +8214,7 @@ export interface operations {
     parameters: {
       query?: never;
       header: {
-        /** @description The `version` field from the product's last read, quoted: `"3"`. Not the `ETag` a GET returns: that one also changes with media. A stale or malformed value is refused with 412. */
+        /** @description The `version` field from the product's last read, quoted: `"3"`. Not the `ETag` a GET returns: that one also changes with media. A missing header is refused with 428, a stale or malformed value with 412. */
         'if-match': string;
       };
       path: {
@@ -8252,6 +8252,13 @@ export interface operations {
         content: {
           'application/json': components['schemas']['HTTPValidationError'];
         };
+      };
+      /** @description The `If-Match` header is missing. */
+      428: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
       };
     };
   };
@@ -8987,7 +8994,7 @@ export interface operations {
     parameters: {
       query?: never;
       header: {
-        /** @description The `version` field from the product's last read, quoted: `"3"`. Not the `ETag` a GET returns: that one also changes with media. A stale or malformed value is refused with 412. */
+        /** @description The `version` field from the product's last read, quoted: `"3"`. Not the `ETag` a GET returns: that one also changes with media. A missing header is refused with 428, a stale or malformed value with 412. */
         'if-match': string;
       };
       path: {
@@ -9025,6 +9032,13 @@ export interface operations {
         content: {
           'application/json': components['schemas']['HTTPValidationError'];
         };
+      };
+      /** @description The `If-Match` header is missing. */
+      428: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
       };
     };
   };
@@ -10747,7 +10761,6 @@ export interface operations {
     parameters: {
       query?: {
         code?: string | null;
-        code_verifier?: string | null;
         state?: string | null;
         error?: string | null;
       };
@@ -10808,7 +10821,6 @@ export interface operations {
     parameters: {
       query?: {
         code?: string | null;
-        code_verifier?: string | null;
         state?: string | null;
         error?: string | null;
       };
@@ -10875,7 +10887,6 @@ export interface operations {
     parameters: {
       query?: {
         code?: string | null;
-        code_verifier?: string | null;
         state?: string | null;
         error?: string | null;
       };
@@ -10936,7 +10947,6 @@ export interface operations {
     parameters: {
       query?: {
         code?: string | null;
-        code_verifier?: string | null;
         state?: string | null;
         error?: string | null;
       };
@@ -10997,7 +11007,6 @@ export interface operations {
     parameters: {
       query?: {
         code?: string | null;
-        code_verifier?: string | null;
         state?: string | null;
         error?: string | null;
       };
@@ -11064,7 +11073,6 @@ export interface operations {
     parameters: {
       query?: {
         code?: string | null;
-        code_verifier?: string | null;
         state?: string | null;
         error?: string | null;
       };
@@ -11131,7 +11139,6 @@ export interface operations {
     parameters: {
       query?: {
         code?: string | null;
-        code_verifier?: string | null;
         state?: string | null;
         error?: string | null;
       };

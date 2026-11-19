@@ -107,7 +107,7 @@ EXPOSE 8000
 USER $APP_USER
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
-    CMD python -c "import sys,urllib.request; sys.exit(0 if urllib.request.urlopen('http://localhost:8000/live',timeout=5).status==200 else 1)"
+    CMD python -c "import sys,urllib.request; sys.exit(0 if urllib.request.urlopen('http://localhost:8000/livez',timeout=5).status==200 else 1)"
 
 # UVICORN_* env vars below are read directly by the uvicorn CLI, not through app
 # Settings; this CMD line is their single source of truth.

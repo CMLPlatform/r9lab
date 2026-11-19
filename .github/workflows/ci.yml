@@ -315,6 +315,85 @@ jobs:
           read -ra recipe <<<"$RECIPE"
           just "${recipe[@]}"
 
+  api-diff:
+    name: API Breaking Changes
+    # The public schema is consumed by every installed app build, and the device and
+    # r9cam schemas by cameras in the field, so a silent removal or tightened enum hurts.
+    # The `breaking-api` label marks an intended break: add it, then re-run this job.
+    needs: changes
+    if: github.event_name == 'pull_request' && needs.changes.outputs.backend == 'true'
+    runs-on: ubuntu-26.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      pull-requests: read
+    steps:
+      # Reads the live labels: the event payload keeps the labels from when the run
+      # started, so a re-run after labelling would still see none.
+      - name: Check for the breaking-api label
+        id: label
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR: ${{ github.event.pull_request.number }}
+        run: |-
+          if gh pr view "$PR" --repo "$GITHUB_REPOSITORY" --json labels --jq '.labels[].name' | grep -qx breaking-api; then
+            echo "skip=true" >>"$GITHUB_OUTPUT"
+          fi
+
+      - name: Checkout
+        if: steps.label.outputs.skip != 'true'
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # The PR merge commit and its first parent (the base) are enough to diff.
+          fetch-depth: 2
+          persist-credentials: false
+
+      # A schema file this PR adds has no base to break: it is skipped, not failed.
+      - name: Extract base schemas
+        id: base
+        if: steps.label.outputs.skip != 'true'
+        run: |-
+          mkdir -p .api-base
+          for doc in public device r9cam; do
+            path="docs/public/api/schemas/openapi.$doc.json"
+            if git cat-file -e "HEAD^1:$path" 2>/dev/null; then
+              git show "HEAD^1:$path" >".api-base/openapi.$doc.json"
+              echo "$doc=true" >>"$GITHUB_OUTPUT"
+            else
+              echo "::notice file=$path::$path is new in this pull request; nothing to diff against."
+            fi
+          done
+
+      - name: Diff the public schema
+        if: steps.label.outputs.skip != 'true' && steps.base.outputs.public == 'true'
+        uses: oasdiff/oasdiff-action/breaking@14ca7009a63c417dfe27b7c44359c4bcccaf8eee # v0.2.1
+        with:
+          base: .api-base/openapi.public.json
+          revision: docs/public/api/schemas/openapi.public.json
+          fail-on: ERR
+          review: "false"
+          github-token: ""
+
+      - name: Diff the device schema
+        if: steps.label.outputs.skip != 'true' && steps.base.outputs.device == 'true'
+        uses: oasdiff/oasdiff-action/breaking@14ca7009a63c417dfe27b7c44359c4bcccaf8eee # v0.2.1
+        with:
+          base: .api-base/openapi.device.json
+          revision: docs/public/api/schemas/openapi.device.json
+          fail-on: ERR
+          review: "false"
+          github-token: ""
+
+      - name: Diff the r9cam camera schema
+        if: steps.label.outputs.skip != 'true' && steps.base.outputs.r9cam == 'true'
+        uses: oasdiff/oasdiff-action/breaking@14ca7009a63c417dfe27b7c44359c4bcccaf8eee # v0.2.1
+        with:
+          base: .api-base/openapi.r9cam.json
+          revision: docs/public/api/schemas/openapi.r9cam.json
+          fail-on: ERR
+          review: "false"
+          github-token: ""
+
   secret-scan:
     name: Secret Scan
     runs-on: ubuntu-26.04
@@ -376,6 +455,10 @@ jobs:
         uses: actions/dependency-review-action@a1d282b36b6f3519aa1f3fc636f609c47dddb294 # v5.0.0
         with:
           fail-on-severity: moderate
+          # Licences that cannot ship inside an AGPL-3.0-or-later project (GPL-2.0-only
+          # conflicts with it; the others restrict use). A new dependency under one fails.
+          # NOTE: deny-licenses is deprecated in v5; move to allow-licenses when v6 drops it.
+          deny-licenses: GPL-2.0-only, BUSL-1.1, SSPL-1.0, CC-BY-NC-4.0, CC-BY-NC-SA-4.0
           # Every entry here needs a reachable-but-unfixable justification and a
           # condition for removing it, and a matching ignoreGhsas entry in
           # pnpm-workspace.yaml so `just audit` enforces the same policy.
@@ -558,6 +641,7 @@ jobs:
       - changes
       - automation
       - backend
+      - api-diff
       - web
       - e2e-www
       - e2e-full-stack

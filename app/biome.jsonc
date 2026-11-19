@@ -45,6 +45,7 @@
               "AppText",
               "Chip",
               "DocsLink",
+              "ExternalTextLink",
               "FilterChip",
               "MutedText",
               "RNText",
@@ -64,11 +65,52 @@
         "useConsistentTestIt": "error"
       },
       "suspicious": {
+        // Cycles make module initialisation order depend on who imports first.
+        "noImportCycles": "error",
         "noSkippedTests": "error"
       }
     }
   },
   "overrides": [
+    {
+      // Layering: services, utils and types sit below the UI. They must not import
+      // features, components, routes, hooks, context or navigation. Restating the
+      // shared patterns is needed because an override replaces the rule's options.
+      // Tests may import feature code to exercise it.
+      "includes": ["src/services/**", "src/utils/**", "src/types/**", "!**/__tests__/**"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "patterns": [
+                  {
+                    "group": ["http://**", "https://**", "//**"],
+                    "message": "Do not import browser runtime JavaScript from remote or CDN URLs; install and bundle dependencies locally."
+                  },
+                  {
+                    "group": ["..", "../**"],
+                    "message": "Use the '@/' alias for cross-directory imports instead of parent-relative paths ('../')."
+                  },
+                  {
+                    "group": [
+                      "@/features/**",
+                      "@/components/**",
+                      "@/app/**",
+                      "@/hooks/**",
+                      "@/context/**",
+                      "@/navigation/**"
+                    ],
+                    "message": "services, utils and types are the lower layers; they must not import UI, feature, hook, context or route code."
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
     {
       // Tooling config files run in Node and occasionally need interop imports.
       "includes": ["eslint.config.mjs"],

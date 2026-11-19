@@ -25,8 +25,7 @@ Both reach only the maintainers.
 
 ## Supported Versions
 
-Only the latest release and `main` get security fixes. Self-hosters upgrade to the latest release
-to get a fix.
+Only the latest release and `main` get security fixes.
 
 ## Security Baseline
 
@@ -63,6 +62,10 @@ Security-sensitive areas:
     once the link's deletion is committed. Revocation is best effort: a failure is logged without the token and
     never blocks the unlink or the erasure. GitHub grants are not revoked by the backend; the user
     removes them in their GitHub settings.
+  - Login and account-link flows use PKCE (S256) on top of the CSRF cookie and signed state. The
+    code verifier is random, lives only in the `__Host-r9lab-oauth-pkce` cookie and is never
+    derived from the state, which anyone who sees the authorization URL can read. The callback
+    takes no verifier from the query string.
 - rate limits (the buckets and numbers are in the security reference)
   - Password login is limited per IP and by failed attempts per account, so a shared account is
     not locked by use while guessing stays capped per account.
@@ -130,6 +133,10 @@ Security-sensitive areas:
     its credential is active and its owner account is active and verified
     (`camera_may_authenticate` in `device_assertion.py`), the same bar a person must clear to upload
     directly. Triggering a capture also needs a verified account.
+  - The relay re-checks the camera on every heartbeat (30 s) and closes the socket with 1008 when
+    the camera is gone, its credential is no longer active or differs from the key the socket
+    authenticated with, or its owner fails the bar above. A re-check that errors or takes over 5 s
+    keeps the socket once; two in a row close it with 1011, and the device authenticates again.
 - backups, secrets, logs, and telemetry
 - release and security artifacts: the GHCR images the hosts pull, and the landing page and docs
   deploy, whose Cloudflare API token is a GitHub Environment secret holding only Workers

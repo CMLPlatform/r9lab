@@ -8,6 +8,7 @@ import { AppButton } from '@/components/base/AppButton';
 import { AppText } from '@/components/base/AppText';
 import { ControlledTextField } from '@/components/base/ControlledTextField';
 import { Icon } from '@/components/base/Icon';
+import { IosAnnouncement } from '@/components/base/IosAnnouncement';
 import { PRESS_TINT } from '@/components/base/pressFeedback';
 import { useResetPassword } from '@/features/auth/usePasswordReset';
 import { useSensitiveAuthToken } from '@/features/auth/useSensitiveAuthToken';
@@ -33,7 +34,15 @@ export default function ResetPasswordScreen() {
       <AuthScreen>
         <AuthCard title="Reset password">
           {success ? (
-            <View style={{ gap: 12, alignItems: 'center', paddingVertical: 16 }}>
+            // Mounted with its text, so a live region alone is often not announced on web and
+            // Android; a status role is.
+            <View
+              testID="reset-password-success-status"
+              role="status"
+              accessibilityLiveRegion="polite"
+              style={{ gap: 12, alignItems: 'center', paddingVertical: 16 }}
+            >
+              <IosAnnouncement text="Password reset. You can now sign in." />
               <AppText variant="body" style={{ textAlign: 'center' }}>
                 Password reset. You can now sign in.
               </AppText>

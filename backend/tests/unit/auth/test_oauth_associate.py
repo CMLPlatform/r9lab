@@ -1,5 +1,7 @@
 """Unit tests for the OAuth account-association flow."""
 
+import base64
+import hashlib
 from dataclasses import dataclass, field
 from types import SimpleNamespace
 from typing import TYPE_CHECKING, Any, cast
@@ -8,6 +10,7 @@ from urllib.parse import parse_qs, urlparse
 from uuid import UUID, uuid4
 
 import pytest
+from fastapi import Response
 
 from app.api.auth.exceptions import (
     OAuthAccountAlreadyLinkedError,
@@ -27,6 +30,7 @@ from app.api.auth.services.oauth.utils import (
     CSRF_TOKEN_KEY,
     OAUTH_FLOW_KEY,
     OAUTH_PROVIDER_KEY,
+    PKCE_VERIFIER_COOKIE_NAME,
     OAuthCookieSettings,
     generate_csrf_token,
     generate_state_token,
@@ -176,6 +180,7 @@ async def test_same_user_reassociate_updates_token_in_place() -> None:
         access_token_state,
         um,  # ty: ignore[invalid-argument-type]
         user_schema=user_schema,
+        response=Response(),
     )
 
     oauth_client.get_id_email.assert_awaited_once_with("new-access")
@@ -216,6 +221,7 @@ async def test_new_account_invokes_associate_callback() -> None:
             access_token_state,
             um,  # ty: ignore[invalid-argument-type]
             user_schema=user_schema,
+            response=Response(),
             background_tasks=background_tasks,
         )
 
@@ -252,6 +258,7 @@ async def test_frontend_redirect_returns_fragment_status() -> None:
         access_token_state,
         um,  # ty: ignore[invalid-argument-type]
         user_schema=MagicMock(),
+        response=Response(),
     )
 
     assert result.status_code in (302, 307)
@@ -278,7 +285,14 @@ async def test_authorize_without_redirect_uri() -> None:
     result = await build_authorize_response(config, request, response, callback_route_name="unused")
 
     assert result.authorization_url == "https://provider.example/auth?x=1"
-    response.set_cookie.assert_called_once()
+    cookies = {call.args[0]: call.args[1] for call in response.set_cookie.call_args_list}
+    assert set(cookies) == {config.cookie_settings.name, PKCE_VERIFIER_COOKIE_NAME}
+    # The challenge sent to the provider is the S256 hash of the verifier kept in the cookie.
+    digest = hashlib.sha256(cookies[PKCE_VERIFIER_COOKIE_NAME].encode()).digest()
+    challenge = base64.urlsafe_b64encode(digest).rstrip(b"=").decode()
+    oauth_client.get_authorization_url.assert_awaited_once()
+    kwargs = oauth_client.get_authorization_url.call_args.kwargs
+    assert (kwargs["code_challenge"], kwargs["code_challenge_method"]) == (challenge, "S256")
 
 
 async def test_authorize_rejects_disallowed_redirect_uri() -> None:

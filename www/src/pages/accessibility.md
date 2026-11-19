@@ -46,10 +46,10 @@ Email [info@r9lab.io](mailto:info@r9lab.io), or open an issue on [GitHub](https:
 
 ## How we check
 
-Automated checks use axe, a testing tool, against the level A and AA rules for WCAG 2.0, 2.1 and 2.2. They run in Chromium and cover these screens. The website and web app scans run on every pull request; the documentation scan runs locally with `just docs/test-e2e`, outside the pull request checks.
+Automated checks use axe, a testing tool, against the level A and AA rules for WCAG 2.0, 2.1 and 2.2. They run in Chromium and cover these screens. Each scan runs on every pull request that changes that part.
 
 - Website: the landing page in both themes, the privacy, terms and accessibility pages ([landing.spec.ts](https://github.com/CMLPlatform/r9lab/blob/main/www/e2e/landing.spec.ts), [accessibility.spec.ts](https://github.com/CMLPlatform/r9lab/blob/main/www/e2e/accessibility.spec.ts)).
-- Documentation site: the home page in both themes, the getting-started guide, two architecture pages, and the page around each API reference. The API reference viewer itself is left out because it is third-party ([accessibility.spec.ts](https://github.com/CMLPlatform/r9lab/blob/main/docs/e2e/accessibility.spec.ts)).
+- Documentation site: every page, at desktop and phone width, plus the home page in the dark theme. The API reference viewer itself is left out because it is third-party ([accessibility.spec.ts](https://github.com/CMLPlatform/r9lab/blob/main/docs/e2e/accessibility.spec.ts)).
 - Web app: the product list, a product page and the account screen. These report only serious and critical findings, and colour contrast is not part of this scan. The sign-in, onboarding and other screens are not scanned ([accessibility.spec.ts](https://github.com/CMLPlatform/r9lab/blob/main/app/e2e/accessibility.spec.ts)).
 
 Other checks: unit tests on the app’s colour pairs, and on the app a test that keyboard focus paints a visible indicator. Linting runs on every pull request.

@@ -1,10 +1,9 @@
-import { useCallback } from 'react';
 import { View } from 'react-native';
 import { AppText } from '@/components/base/AppText';
+import { ExternalTextLink } from '@/components/base/ExternalTextLink';
 import { Icon } from '@/components/base/Icon';
 import { Switch } from '@/components/base/ui/switch';
 import { DOCS_URL } from '@/config';
-import { openExternalUrl } from '@/services/externalLinks';
 import { useAppTheme } from '@/theme/appThemeContext';
 import { ProfileAction } from './shared';
 import { createProfileSectionStyles } from './styles';
@@ -32,11 +31,6 @@ export function ProfileIntegrationsSection({
 }: ProfileIntegrationsSectionProps) {
   const theme = useAppTheme();
   const styles = createProfileSectionStyles(theme);
-  const openDocs = useCallback(() => {
-    if (DOCS_URL) {
-      void openExternalUrl(new URL('/user-guides/r9cam', DOCS_URL).toString());
-    }
-  }, []);
   return (
     <View className="mx-1">
       <View className="flex-row items-center gap-3 px-4 py-2.5">
@@ -47,9 +41,13 @@ export function ProfileIntegrationsSection({
           <AppText className="font-semibold">Raspberry Pi camera</AppText>
           <AppText variant="caption" className="mt-px text-muted-foreground">
             Capture images with this camera during disassembly.{' '}
-            <AppText className="underline" style={styles.docsLink} onPress={openDocs}>
+            <ExternalTextLink
+              url={DOCS_URL ? new URL('/user-guides/r9cam', DOCS_URL).toString() : undefined}
+              style={styles.docsLink}
+              accessibilityLabel="Learn more about the Raspberry Pi camera"
+            >
               Learn more
-            </AppText>
+            </ExternalTextLink>
           </AppText>
         </View>
         <Switch

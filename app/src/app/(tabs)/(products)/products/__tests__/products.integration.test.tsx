@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { HttpResponse, http } from 'msw';
+import { Children, isValidElement, type ReactElement, type ReactNode } from 'react';
 import Products from '@/app/(tabs)/(products)/products';
 import { API_URL } from '@/config';
 import { productsInfiniteQueryOptions } from '@/features/products/queries';
@@ -25,6 +26,24 @@ const mockDialogApi = {
 const mockUseDialog = jest.fn(() => ({
   ...mockDialogApi,
 }));
+
+// Capture the head children: the test renderer cannot mount <title> or <meta>.
+let mockHeadChildren: ReactNode;
+jest.mock('expo-router/head', () => ({
+  __esModule: true,
+  default: ({ children }: { children: ReactNode }) => {
+    mockHeadChildren = children;
+    return null;
+  },
+}));
+
+function headDescription(): string | undefined {
+  const meta = Children.toArray(mockHeadChildren).find(
+    (child): child is ReactElement<{ name: string; content: string }> =>
+      isValidElement(child) && child.type === 'meta',
+  );
+  return meta?.props.content;
+}
 
 jest.mock('expo-router', () => ({
   useLocalSearchParams: jest.fn(),
@@ -310,6 +329,11 @@ describe('Products screen', () => {
     expect(screen.getByText('Last 7d')).toBeOnTheScreen();
   });
 
+  it('describes the page for search results', async () => {
+    await renderProducts();
+    expect(headDescription()).toContain('Browse products');
+  });
+
   it('shows skeleton rows while loading', async () => {
     await renderProducts();
     expect(screen.getAllByTestId('product-card-skeleton').length).toBeGreaterThan(0);
@@ -390,6 +414,12 @@ describe('Products screen', () => {
     expect(screen.getByText('Verify your email to start creating')).toBeOnTheScreen();
     expect(screen.getByText('Verify email to add product')).toBeOnTheScreen();
     expect(screen.getByTestId('profile-pill-label')).toBeOnTheScreen();
+    // One text node, so a screen reader reads it as a sentence.
+    expect(
+      screen.getByText(
+        'You can browse products and manage your account. Once your email is verified, you can use the New product button to create products.',
+      ),
+    ).toBeOnTheScreen();
     expect(screen.getByText('Got it')).toBeOnTheScreen();
     expect(screen.getByText('Verify email')).toBeOnTheScreen();
 
@@ -515,7 +545,11 @@ describe('Empty-state messages', () => {
     await renderProducts();
 
     await waitFor(() =>
-      expect(screen.getByText("You haven't created any products yet. Tap the")).toBeOnTheScreen(),
+      expect(
+        screen.getByText(
+          "You haven't created any products yet. Tap the New product button to add your first one.",
+        ),
+      ).toBeOnTheScreen(),
     );
     expect(screen.getAllByText('New product').length).toBeGreaterThan(0);
   });
@@ -524,7 +558,11 @@ describe('Empty-state messages', () => {
     mockUseAuth.mockReturnValue({ user: mockUser() });
     await renderProducts();
 
-    await waitFor(() => expect(screen.getByText('No products yet. Tap the')).toBeOnTheScreen());
+    await waitFor(() =>
+      expect(
+        screen.getByText('No products yet. Tap the New product button to add the first one.'),
+      ).toBeOnTheScreen(),
+    );
     expect(screen.getAllByText('New product').length).toBeGreaterThan(0);
   });
 });

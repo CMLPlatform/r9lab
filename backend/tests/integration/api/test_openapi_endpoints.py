@@ -182,6 +182,17 @@ async def test_public_openapi_json_filters_to_app_schema(openapi_client: AsyncCl
     assert "MaterialCreateWithCategories" not in payload["components"]["schemas"]
 
 
+@pytest.mark.parametrize("path", ["/v1/products/{product_id}", "/v1/components/{component_id}"])
+async def test_product_patch_declares_if_match_required_once(openapi_client: AsyncClient, path: str) -> None:
+    """The schema marks If-Match required although the route answers its absence itself, with 428."""
+    payload = (await openapi_client.get("/openapi.public.json")).json()
+    operation = payload["paths"][path]["patch"]
+
+    headers = [param for param in operation["parameters"] if param["in"] == "header"]
+    assert [(param["name"], param["required"]) for param in headers] == [("if-match", True)]
+    assert {"412", "428"} <= set(operation["responses"])
+
+
 async def test_admin_openapi_json_filters_to_admin_schema(openapi_client: AsyncClient) -> None:
     """The admin OpenAPI schema should contain admin routes only."""
     response = await openapi_client.get("/openapi.admin.json")

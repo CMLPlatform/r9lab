@@ -31,6 +31,7 @@ import { KeyboardShortcutsDialog } from '@/components/base/KeyboardShortcutsDial
 import { LazyBoundary } from '@/components/base/LazyBoundary';
 import { lazyWithRetry } from '@/components/base/lazyWithRetry';
 import { OfflineBanner } from '@/components/base/OfflineBanner';
+import { PlainHeaderTitle } from '@/components/base/PlainHeaderTitle';
 import { StaticBackground } from '@/components/base/StaticBackground';
 import { TopNav } from '@/components/base/TopNav';
 import { ActiveStreamBanner } from '@/components/cameras/ActiveStreamBanner';
@@ -187,7 +188,11 @@ export const AppStack = memo(function AppStack() {
       <Stack.Screen name="(auth)/reset-password" options={{ headerShown: false }} />
       <Stack.Screen name="(auth)/mfa" options={{ headerShown: false }} />
       <Stack.Screen name="(auth)/verify" options={{ headerShown: false }} />
-      <Stack.Screen name="category-selection" options={{ title: 'Select category' }} />
+      {/* Plain-text header title: the screen renders its own h1 (see PlainHeaderTitle). */}
+      <Stack.Screen
+        name="category-selection"
+        options={{ title: 'Select category', headerTitle: PlainHeaderTitle }}
+      />
     </Stack>
   );
 });

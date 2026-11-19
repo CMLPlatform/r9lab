@@ -2,6 +2,7 @@ import { StyleSheet, View } from 'react-native';
 import { AppButton } from '@/components/base/AppButton';
 import { AppText } from '@/components/base/AppText';
 import { Card } from '@/components/base/Card';
+import { ExternalTextLink } from '@/components/base/ExternalTextLink';
 import { Icon } from '@/components/base/Icon';
 import { MutedText } from '@/components/base/MutedText';
 import { StatusPill } from '@/components/base/StatusPill';
@@ -22,7 +23,6 @@ type YouTubeStreamCardViewProps = {
   elapsed: string;
   streamStatus: StreamView | null | undefined;
   isStopping: boolean;
-  onWatch: () => void;
   onStop: () => void;
 };
 
@@ -32,7 +32,6 @@ export function YouTubeStreamCardView({
   elapsed,
   streamStatus,
   isStopping,
-  onWatch,
   onStop,
 }: YouTubeStreamCardViewProps) {
   const theme = useAppTheme();
@@ -58,9 +57,14 @@ export function YouTubeStreamCardView({
         ) : isLive && streamStatus ? (
           <>
             {elapsed ? <MutedText>Live for {elapsed}</MutedText> : null}
-            <AppText variant="body" style={themed.watchLink} onPress={onWatch} numberOfLines={1}>
+            <ExternalTextLink
+              url={streamStatus.url}
+              variant="body"
+              style={themed.watchLink}
+              numberOfLines={1}
+            >
               {streamStatus.url}
-            </AppText>
+            </ExternalTextLink>
             <AppButton
               variant="destructive"
               onPress={onStop}

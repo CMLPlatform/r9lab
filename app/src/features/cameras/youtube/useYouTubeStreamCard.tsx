@@ -4,7 +4,6 @@ import { useStopYouTubeStreamMutation, useStreamStatusQuery } from '@/features/c
 import { useServerPreferenceToggle } from '@/features/cameras/serverPreferenceToggle';
 import { useAppFeedback } from '@/hooks/useAppFeedback';
 import { useElapsed } from '@/hooks/useElapsed';
-import { openExternalUrl } from '@/services/externalLinks';
 
 export function useYouTubeStreamCard(cameraId: string, isOnline: boolean) {
   const { enabled: youtubeEnabled } = useServerPreferenceToggle('youtube_streaming_enabled');
@@ -15,11 +14,6 @@ export function useYouTubeStreamCard(cameraId: string, isOnline: boolean) {
   });
   const stopMutation = useStopYouTubeStreamMutation(cameraId);
   const elapsed = useElapsed(streamStatus?.started_at ?? null);
-
-  const handleWatch = () => {
-    if (!streamStatus?.url) return;
-    void openExternalUrl(streamStatus.url);
-  };
 
   const handleStop = () => {
     feedback.alert({
@@ -50,7 +44,6 @@ export function useYouTubeStreamCard(cameraId: string, isOnline: boolean) {
       elapsed,
     },
     actions: {
-      handleWatch,
       handleStop,
     },
   };

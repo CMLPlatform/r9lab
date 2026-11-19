@@ -6,13 +6,17 @@ This module keeps the app-facing cache API small and stable while using
 
 import asyncio
 import hashlib
+import inspect
 import logging
+from annotationlib import Format
 from functools import wraps
+from operator import itemgetter
 from typing import TYPE_CHECKING, Any, cast
 
 from cashews import Cache
 from cashews.exceptions import UnSecureDataError
 from fastapi_pagination.api import resolve_params
+from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.requests import Request
 from starlette.responses import Response
@@ -24,6 +28,7 @@ from app.core.logging import sanitize_log_value
 if TYPE_CHECKING:
     from collections.abc import Awaitable, Callable
 
+    from fastapi.dependencies.models import Dependant
     from redis.asyncio import Redis
 
 logger = logging.getLogger(__name__)
@@ -34,7 +39,10 @@ _SUCCESS_STATUS_MAX = 299
 _CACHE_SIGNING_DIGEST = "sha256"
 _NO_STORE_DIRECTIVE = "no-store"
 _MISSING = object()
+_REQUEST_PARAM = "cache_request"
 _backend = Cache()
+# id(route) -> (route, its query param names); holding the route keeps its id from being reused.
+_route_query_names: dict[int, tuple[object, frozenset[str]]] = {}
 _cache_state = {"initialized": False}
 
 
@@ -89,16 +97,50 @@ def _pagination_key_part() -> str:
     """Return the active pagination params as a key fragment, or "" when unpaginated.
 
     fastapi-pagination reads page/size from a ContextVar rather than the endpoint's
-    parameters, so they are invisible to both ``kwargs`` and (on an endpoint that does
-    not declare a ``Request``) the query string. Reading the ContextVar directly makes
-    the key fail closed: a paginated endpoint varies per page whether or not its author
-    remembered to declare ``Request``.
+    parameters, so they are invisible to ``kwargs``. Reading the ContextVar keeps the key
+    per page for a cached function called without a request.
     """
     try:
         raw = resolve_params().to_raw_params()
     except Exception:  # noqa: BLE001 - unpaginated endpoints raise; they have no page to add
         return ""
     return f"{getattr(raw, 'limit', None)}:{getattr(raw, 'offset', None)}"
+
+
+def _declared_query_names(dependant: Dependant) -> frozenset[str]:
+    """Return the query param names a route reads, across its whole dependency tree."""
+    names: set[str] = set()
+    pending = [dependant]
+    while pending:
+        current = pending.pop()
+        pending.extend(current.dependencies)
+        for field in current.query_params:
+            names.add(field.alias)
+            model = field.field_info.annotation
+            if isinstance(model, type) and issubclass(model, BaseModel):  # a Query() param model
+                names.update(info.alias or name for name, info in model.model_fields.items())
+    return frozenset(names)
+
+
+def _query_key_part(request: Request | None) -> str:
+    """Return the request's declared query params, sorted by name, as a key fragment.
+
+    The endpoint ignores undeclared params, so they stay out of the key: otherwise any
+    client could fill the cache with copies of one response. Without a matched route the
+    whole query string is used.
+    """
+    if request is None:
+        return ""
+    items = request.query_params.multi_items()
+    route = request.scope.get("route")
+    dependant = getattr(route, "dependant", None)
+    if dependant is not None:
+        cached = _route_query_names.get(id(route))
+        if cached is None or cached[0] is not route:
+            cached = _route_query_names[id(route)] = (route, _declared_query_names(dependant))
+        items = [item for item in items if item[0] in cached[1]]
+    # Sorted by name only: the order of repeated values can matter to the endpoint.
+    return repr(sorted(items, key=itemgetter(0)))
 
 
 def _cache_key_excluding_dependencies(
@@ -121,7 +163,7 @@ def _cache_key_excluding_dependencies(
     function_name = getattr(func, "__name__", func.__class__.__name__)
     # The query string carries inputs outside the endpoint's kwargs, notably
     # fastapi-pagination's page/size (a ContextVar); without it every page shares one key.
-    query = request.url.query if request is not None else ""
+    query = _query_key_part(request)
     cache_key_source = (
         f"{module_name}:{function_name}:{filtered_args}:{filtered_kwargs}:{query}:{_pagination_key_part()}"
     )
@@ -174,15 +216,16 @@ def cache[**P, T](
     def decorator(func: Callable[P, Awaitable[T]]) -> Callable[P, Awaitable[T]]:
         @wraps(func)
         async def wrapper(*args: P.args, **kwargs: P.kwargs) -> T:
-            request = kwargs.get("request")
-            if not isinstance(request, Request):
-                request = next((arg for arg in args if isinstance(arg, Request)), None)
+            injected_request = cast("Request | None", kwargs.pop(_REQUEST_PARAM, None))
+            request = next((arg for arg in (*args, *kwargs.values()) if isinstance(arg, Request)), None)
+            # Only an endpoint that reads the request can vary by its credentials; the
+            # injected one is for the key alone, so signed-in clients share the entry.
             has_auth_material = request_has_auth_material(request)
 
             key = _cache_key_excluding_dependencies(
                 func,
                 namespace=cache_namespace(namespace),
-                request=request,
+                request=request or injected_request,
                 args=args,
                 kwargs=dict(kwargs),
             )
@@ -198,9 +241,30 @@ def cache[**P, T](
                 await _backend.set(key, result, expire=expire)
             return result
 
+        # FastAPI injects the request through this extra parameter, so every endpoint keys
+        # by the query params its route declares even when it declares no Request of its
+        # own: filter sets keep their search term in private state that their repr leaves out.
+        cast("Any", wrapper).__signature__ = _signature_with_request(func)
         return wrapper
 
     return decorator
+
+
+def _signature_with_request(func: Callable[..., Any]) -> inspect.Signature:
+    """Return ``func``'s signature plus an optional keyword-only ``Request`` parameter.
+
+    An endpoint that already declares a ``Request`` keeps its signature: FastAPI fills
+    only one request parameter per endpoint.
+    """
+    try:
+        signature = inspect.signature(func, eval_str=True)
+    except NameError:  # names imported only under TYPE_CHECKING, as FastAPI handles them
+        signature = inspect.signature(func, annotation_format=Format.FORWARDREF)
+    params = signature.parameters.values()
+    if any(isinstance(p.annotation, type) and issubclass(p.annotation, Request) for p in params):
+        return signature
+    request_param = inspect.Parameter(_REQUEST_PARAM, inspect.Parameter.KEYWORD_ONLY, default=None, annotation=Request)
+    return signature.replace(parameters=[*params, request_param])
 
 
 def init_cache(redis_client: Redis | None) -> None:

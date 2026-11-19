@@ -1,0 +1,10 @@
+---
+// The accessibility statement lives on the main site and covers this one; the
+// directive asks for a link on every page, so it sits in the footer slot.
+import Default from '@astrojs/starlight/components/Footer.astro';
+---
+
+<Default {...Astro.props} />
+<p class="r9lab-footer-note">
+  <a href="https://r9lab.io/accessibility/">Accessibility statement</a>
+</p>

@@ -1,26 +1,28 @@
 """Unit tests for cache utilities."""
 
+import inspect
 from unittest.mock import AsyncMock, MagicMock, patch
 
 from cashews.exceptions import UnSecureDataError
 from fastapi_pagination import Params
 from fastapi_pagination.api import set_params
 from pydantic import SecretStr
+from starlette.requests import Request
 
 from app.core.cache import (
     _backend,
     _backend_get,
     _cache_key_excluding_dependencies,
     _cache_state,
+    cache,
     clear_cache_namespace,
+    close_cache,
     init_cache,
 )
 
 
-def _request_with_query(query: str) -> MagicMock:
-    request = MagicMock()
-    request.url.query = query
-    return request
+def _request_with_query(query: str) -> Request:
+    return Request({"type": "http", "method": "GET", "path": "/", "headers": [], "query_string": query.encode()})
 
 
 def _example_endpoint() -> None:
@@ -130,3 +132,31 @@ async def test_clear_cache_namespace() -> None:
         await clear_cache_namespace("test-namespace")
 
         mock_delete.assert_awaited_once_with("test-cache:test-namespace:*")
+
+
+async def test_cached_endpoint_without_request_parameter_keys_by_query_string() -> None:
+    """An endpoint that declares no ``Request`` still gets keyed by its query string.
+
+    Filter sets keep the search term in private state their repr leaves out, so the
+    kwargs alone made ``?search=a`` and ``?search=b`` share one entry.
+    """
+    calls: list[str] = []
+    filters = MagicMock(__repr__=lambda _self: "Filters()")
+
+    async def endpoint(product_filter: object) -> int:
+        calls.append(repr(product_filter))
+        return len(calls)
+
+    cached = cache(expire=60)(endpoint)
+    request_param = next(p for p in inspect.signature(cached).parameters.values() if p.annotation is Request)
+
+    init_cache(None)
+    try:
+        results = [
+            await cached(product_filter=filters, **{request_param.name: _request_with_query(query)})
+            for query in ("search=a", "search=b", "search=a")
+        ]
+    finally:
+        await close_cache()
+
+    assert results == [1, 2, 1]

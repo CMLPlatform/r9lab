@@ -485,6 +485,9 @@ names the schema), so rolling back is pulling an earlier tag. The package pages 
 `rollback` cannot cross the R9lab rename: an older release runs the `relab_prod` project. Fix
 forward or restore from backup instead.
 
+The api healthcheck tries `/livez` and falls back to `/live`, so a rollback to a release from
+before the probe rename still turns healthy.
+
 ```bash
 just stack prod rollback YES <tag>                    # code only: the new schema still suits the old code
 just stack prod rollback YES <tag> <alembic-revision> # also downgrade the schema to that revision

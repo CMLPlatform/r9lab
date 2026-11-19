@@ -12,7 +12,7 @@ from app.api.common.crud.filtering import create_filter_dependency
 from app.api.common.crud.query import require_model
 from app.api.common.ownership import get_user_owned_object
 from app.api.common.routers.dependencies import AsyncSessionDep
-from app.api.data_collection.exceptions import ProductVersionMismatchError
+from app.api.data_collection.exceptions import ProductVersionMismatchError, ProductVersionRequiredError
 from app.api.data_collection.filters import MaterialProductLinkFilter, ProductFilterWithRelationships
 from app.api.data_collection.models.product import Product
 
@@ -26,17 +26,33 @@ ProductFilterWithRelationshipsDep = Annotated[
 
 
 ### Optimistic concurrency ###
+_IF_MATCH_DESCRIPTION = (
+    'The `version` field from the product\'s last read, quoted: `"3"`. '
+    "Not the `ETag` a GET returns: that one also changes with media. "
+    "A missing header is refused with 428, a stale or malformed value with 412."
+)
+# The parameter is optional in Python so a missing header answers 428, so the schema
+# declares it here as required instead of from the signature.
+IF_MATCH_OPENAPI_EXTRA = {
+    "parameters": [
+        {
+            "name": "if-match",
+            "in": "header",
+            "required": True,
+            "schema": {"type": "string", "title": "If-Match"},
+            "description": _IF_MATCH_DESCRIPTION,
+        }
+    ]
+}
+
+
 def product_if_match_version(
-    if_match: Annotated[
-        str,
-        Header(
-            description='The `version` field from the product\'s last read, quoted: `"3"`. '
-            "Not the `ETag` a GET returns: that one also changes with media. "
-            "A stale or malformed value is refused with 412.",
-        ),
-    ],
+    if_match: Annotated[str | None, Header(include_in_schema=False)] = None,
 ) -> int:
     """Parse the required ``If-Match: "<version>"`` header on product updates."""
+    # Optional in the signature so a missing header answers 428 (RFC 6585), not a 422.
+    if if_match is None:
+        raise ProductVersionRequiredError
     match = re.fullmatch(r'"([0-9]{1,9})"', if_match.strip())
     if match is None:
         raise ProductVersionMismatchError

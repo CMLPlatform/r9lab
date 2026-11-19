@@ -87,7 +87,7 @@ async def test_connect_logs_unexpected_background_task_failure() -> None:
         await asyncio.sleep(0)
 
     with (
-        patch("app.api.plugins.r9cam.websocket.router._authenticate", new=AsyncMock(return_value=True)),
+        patch("app.api.plugins.r9cam.websocket.router._authenticate", new=AsyncMock(return_value=MagicMock())),
         patch("app.api.plugins.r9cam.websocket.router.get_connection_manager", return_value=manager),
         patch("app.api.plugins.r9cam.websocket.router.require_connection_redis", return_value=redis),
         patch("app.api.plugins.r9cam.websocket.router._receive_loop", new=_noop_receive_loop),
@@ -103,6 +103,42 @@ async def test_connect_logs_unexpected_background_task_failure() -> None:
     ]
     assert len(logged_unexpected) == 1
     assert str(camera_id) in logged_unexpected[0].args
+
+
+async def test_connect_keeps_the_credential_the_camera_authenticated_with() -> None:
+    """The session holds the camera's relay key, which each heartbeat re-check compares against.
+
+    Without it the first re-check sees a differing key and closes every tunnel with 1008.
+    """
+    websocket = MagicMock()
+    websocket.headers = {}
+    websocket.client = SimpleNamespace(host="203.0.113.10")
+    websocket.accept = AsyncMock()
+    manager = MagicMock()
+    manager.register = AsyncMock()
+    manager.unregister = MagicMock(return_value=False)
+    jwk = {"kty": "EC", "crv": "P-256", "x": "x-coordinate", "y": "y-coordinate"}
+    camera = SimpleNamespace(relay_key_id="cam-key-1", relay_public_key_jwk=jwk)
+    sessions: list[_RelayWebSocketSession] = []
+
+    async def _record_session(_websocket: object, session: _RelayWebSocketSession) -> None:
+        sessions.append(session)
+
+    async def _hang_forever(*_args: object, **_kwargs: object) -> None:
+        await asyncio.Event().wait()
+
+    with (
+        patch("app.api.plugins.r9cam.websocket.router._authenticate", new=AsyncMock(return_value=camera)),
+        patch("app.api.plugins.r9cam.websocket.router.get_connection_manager", return_value=manager),
+        patch("app.api.plugins.r9cam.websocket.router.require_connection_redis", return_value=AsyncMock()),
+        patch("app.api.plugins.r9cam.websocket.router._receive_loop", new=_record_session),
+        patch("app.api.plugins.r9cam.websocket.router.run_relay_listener", new=_hang_forever),
+        patch("app.api.plugins.r9cam.websocket.router._heartbeat_loop", new=_hang_forever),
+        patch("app.api.plugins.r9cam.websocket.router.mark_camera_offline", new=AsyncMock()),
+    ):
+        await camera_websocket_connect(websocket, uuid4())
+
+    assert [(s.relay_key_id, s.relay_public_key_jwk) for s in sessions] == [("cam-key-1", jwk)]
 
 
 async def test_session_text_frame_sanitizes_camera_id_in_log() -> None:
@@ -165,7 +201,7 @@ async def test_authenticate_sanitizes_client_ip_when_blocked() -> None:
         mock_limiter.ahit_key = AsyncMock(side_effect=RateLimitExceededError)
         result = await _authenticate(websocket, camera_id)
 
-    assert result is False
+    assert result is None
     websocket.close.assert_awaited_once()
     mock_logger.warning.assert_called_once_with(
         "WebSocket auth bucket %s for camera %s blocked by rate limit.",
@@ -187,7 +223,7 @@ async def test_authenticate_enforces_redis_backed_rate_limit_before_auth_lookup(
         mock_limiter.ahit_key = AsyncMock()
         result = await _authenticate(websocket, camera_id)
 
-    assert result is False
+    assert result is None
     mock_limiter.ahit_key.assert_any_await(
         "10/minute",
         rate_limit_bucket_key("r9cam:ws-auth:ip", "203.0.113.10"),
@@ -219,6 +255,124 @@ async def test_heartbeat_loop_sanitizes_camera_id_on_timeout() -> None:
         str(camera_id),
         91.0,
     )
+
+
+_RELAY_JWK = {"kty": "EC", "crv": "P-256", "x": "x-1", "y": "y-1"}
+
+
+def _authorised_camera(**changes: object) -> SimpleNamespace:
+    camera = SimpleNamespace(
+        credential_is_active=True,
+        relay_key_id="key-1",
+        relay_public_key_jwk=dict(_RELAY_JWK),
+        owner=SimpleNamespace(is_active=True, is_verified=True),
+    )
+    for name, value in changes.items():
+        setattr(camera, name, value)
+    return camera
+
+
+def _heartbeat_session() -> _RelayWebSocketSession:
+    return _RelayWebSocketSession(
+        camera_id=uuid4(),
+        manager=MagicMock(),
+        redis=AsyncMock(),
+        relay_key_id="key-1",
+        relay_public_key_jwk=dict(_RELAY_JWK),
+        last_pong_at=0.0,
+    )
+
+
+@pytest.mark.parametrize(
+    "camera",
+    [
+        None,
+        _authorised_camera(credential_is_active=False),
+        _authorised_camera(relay_key_id="key-2"),
+        _authorised_camera(relay_public_key_jwk={**_RELAY_JWK, "x": "x-2"}),
+        _authorised_camera(owner=SimpleNamespace(is_active=False, is_verified=True)),
+        _authorised_camera(owner=SimpleNamespace(is_active=True, is_verified=False)),
+    ],
+    ids=["deleted", "revoked", "key-id-rotated", "key-rotated", "owner-inactive", "owner-unverified"],
+)
+async def test_heartbeat_closes_a_socket_the_camera_may_no_longer_hold(camera: SimpleNamespace | None) -> None:
+    """A tunnel opened before a revoke, rotation, delete or owner change closes on the next tick."""
+    websocket = MagicMock()
+    websocket.close = AsyncMock()
+    websocket.send_text = AsyncMock()
+
+    with (
+        patch(f"{_ROUTER}.asyncio.sleep", new=AsyncMock()),
+        patch(f"{_ROUTER}.monotonic", return_value=1.0),
+        patch(f"{_ROUTER}._get_camera", new=AsyncMock(return_value=camera)),
+    ):
+        await _heartbeat_loop(websocket, _heartbeat_session())
+
+    websocket.close.assert_awaited_once_with(code=_WS_POLICY_VIOLATION, reason="Camera no longer authorised.")
+    websocket.send_text.assert_not_awaited()
+
+
+async def _hang(*_args: object, **_kwargs: object) -> None:
+    await asyncio.Event().wait()
+
+
+async def test_heartbeat_keeps_the_socket_after_one_failed_re_check() -> None:
+    """A single database error keeps the tunnel and still pings; a success resets the count."""
+    websocket = MagicMock()
+    websocket.close = AsyncMock()
+    websocket.send_text = AsyncMock()
+    lookups = [OSError("db down"), _authorised_camera(), OSError("db down")]
+
+    with (
+        patch(f"{_ROUTER}.asyncio.sleep", new=AsyncMock(side_effect=[None, None, None, asyncio.CancelledError])),
+        patch(f"{_ROUTER}.monotonic", return_value=1.0),
+        patch(f"{_ROUTER}._get_camera", new=AsyncMock(side_effect=lookups)),
+        patch(f"{_ROUTER}.logger"),
+        pytest.raises(asyncio.CancelledError),
+    ):
+        await _heartbeat_loop(websocket, _heartbeat_session())
+
+    websocket.close.assert_not_awaited()
+    assert websocket.send_text.await_count == 3
+
+
+@pytest.mark.parametrize("failure", ["error", "timeout"])
+async def test_heartbeat_closes_with_1011_after_two_failed_re_checks(failure: str) -> None:
+    """Two failed re-checks in a row, a timeout included, close with 1011 rather than a policy close."""
+    websocket = MagicMock()
+    websocket.close = AsyncMock()
+    websocket.send_text = AsyncMock()
+    lookup = AsyncMock(side_effect=OSError("db down")) if failure == "error" else _hang
+
+    with (
+        patch(f"{_ROUTER}.asyncio.sleep", new=AsyncMock()),
+        patch(f"{_ROUTER}.monotonic", return_value=1.0),
+        patch(f"{_ROUTER}._RECHECK_TIMEOUT", 0.01),
+        patch(f"{_ROUTER}._get_camera", new=lookup),
+        patch(f"{_ROUTER}.logger"),
+    ):
+        await asyncio.wait_for(_heartbeat_loop(websocket, _heartbeat_session()), timeout=2)
+
+    websocket.close.assert_awaited_once_with(code=_WS_INTERNAL_ERROR, reason="Authorisation check unavailable.")
+    websocket.send_text.assert_awaited_once()
+
+
+async def test_heartbeat_keeps_pinging_a_camera_that_is_still_authorised() -> None:
+    """An unchanged camera keeps its socket and gets its ping."""
+    websocket = MagicMock()
+    websocket.close = AsyncMock()
+    websocket.send_text = AsyncMock()
+
+    with (
+        patch(f"{_ROUTER}.asyncio.sleep", new=AsyncMock(side_effect=[None, asyncio.CancelledError])),
+        patch(f"{_ROUTER}.monotonic", return_value=1.0),
+        patch(f"{_ROUTER}._get_camera", new=AsyncMock(return_value=_authorised_camera())),
+        pytest.raises(asyncio.CancelledError),
+    ):
+        await _heartbeat_loop(websocket, _heartbeat_session())
+
+    websocket.close.assert_not_awaited()
+    websocket.send_text.assert_awaited_once()
 
 
 async def test_receive_loop_closes_on_oversized_text_frame(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -521,7 +675,7 @@ async def test_authenticate_rejects_an_unknown_camera(relay_auth_patches) -> Non
     relay_auth_patches.get_camera.return_value = None
     websocket = _authenticating_websocket()
 
-    assert await _authenticate(websocket, uuid4()) is False
+    assert await _authenticate(websocket, uuid4()) is None
     websocket.close.assert_awaited_once_with(code=_WS_POLICY_VIOLATION, reason="Authentication failed.")
     relay_auth_patches.verify_assertion.assert_not_awaited()
 
@@ -535,7 +689,7 @@ async def test_authenticate_rejects_a_camera_whose_credential_is_no_longer_activ
     relay_auth_patches.get_camera.return_value = SimpleNamespace(credential_is_active=False, relay_key_id="key-1")
     websocket = _authenticating_websocket()
 
-    assert await _authenticate(websocket, uuid4()) is False
+    assert await _authenticate(websocket, uuid4()) is None
     websocket.close.assert_awaited_once_with(code=_WS_POLICY_VIOLATION, reason="Authentication failed.")
     relay_auth_patches.verify_assertion.assert_not_awaited()
 
@@ -548,7 +702,7 @@ async def test_authenticate_rejects_a_camera_whose_owner_is_inactive_or_unverifi
     setattr(relay_auth_patches.get_camera.return_value.owner, owner_flag, False)
     websocket = _authenticating_websocket()
 
-    assert await _authenticate(websocket, uuid4()) is False
+    assert await _authenticate(websocket, uuid4()) is None
     websocket.close.assert_awaited_once_with(code=_WS_POLICY_VIOLATION, reason="Authentication failed.")
     relay_auth_patches.verify_assertion.assert_not_awaited()
 
@@ -558,7 +712,7 @@ async def test_authenticate_fails_closed_when_redis_is_unavailable(relay_auth_pa
     relay_auth_patches.require_redis.side_effect = RequiredServiceUnavailableError("redis")
     websocket = _authenticating_websocket()
 
-    assert await _authenticate(websocket, uuid4()) is False
+    assert await _authenticate(websocket, uuid4()) is None
     websocket.close.assert_awaited_once_with(code=_WS_INTERNAL_ERROR, reason="Authentication service unavailable.")
     relay_auth_patches.verify_assertion.assert_not_awaited()
 
@@ -568,7 +722,7 @@ async def test_authenticate_rejects_an_invalid_assertion(relay_auth_patches) -> 
     relay_auth_patches.verify_assertion.side_effect = InvalidTokenError("expired")
     websocket = _authenticating_websocket()
 
-    assert await _authenticate(websocket, uuid4()) is False
+    assert await _authenticate(websocket, uuid4()) is None
     websocket.close.assert_awaited_once_with(code=_WS_POLICY_VIOLATION, reason="Authentication failed.")
     relay_auth_patches.mark_online.assert_not_awaited()
 
@@ -578,7 +732,7 @@ async def test_authenticate_accepts_a_valid_assertion_and_marks_the_camera_onlin
     websocket = _authenticating_websocket()
     camera_id = uuid4()
 
-    assert await _authenticate(websocket, camera_id) is True
+    assert await _authenticate(websocket, camera_id) is relay_auth_patches.get_camera.return_value
     websocket.close.assert_not_awaited()
     relay_auth_patches.mark_online.assert_awaited_once()
     assert relay_auth_patches.mark_online.await_args.args[1] == camera_id

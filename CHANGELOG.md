@@ -21,6 +21,12 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   - Rolling back past the rename is not supported once traffic reopens.
 - **Breaking:** `just deploy` uses the ssh alias `r9lab-<env>` by default. Rename your ssh
   aliases, or set `R9LAB_DEPLOY_HOST`.
+- **Breaking:** API clients: `PATCH /v1/products/{id}` and `PATCH /v1/components/{id}`
+  without an `If-Match` header answer 428 Precondition Required instead of 422.
+- **Breaking:** the API's health probes move: `/live` is now `/livez` and `/health` is now
+  `/readyz`. The old paths answer 404. Point any external monitor at the new paths. `/readyz`
+  gives each database and Redis check 2 seconds, sends `Cache-Control: no-store` and no longer
+  names the database driver.
 - Developers: run `docker compose -p relab_dev down` (and `relab_test`, `relab_e2e`) before the
   first `just dev-up`. The old dev database is not carried over, so seed it again. Rebuild the
   devcontainer: the workspace is now `/opt/r9lab`.
@@ -30,6 +36,12 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- The app links the accessibility statement from its sign-in and sign-up screens, and Terms,
+  Privacy policy and the accessibility statement from Account, under About.
+  ([#506](https://github.com/CMLPlatform/r9lab/issues/506))
+- The public web app routes (products, a product, a profile, sign-in, sign-up) carry a
+  `<meta name="description">`, taken from the product's description on a product page.
+  ([#504](https://github.com/CMLPlatform/r9lab/issues/504))
 - r9cam cameras can sign their device tokens with EdDSA (Ed25519) as well as ES256. Each camera
   may use only the algorithm of the key it paired with. The backend now uses r9cam-models
   0.7.0, which accepts Ed25519 public keys at pairing. ([#501](https://github.com/CMLPlatform/r9lab/issues/501))
@@ -49,17 +61,31 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Product lists filter on `has_components` (`true` or `false`) and on `completeness`
   (`completeness[ge]=1` keeps complete records). The app's product filters gain "Has components"
   and "Complete records" chips. ([#113](https://github.com/CMLPlatform/r9lab/issues/113))
+- A `/.well-known/security.txt` on the website (RFC 9116) and alt text on the social preview image.
+- Pull requests fail when they change the public or device OpenAPI document in a breaking way
+  (label `breaking-api` marks an intended break), or add a dependency under a licence that cannot
+  ship in an AGPL-3.0-or-later project.
 
 ### Changed
 
+- The landing page shows the example teardown's six photo plates in two columns on a phone, so
+  the "Why" section is not pushed far down. A plate with sub-parts says how many ("258 g · 2
+  parts"). Links to the app open in the same tab; links to other sites still open a new one.
+  The method section numbers only its steps, and a skip link leads to the main content.
+- Every docs page links the accessibility statement from its footer. Wide tables and code blocks
+  scroll from the keyboard: the docs now render Markdown with `@astrojs/markdown-satteri`, and a
+  table plugin wraps each table in a scroll region. The docs call the camera plugin r9cam
+  throughout, the home page is titled "R9lab documentation" and has an Install card, the 404 page
+  links back into the docs, and the menu button on a phone is flat in light mode too.
+  ([#506](https://github.com/CMLPlatform/r9lab/issues/506))
+- The docs accessibility scan covers every built page at desktop and phone width, and the
+  accessibility statement says it runs on every pull request.
 - The welcome card on the products screen has even inner padding, the mark lines up with the
   text, and "Sign in" is a solid primary button. On wide screens the actions sit beside the text.
 - The `r9lab-backup` image is built on Debian slim with only the PostgreSQL client, not the
   full `postgres:18` server image. It is about 71 MB to pull instead of 186 MB.
 - The landing page and docs Workers are named `r9lab-www-<env>` and `r9lab-docs-<env>`.
-- `just images-verify` checks images against `CMLPlatform/r9lab`. Only `sha-8697ebf`, published
-  between the deployment rename and the repository rename, still verifies against the old
-  repository name.
+- `just images-verify` checks images against `CMLPlatform/r9lab`.
 - `RELAB_ENVIRONMENT` is gone from `compose.deploy.yaml`; only `R9LAB_ENVIRONMENT` is set.
 - The dataset release build reads only `R9LAB_PSEUDONYM_SALT` (the `RELAB_PSEUDONYM_SALT`
   fallback is removed) and rejects salts shorter than 32 characters.
@@ -71,6 +97,8 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Removed
 
+- The landing page no longer reads a theme choice stored under the old `relab-theme` key; visitors
+  who set one before the rename see the system theme until they choose again.
 - The legacy admin path `/v1/admin/plugins/rpi-cam` is no longer served. The device and
   user-facing legacy camera paths stay until 2027-01-31.
 - The docs site's Prerequisites, Configure, Deploy and Upgrade and backup pages. Their URLs
@@ -79,6 +107,18 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- Cached public lists, such as product types and taxonomies, are stored per search, filter and
+  page. A search or filter no longer gets the result of an earlier request with the same page
+  size.
+- Web app accessibility: the category picker has one page heading instead of two; wrong-code,
+  reset and verify errors are announced by screen readers; inline links (camera guide, stream
+  URL) are real links that open with Enter and in a new tab; and the welcome and empty messages
+  read as one sentence.
+- The products list no longer says "No products yet" under a failed load. Only deleting the
+  account is red on the account screen, not signing out or unlinking a provider, and "Connected
+  as" no longer ends empty when a provider gave no email.
+- A product or component edit that sets `amount_in_parent` on a base product, or clears it on a
+  component, answers 400 instead of 500.
 - Registration and verification emails said the link expires in 1 hour. They now state the
   real lifetime, 1 day, and the reset email states its own.
 - Public profile statistics are counted from the owner's products and photos, so they stay
@@ -123,6 +163,13 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Security
 
+- Google and GitHub sign-in and account linking use PKCE (S256). The OAuth callbacks no longer
+  accept a `code_verifier` query parameter.
+- An open camera relay connection closes within one heartbeat (30 seconds) once the camera is
+  deleted, its credential is revoked or its key rotated, or its owner is deactivated or loses
+  verification.
+- Every admin change to reference data (taxonomies, categories, materials, product types, their
+  category links and media) and every cache clear writes an audit event naming the admin.
 - Pillow is updated to 13.0.0, which fixes a heap buffer overflow in its JPEG decoder
   ([GHSA-8g5g-8vmr-9782](https://github.com/advisories/GHSA-8g5g-8vmr-9782), critical).
 - Only the latest release gets security fixes; SECURITY.md now says so, and how a report is

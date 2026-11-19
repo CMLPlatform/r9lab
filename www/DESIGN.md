@@ -339,11 +339,17 @@ viewport, not per step.
   schedule extract line.
 - **Meta** (Sans 400, `0.94rem`, often italic, muted): page meta lines, chart captions, the
   affiliation line, the 9R aside. Italic marks an editorial note about the page.
-- **Metric** (Sans 600, `clamp(2.4rem, 5vw, 3.6rem)`, 0.95, `-0.02em`): the one hero figure, in
-  *proportional* digits: `tabular-nums` reads loose at display size. Tiles below it use
+- **Metric** (Sans 600, `clamp(2.4rem, 5vw, 3.6rem)`, 0.95, `-0.02em`): the stats panel's headline
+  figure. The hero itself carries one figure on the Data line with its as-of date: proof beats
+  conversion, and a display-size number beside the contribute button would read as growth marketing.
+  Metric digits are *proportional*: `tabular-nums` reads loose at display size. Tiles below it use
   `1.55rem`/600 with the same treatment.
 
 ### Named Rules
+
+**The New-Tab Rule.** Links to the app open in the same tab: it is the same product, and a sign-up
+flow in a second tab leaves an orphan with no back button. Links to other sites (docs, DOI, licence,
+GitHub) open a new tab and say so in hidden text.
 
 **The No-Eyebrow Rule.** www carries **no eyebrows or kickers**. A mono uppercase label that only
 restates the heading under it is chrome. Provenance lines sit *under* the title as captions, never

@@ -145,6 +145,10 @@ describe('ResetPasswordScreen submission', () => {
     );
     expect(screen.getByText(PASSWORD_RESET_SUCCESS_PATTERN)).toBeOnTheScreen();
     expect(screen.getByText(REDIRECTING_TO_LOGIN_PATTERN)).toBeOnTheScreen();
+    // The success view mounts with its text, which a live region alone often leaves unannounced.
+    const status = screen.getByTestId('reset-password-success-status');
+    expect(status.props.role).toBe('status');
+    expect(status).toHaveTextContent(PASSWORD_RESET_SUCCESS_PATTERN);
   });
 
   it('submits a web fragment token after scrubbing it from the URL', async () => {

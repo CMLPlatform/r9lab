@@ -1,0 +1,6 @@
+Contact: https://github.com/CMLPlatform/r9lab/security/advisories/new
+Contact: mailto:info@r9lab.io
+Expires: 2027-11-01T00:00:00.000Z
+Preferred-Languages: en
+Canonical: https://r9lab.io/.well-known/security.txt
+Policy: https://github.com/CMLPlatform/r9lab/blob/main/.github/SECURITY.md

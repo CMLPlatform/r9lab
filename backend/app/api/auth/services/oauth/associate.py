@@ -34,6 +34,7 @@ from .utils import (
     FRONTEND_REDIRECT_URI_KEY,
     OAuth2AuthorizeResponse,
     OAuthCookieSettings,
+    delete_flow_cookies,
 )
 
 if TYPE_CHECKING:
@@ -147,6 +148,7 @@ def build_oauth_associate_router(
 
     async def callback(
         request: Request,
+        response: Response,
         user: Annotated[User, Depends(get_current_active_user)],
         access_token_state: Annotated[tuple[OAuth2Token, str], Depends(oauth2_authorize_callback)],
         user_manager: Annotated[UserManager, Depends(fastapi_user_manager.get_user_manager)],
@@ -159,6 +161,7 @@ def build_oauth_associate_router(
             access_token_state,
             user_manager,
             user_schema=user_schema,
+            response=response,
             background_tasks=background_tasks,
         )
 
@@ -181,12 +184,15 @@ async def handle_oauth_associate_callback(
     user_manager: UserManager,
     *,
     user_schema: type[schemas.U],
+    response: Response,
     background_tasks: BackgroundTasks | None = None,
 ) -> Response | schemas.U:
     """Handle one OAuth account-association callback after provider token exchange.
 
     Once the state is verified it names a trusted frontend, so a failed link goes back
-    there as ``status=error``; before that, errors stay JSON.
+    there as ``status=error``; before that, errors stay JSON. A redirect, or the route's
+    ``response`` when the user is returned as JSON, expires the flow's CSRF and PKCE
+    verifier cookies.
     """
     token, state = access_token_state
     state_data = verify_oauth_state(config, request, state)
@@ -199,11 +205,16 @@ async def handle_oauth_associate_callback(
         if not frontend_redirect:
             raise
         error = str(getattr(err.detail, "value", err.detail))
-        return create_oauth_result_redirect(frontend_redirect, status="error", error=error)
+        redirect = create_oauth_result_redirect(frontend_redirect, status="error", error=error)
+        delete_flow_cookies(redirect, config.cookie_settings)
+        return redirect
 
     if frontend_redirect:
-        return create_oauth_result_redirect(frontend_redirect, status="success", response=FastAPIResponse())
+        redirect = create_oauth_result_redirect(frontend_redirect, status="success", response=FastAPIResponse())
+        delete_flow_cookies(redirect, config.cookie_settings)
+        return redirect
 
+    delete_flow_cookies(response, config.cookie_settings)
     return cast("schemas.U", user_schema.model_validate(user))
 
 

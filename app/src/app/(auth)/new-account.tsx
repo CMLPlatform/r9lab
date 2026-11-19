@@ -21,6 +21,10 @@ export default function NewAccount() {
     <>
       <Head>
         <title>Create account · R9lab</title>
+        <meta
+          name="description"
+          content="Create a free R9lab account to record products and their parts for circular-economy research."
+        />
       </Head>
       <NewAccountLayout onNavigateToLogin={actions.goToLogin}>
         {flow.section === 'username' ? (

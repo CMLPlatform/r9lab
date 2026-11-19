@@ -26,6 +26,7 @@ function renderList({
   isLoading = false,
   numColumns = 1,
   isFiltered = false,
+  hasError = false,
 }: {
   isFetchingNextPage?: boolean;
   hasNextPage?: boolean;
@@ -36,6 +37,7 @@ function renderList({
   isLoading?: boolean;
   numColumns?: number;
   isFiltered?: boolean;
+  hasError?: boolean;
 } = {}) {
   return renderWithProviders(
     <ProductsListContent
@@ -50,6 +52,7 @@ function renderList({
       searchQuery=""
       isFiltered={isFiltered}
       isAuthenticated
+      hasError={hasError}
       onScroll={undefined}
       onRefresh={onRefresh}
       onFetchNextPage={onFetchNextPage}
@@ -284,6 +287,18 @@ describe('ProductsListContent empty state', () => {
     // (wide, not a square mark) rather than the source path.
     const wordmark = screen.getByTestId('expo-image', { includeHiddenElements: true });
     expect(wordmark.props.style.width).toBeGreaterThan(wordmark.props.style.height * 2);
+  });
+
+  it('shows no empty copy when the load failed, so it cannot contradict the error', async () => {
+    await renderList({ products: [], total: 0, hasError: true });
+    expect(screen.queryByTestId('products-empty-state')).toBeNull();
+  });
+
+  it('reads the call to action as one text node', async () => {
+    await renderList({ products: [], total: 0 });
+    expect(
+      screen.getByText('No products yet. Tap the New product button to add the first one.'),
+    ).toBeOnTheScreen();
   });
 
   it('does not mount the teardown photo behind a populated list', async () => {

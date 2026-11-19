@@ -129,7 +129,7 @@ datasets (hyperspectral ENVI, HDF5, NITF, GeoTIFF); R9lab stores those without i
 Every signed-in, verified account can upload images. Only a lab account sees the "Research files"
 block on a record it owns. Ask an administrator if you need the lab role.
 
-For the camera integration, see [RPi camera integration](../r9cam/).
+For the camera integration, see [r9cam integration](../r9cam/).
 
 ## Upload limits
 

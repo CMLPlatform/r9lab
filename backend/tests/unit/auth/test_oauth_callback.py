@@ -13,12 +13,14 @@ from app.api.auth.services.oauth.utils import (
     CSRF_TOKEN_KEY,
     OAUTH_FLOW_KEY,
     OAUTH_PROVIDER_KEY,
+    PKCE_VERIFIER_COOKIE_NAME,
     generate_csrf_token,
     generate_state_token,
 )
 
 STATE_SECRET = "test-state-secret-at-least-32-bytes-long-for-hmac-sha256"
 REDIRECT_URL = "https://api.example.com/v1/oauth/github/session/callback"
+CODE_VERIFIER = "verifier-from-the-authorize-step"
 
 
 def _config() -> tuple[OAuthFlowConfig, MagicMock]:
@@ -37,7 +39,7 @@ def _request_with_state(config: OAuthFlowConfig) -> tuple[MagicMock, str]:
         {CSRF_TOKEN_KEY: csrf_token, OAUTH_PROVIDER_KEY: "github", OAUTH_FLOW_KEY: config.oauth_flow}, STATE_SECRET
     )
     request = MagicMock()
-    request.cookies = {config.cookie_settings.name: csrf_token}
+    request.cookies = {config.cookie_settings.name: csrf_token, PKCE_VERIFIER_COOKIE_NAME: CODE_VERIFIER}
     return request, state
 
 
@@ -50,7 +52,18 @@ async def test_trades_code_after_state_verifies() -> None:
 
     assert token == {"access_token": "provider-token"}
     assert returned_state == state
-    client.get_access_token.assert_awaited_once_with("c", REDIRECT_URL, None)
+    client.get_access_token.assert_awaited_once_with("c", REDIRECT_URL, CODE_VERIFIER)
+
+
+async def test_state_without_pkce_cookie_never_reaches_provider() -> None:
+    """A callback that lacks the verifier cookie answers 400 without trading the code."""
+    config, client = _config()
+    request, state = _request_with_state(config)
+    del request.cookies[PKCE_VERIFIER_COOKIE_NAME]
+
+    with pytest.raises(OAuthInvalidStateError):
+        await authorize_callback_dependency(config, "unused")(request, code="c", state=state)
+    client.get_access_token.assert_not_awaited()
 
 
 @pytest.mark.parametrize(

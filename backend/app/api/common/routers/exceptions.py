@@ -31,6 +31,20 @@ _CLIENT_VALUE_SQLSTATES = {
     # character_not_in_repertoire: text holding a NUL byte.
     "22021": "Text values must not contain NUL characters",
 }
+# CHECK constraints a request body can break, so the client gets a 400 rather than a 500.
+# Keyed by constraint name.
+_CLIENT_CHECK_CONSTRAINTS = {
+    "product_role_invariants": "A component needs an amount_in_parent above 0, and a base product cannot have one",
+}
+
+
+def _client_db_error_detail(exc: DBAPIError) -> str | None:
+    """Return the client-facing detail for a database error the request caused, else None."""
+    if detail := _CLIENT_VALUE_SQLSTATES.get(getattr(exc.orig, "sqlstate", None)):
+        return detail
+    # The driver's own exception, chained by the SQLAlchemy adapter, names the constraint.
+    constraint = getattr(getattr(exc.orig, "__cause__", None), "constraint_name", None)
+    return _CLIENT_CHECK_CONSTRAINTS.get(constraint) if constraint else None
 
 
 def create_exception_handler(
@@ -92,7 +106,7 @@ def _response_parts(
         )
     if isinstance(exc, APIError):
         return _api_error_parts(exc)
-    if isinstance(exc, DBAPIError) and (detail := _CLIENT_VALUE_SQLSTATES.get(getattr(exc.orig, "sqlstate", None))):
+    if isinstance(exc, DBAPIError) and (detail := _client_db_error_detail(exc)):
         return (
             BadRequestError.http_status_code,
             detail,

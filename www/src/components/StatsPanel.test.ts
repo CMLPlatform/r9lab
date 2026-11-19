@@ -10,8 +10,8 @@ describe('StatsPanel', () => {
 
     expect(html).toContain('id="stats-panel"');
     expect(html).toContain('hidden');
-    // Async reveal (src/scripts/stats.ts) needs to be announced to screen readers.
-    expect(html).toContain('aria-live="polite"');
+    // A one-off render, not a live update: announcing the whole ledger would be noise.
+    expect(html).not.toContain('aria-live');
     for (const hook of [
       'hero',
       'tiles',

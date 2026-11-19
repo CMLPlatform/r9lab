@@ -72,17 +72,16 @@ const phases = [
   {/* Ordered lists carry the order; no arrow glyphs. */}
   <ol class="flow" role="list">
     {
-      phases.map((phase, phaseIndex) => (
+      phases.map((phase) => (
         <li class="flow-phase">
           <p class="flow-phase-name">
-            <span class="flow-phase-num">{phaseIndex + 1}</span>
             {phase.name}
             {phase.repeats && <span class="flow-phase-repeat">repeats</span>}
           </p>
           <ol class="flow-steps" role="list">
             {phase.steps.map((step) => (
               <li class="flow-step">
-                <h3 class="flow-step-name">{step.name}</h3>
+                <strong class="flow-step-name">{step.name}</strong>
                 <p class="flow-step-detail">{step.detail}</p>
               </li>
             ))}
@@ -102,10 +101,10 @@ const phases = [
       made or read. The wordmark stays artwork, never spelled out as text. */}
   <p class="method-aside">
     {/* Explicit spaces: Astro strips the inter-node newline around an <a>. */}
-    Background: the nine in the mark is a nod to the 9R framework, the ten circular-economy
-    strategies from Refuse to Recover that the project takes its cue from.{' '}
+    Background: the nine in the mark nods to the 9R framework, the ladder of circular-economy
+    strategies from Refuse to Recover.{' '}
     <a href={frameworkUrl} target="_blank" rel="noopener noreferrer"
-      >See the ladder in the docs<span class="visually-hidden"> (opens in new tab)</span></a
+      >Read about the 9R framework in the docs<span class="visually-hidden"> (opens in new tab)</span></a
     >.
   </p>
 </section>
@@ -159,14 +158,6 @@ const phases = [
     color: var(--color-muted);
   }
 
-  /* Ink, not manila: these ordinals label a section, and the accent rule
-     reserves manila for a datum. Weight carries the emphasis.
-     Mirrors assets/DESIGN.md:167-173; change it there first. */
-  .flow-phase-num {
-    color: var(--color-on-surface);
-    font-weight: 600;
-  }
-
   /* The looping phase says so; the column layout cannot draw the arrow back. */
   .flow-phase-repeat {
     padding: 0.1rem 0.4rem;
@@ -205,6 +196,7 @@ const phases = [
   }
 
   .flow-step-name {
+    display: block;
     margin: 0;
     font-family: var(--r9lab-brand-font), sans-serif;
     font-size: var(--r9lab-type-body-size);

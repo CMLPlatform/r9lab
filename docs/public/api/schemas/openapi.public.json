@@ -9499,12 +9499,11 @@
             }
           },
           {
-            "description": "The `version` field from the product's last read, quoted: `\"3\"`. Not the `ETag` a GET returns: that one also changes with media. A stale or malformed value is refused with 412.",
+            "description": "The `version` field from the product's last read, quoted: `\"3\"`. Not the `ETag` a GET returns: that one also changes with media. A missing header is refused with 428, a stale or malformed value with 412.",
             "in": "header",
             "name": "if-match",
             "required": true,
             "schema": {
-              "description": "The `version` field from the product's last read, quoted: `\"3\"`. Not the `ETag` a GET returns: that one also changes with media. A stale or malformed value is refused with 412.",
               "title": "If-Match",
               "type": "string"
             }
@@ -9543,6 +9542,9 @@
               }
             },
             "description": "Validation Error"
+          },
+          "428": {
+            "description": "The `If-Match` header is missing."
           }
         },
         "security": [
@@ -12111,22 +12113,6 @@
           },
           {
             "in": "query",
-            "name": "code_verifier",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Code Verifier"
-            }
-          },
-          {
-            "in": "query",
             "name": "state",
             "required": false,
             "schema": {
@@ -12249,22 +12235,6 @@
           },
           {
             "in": "query",
-            "name": "code_verifier",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Code Verifier"
-            }
-          },
-          {
-            "in": "query",
             "name": "state",
             "required": false,
             "schema": {
@@ -12373,22 +12343,6 @@
                 }
               ],
               "title": "Code"
-            }
-          },
-          {
-            "in": "query",
-            "name": "code_verifier",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Code Verifier"
             }
           },
           {
@@ -12533,22 +12487,6 @@
                 }
               ],
               "title": "Code"
-            }
-          },
-          {
-            "in": "query",
-            "name": "code_verifier",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Code Verifier"
             }
           },
           {
@@ -12707,22 +12645,6 @@
           },
           {
             "in": "query",
-            "name": "code_verifier",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Code Verifier"
-            }
-          },
-          {
-            "in": "query",
             "name": "state",
             "required": false,
             "schema": {
@@ -12845,22 +12767,6 @@
           },
           {
             "in": "query",
-            "name": "code_verifier",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Code Verifier"
-            }
-          },
-          {
-            "in": "query",
             "name": "state",
             "required": false,
             "schema": {
@@ -12969,22 +12875,6 @@
                 }
               ],
               "title": "Code"
-            }
-          },
-          {
-            "in": "query",
-            "name": "code_verifier",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Code Verifier"
             }
           },
           {
@@ -16830,12 +16720,11 @@
             }
           },
           {
-            "description": "The `version` field from the product's last read, quoted: `\"3\"`. Not the `ETag` a GET returns: that one also changes with media. A stale or malformed value is refused with 412.",
+            "description": "The `version` field from the product's last read, quoted: `\"3\"`. Not the `ETag` a GET returns: that one also changes with media. A missing header is refused with 428, a stale or malformed value with 412.",
             "in": "header",
             "name": "if-match",
             "required": true,
             "schema": {
-              "description": "The `version` field from the product's last read, quoted: `\"3\"`. Not the `ETag` a GET returns: that one also changes with media. A stale or malformed value is refused with 412.",
               "title": "If-Match",
               "type": "string"
             }
@@ -16874,6 +16763,9 @@
               }
             },
             "description": "Validation Error"
+          },
+          "428": {
+            "description": "The `If-Match` header is missing."
           }
         },
         "security": [

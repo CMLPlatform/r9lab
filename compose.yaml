@@ -95,7 +95,9 @@ services:
       REDIS_HOST: redis # Point to the cache service
     healthcheck:
       !!merge <<: *healthcheck-defaults
-      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/live', timeout=5)"]
+      # TODO(drop-by 2027-01-31): drop the /live fallback once no rollback target predates /livez
+      # (a rollback swaps the image but keeps these compose files).
+      test: ["CMD", "python", "-c", "import http.client as h, sys; s = lambda p: (c := h.HTTPConnection('localhost', 8000, timeout=5)).request('GET', p) or c.getresponse().status; sys.exit(s('/livez') != 200 and s('/live') != 200)"]
     networks:
       - edge
       - data

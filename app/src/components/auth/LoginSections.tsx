@@ -33,7 +33,7 @@ export function LoginLayout({ children, onBrowse }: LoginLayoutProps) {
       style={{ backgroundColor: theme.tokens.overlay.page }}
     >
       <Icon name="arrow-left" size={16} color={VARIANT_FOREGROUND_COLOR.ghost(theme.colors)} />
-      Browse
+      Browse products
     </AppButton>
   );
   return (

@@ -5,7 +5,7 @@ import Animated, { FadeIn, ReduceMotion } from 'react-native-reanimated';
 const RESULT_FADE = FadeIn.duration(250).reduceMotion(ReduceMotion.System);
 
 import Head from 'expo-router/head';
-import { AuthCard } from '@/components/auth/AuthCardSections';
+import { AuthCard, AuthFormError } from '@/components/auth/AuthCardSections';
 import { AuthScreen } from '@/components/auth/AuthScreen';
 import { AppButton } from '@/components/base/AppButton';
 import { AppText } from '@/components/base/AppText';
@@ -49,9 +49,7 @@ export default function VerifyEmailScreen() {
           {error && !isLoading && (
             <Animated.View entering={RESULT_FADE}>
               <View className="gap-3 items-center">
-                <AppText variant="body" className="text-destructive text-center">
-                  {error}
-                </AppText>
+                <AuthFormError message={error} className="text-center" />
                 <AppButton variant="primary" onPress={goHome}>
                   Back to home
                 </AppButton>
