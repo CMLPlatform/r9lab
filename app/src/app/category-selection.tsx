@@ -55,7 +55,7 @@ export default function CategorySelection() {
           <View className="gap-3">
             <AppText variant="eyebrow">Common types</AppText>
             {commonTypes.map((item) => (
-              <RecentCategoryCard key={item.id} item={item} onSelectType={selectType} />
+              <RecentCategoryCard key={item.name} item={item} onSelectType={selectType} />
             ))}
           </View>
         ) : null}
@@ -63,7 +63,7 @@ export default function CategorySelection() {
           <View className="gap-3">
             <AppText variant="eyebrow">Recent</AppText>
             {recents.map((item) => (
-              <RecentCategoryCard key={item.id} item={item} onSelectType={selectType} />
+              <RecentCategoryCard key={item.name} item={item} onSelectType={selectType} />
             ))}
           </View>
         ) : null}
@@ -113,7 +113,14 @@ export default function CategorySelection() {
           ListHeaderComponent={listHeader}
           ListEmptyComponent={
             loadFailed ? (
-              <ErrorState message="Couldn't load the category list." onRetry={retryLoad} />
+              <ErrorState
+                message={
+                  debouncedSearchQuery
+                    ? "Couldn't search the categories."
+                    : "Couldn't load the category list."
+                }
+                onRetry={retryLoad}
+              />
             ) : loading ? (
               <CenteredSpinner />
             ) : debouncedSearchQuery ? (

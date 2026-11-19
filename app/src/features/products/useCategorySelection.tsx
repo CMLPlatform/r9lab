@@ -1,15 +1,15 @@
-import { useQuery } from '@tanstack/react-query';
+import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
 import { useDebounce } from 'use-debounce';
-import { topCategoriesQueryOptions } from '@/features/products/queries';
-import { useRequireAuth } from '@/hooks/useRequireAuth';
-import { fetchCpvChildren } from '@/services/api/categories';
 import {
-  fetchProductTypesByName,
-  type ProductTypeOption,
-  searchProductTypes,
-} from '@/services/api/productTypes';
+  cpvChildrenQueryOptions,
+  productTypeLabelsQueryOptions,
+  productTypesSearchQueryOptions,
+  topCategoriesQueryOptions,
+} from '@/features/products/queries';
+import { useRequireAuth } from '@/hooks/useRequireAuth';
+import { fetchProductTypesByName, type ProductTypeOption } from '@/services/api/productTypes';
 import type { CPVCategory } from '@/types/CPVCategory';
 import { setPendingTypeSelection } from './pendingTypeSelection';
 import { useRecentCategories } from './useRecentCategories';
@@ -35,34 +35,26 @@ export function useCategorySelection() {
   // Public aggregate; a failure just hides the shortcut section.
   const { data: topCategories } = useQuery(topCategoriesQueryOptions);
 
-  const parentId = history.at(-1)?.id;
   const browse = useQuery({
-    queryKey: ['cpv-children', parentId ?? 'root'] as const,
-    queryFn: () => fetchCpvChildren(parentId),
-    staleTime: Infinity,
+    ...cpvChildrenQueryOptions(history.at(-1)?.id),
     retry: false,
   });
-  // Search runs on the server across every level, whatever branch is open.
+  // Search runs on the server across every level, whatever branch is open. The previous
+  // results stay up while the next keystroke loads, so the list does not flash a spinner.
   const search = useQuery({
-    queryKey: ['product-types', 'search', debouncedSearchQuery] as const,
-    queryFn: async () => (await searchProductTypes(debouncedSearchQuery)).map(asItem),
+    ...productTypesSearchQueryOptions(debouncedSearchQuery),
     enabled: debouncedSearchQuery !== '',
-    staleTime: 60_000,
-    retry: false,
+    placeholderData: keepPreviousData,
+    select: (types) => types.map(asItem),
   });
   const active = debouncedSearchQuery ? search : browse;
 
   // Stats report a type by stored name (the CPV code); resolve it to the product type row.
   const commonNames = useMemo(() => topCategories?.map(({ name }) => name) ?? [], [topCategories]);
   const { data: commonTypes = [] } = useQuery({
-    queryKey: ['product-types', 'by-name', commonNames] as const,
-    queryFn: async () => {
-      const rows = await fetchProductTypesByName(commonNames);
-      return commonNames.flatMap((name) => rows.filter((row) => row.name === name).map(asItem));
-    },
-    enabled: commonNames.length > 0,
-    staleTime: Infinity,
-    retry: false,
+    ...productTypeLabelsQueryOptions(commonNames),
+    select: (rows) =>
+      commonNames.flatMap((name) => rows.filter((row) => row.name === name).map(asItem)),
   });
 
   const selectBranch = (item: CPVCategory) => setHistory((h) => [...h, item]);

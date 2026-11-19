@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { useRouter } from 'expo-router';
-import { HttpResponse, http } from 'msw';
+import { delay, HttpResponse, http } from 'msw';
 import { StyleSheet } from 'react-native';
 import CategorySelection from '@/app/category-selection';
 import { API_URL } from '@/config';
@@ -62,6 +62,8 @@ const treeNode = (id: number, externalId: string, name: string, subcategories: u
   subcategories,
 });
 const AGRI_CHILD = treeNode(3, '03100000', 'Agricultural and horticultural products');
+// The API's paginated envelope.
+const page = (items: unknown[]) => ({ items, page: 1, pages: 1, size: 100, total: items.length });
 const PRODUCT_TYPES = [
   { id: 66, name: 'CPV: 03', description: 'Agricultural products' },
   { id: 77, name: 'CPV: 09', description: 'Petroleum products' },
@@ -89,25 +91,28 @@ describe('CategorySelection', () => {
         expect(url.searchParams.get('taxonomy_name[ilike]')).toBe(
           'Common Procurement Vocabulary (CPV)',
         );
-        return HttpResponse.json({
-          items: [
+        expect(url.searchParams.get('size')).toBe('100');
+        return HttpResponse.json(
+          page([
             treeNode(1, '03000000', 'Agricultural products', [AGRI_CHILD]),
             treeNode(2, '09000000', 'Petroleum products'),
-          ],
-        });
+          ]),
+        );
       }),
       http.get(`${API_URL}/categories/1/subcategories/tree`, () =>
-        HttpResponse.json({ items: [AGRI_CHILD] }),
+        HttpResponse.json(page([AGRI_CHILD])),
       ),
       http.get(`${API_URL}/product-types`, ({ request }) => {
         const params = new URL(request.url).searchParams;
         const search = params.get('search')?.toLowerCase();
         const names = params.getAll('name[in]');
-        return HttpResponse.json({
-          items: PRODUCT_TYPES.filter((type) =>
-            search ? type.description.toLowerCase().includes(search) : names.includes(type.name),
+        return HttpResponse.json(
+          page(
+            PRODUCT_TYPES.filter((type) =>
+              search ? type.description.toLowerCase().includes(search) : names.includes(type.name),
+            ),
           ),
-        });
+        );
       }),
     );
   });
@@ -282,6 +287,55 @@ describe('CategorySelection', () => {
     await waitFor(() => {
       expect(useRecentCategories.getState().recents.map((c) => c.name)).toEqual(['CPV: 09']);
     });
+  });
+
+  it('keys recents by stored name, so ids from different sources cannot collide', async () => {
+    // A category id and a product type id can be equal; both cards must render.
+    useRecentCategories.setState({
+      recents: [
+        { id: 2, name: 'CPV: 09', description: 'Petroleum products', childCount: 0 },
+        { id: 2, name: 'CPV: 03', description: 'Old bundle entry', childCount: 0 },
+      ],
+    });
+    const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => undefined);
+    await renderWithProviders(<CategorySelection />);
+    await screen.findByText('Recent');
+    expect(screen.getByText('Old bundle entry')).toBeOnTheScreen();
+    // React logs "two children with the same key" when ids collide.
+    expect(errorSpy.mock.calls.flat().join(' ')).not.toContain('same key');
+    errorSpy.mockRestore();
+  });
+
+  it('keeps the previous results on screen while the next search loads', async () => {
+    await renderWithProviders(<CategorySelection />);
+    await screen.findByPlaceholderText('Search');
+    await fireEvent.changeText(screen.getByPlaceholderText('Search'), 'petroleum');
+    await act(async () => {
+      jest.advanceTimersByTime(300);
+    });
+    await screen.findByText('Petroleum products');
+    server.use(
+      http.get(`${API_URL}/product-types`, async () => {
+        await delay(1000);
+        return HttpResponse.json(page([]));
+      }),
+    );
+    await fireEvent.changeText(screen.getByPlaceholderText('Search'), 'petroleum p');
+    await act(async () => {
+      jest.advanceTimersByTime(300);
+    });
+    expect(screen.getByText('Petroleum products')).toBeOnTheScreen();
+  });
+
+  it('words a failed search as a search error, not a category list error', async () => {
+    server.use(http.get(`${API_URL}/product-types`, () => HttpResponse.error()));
+    await renderWithProviders(<CategorySelection />);
+    await screen.findByPlaceholderText('Search');
+    await fireEvent.changeText(screen.getByPlaceholderText('Search'), 'petroleum');
+    await act(async () => {
+      jest.advanceTimersByTime(300);
+    });
+    expect(await screen.findByText("Couldn't search the categories.")).toBeOnTheScreen();
   });
 
   it('shows the plain-language blurb and contextual CPV help tooltip', async () => {
