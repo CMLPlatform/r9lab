@@ -108,4 +108,36 @@ describe('Admin users screen', () => {
     await waitFor(() => expect(screen.getByText('page2@example.org')).toBeOnTheScreen());
     expect(screen.getByText('Page 2 of 2')).toBeOnTheScreen();
   });
+
+  it('steps back to the last page when the page it shows no longer exists', async () => {
+    mockUseAuth.mockReturnValue({
+      user: mockUser({ isSuperuser: true, mfaEnabled: true }),
+      isLoading: false,
+    });
+    // The only user on page 3 is removed after page 2 loaded, so page 3 comes back empty.
+    let removed = false;
+    server.use(
+      http.get(`${API_URL}/admin/users`, ({ request }) => {
+        const page = Number(new URL(request.url).searchParams.get('page'));
+        if (page === 3) removed = true;
+        return HttpResponse.json({
+          items: page === 3 ? [] : [mockAdminUser({ email: `page${page}@example.org` })],
+          total: removed ? 50 : 51,
+          page,
+          size: 25,
+          pages: removed ? 2 : 3,
+        });
+      }),
+    );
+
+    await renderWithProviders(<AdminUsersScreen />, { withDialog: true });
+
+    await waitFor(() => expect(screen.getByText('page1@example.org')).toBeOnTheScreen());
+    await user.press(screen.getByRole('button', { name: 'Next' }));
+    await waitFor(() => expect(screen.getByText('page2@example.org')).toBeOnTheScreen());
+    await user.press(screen.getByRole('button', { name: 'Next' }));
+
+    await waitFor(() => expect(screen.getByText('page2@example.org')).toBeOnTheScreen());
+    expect(screen.getByText('Page 2 of 2')).toBeOnTheScreen();
+  });
 });

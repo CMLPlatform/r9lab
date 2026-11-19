@@ -80,7 +80,9 @@ export function AdminUsersList() {
   const [debouncedSearch] = useDebounce(search.trim(), 300);
   const query = useAdminUsersQuery({ search: debouncedSearch, filter, page, size: PAGE_SIZE });
   const { refetch } = query;
-  const pages = query.data?.pages ?? 1;
+  const pages = Math.max(1, query.data?.pages ?? 1);
+  // Removing the last user on the last page leaves that page empty: step back to the new last one.
+  if (query.data && page > pages) setPage(pages);
 
   const handleSearch = useCallback((text: string) => {
     setSearch(text);
