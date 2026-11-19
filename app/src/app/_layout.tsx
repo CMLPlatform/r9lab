@@ -188,14 +188,24 @@ export const AppStack = memo(function AppStack() {
       <Stack.Screen name="(auth)/reset-password" options={{ headerShown: false }} />
       <Stack.Screen name="(auth)/mfa" options={{ headerShown: false }} />
       <Stack.Screen name="(auth)/verify" options={{ headerShown: false }} />
-      {/* Plain-text header title: the screen renders its own h1 (see PlainHeaderTitle). */}
+      {/* Plain-text header title: the screen renders its own h1 (see PlainHeaderTitle).
+        A modal keeps the form it was opened from in view: a dialog on wide web, a sheet on phones. */}
       <Stack.Screen
         name="category-selection"
-        options={{ title: 'Select category', headerTitle: PlainHeaderTitle }}
+        options={{
+          title: 'Select category',
+          headerTitle: PlainHeaderTitle,
+          presentation: 'modal',
+          ...CATEGORY_MODAL_WEB_SIZE,
+        }}
       />
     </Stack>
   );
 });
+
+// NOTE: expo-router's web modal reads webModalStyle, but Stack.Screen's options type
+// leaves it out; a spread object skips the excess-property check.
+const CATEGORY_MODAL_WEB_SIZE = { webModalStyle: { width: 720, height: '85%' } };
 
 function AppShell() {
   const colorScheme = useEffectiveColorScheme();

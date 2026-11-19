@@ -24,8 +24,6 @@ import { visuallyHidden } from '@/utils/a11y';
 import { getFloatingPosition } from '@/utils/platformLayout';
 
 type SaveBarProps = {
-  /** `flow` consumes screen height; `floating` retains the wide-web viewport dock. */
-  layout?: 'flow' | 'floating';
   /** Extra bottom inset so the dock clears BottomNav (see FabControls). */
   bottomOffset: number;
   entityRole: 'product' | 'component';
@@ -44,11 +42,11 @@ type SaveBarProps = {
 
 /**
  * Edit / Save / Done action bar plus an inline error summary. In normal flow below
- * md, docked to the viewport above. ActiveStreamBanner reserves dock space via
- * SAVE_BAR_DOCK_ROUTE; update it if the route or `canModerate` condition changes.
+ * Floats at the bottom right over the content at every width, like the view-mode FAB;
+ * the detail scroll pads its end to clear it (Content.tsx). ActiveStreamBanner reserves
+ * dock space via SAVE_BAR_DOCK_ROUTE; update it if the route or `canModerate` condition changes.
  */
 export function SaveBar({
-  layout = 'floating',
   bottomOffset,
   entityRole,
   editMode,
@@ -100,16 +98,12 @@ export function SaveBar({
       testID="save-bar-dock"
       entering={DOCK_ENTER}
       exiting={DOCK_EXIT}
-      style={
-        layout === 'flow'
-          ? [flowStyle, { marginBottom: bottomOffset }]
-          : [floatingStyle, { bottom: DOCK_BOTTOM + bottomOffset }]
-      }
+      style={[floatingStyle, { bottom: DOCK_BOTTOM + bottomOffset }]}
     >
       {/* Animated.View ignores className, so the row and its card sit one level in. */}
       <View
         testID="save-bar-row"
-        style={layout === 'flow' ? flowRowStyle : undefined}
+        style={rowStyle}
         className={`flex-row items-center justify-end gap-3${showsSummary ? ' rounded-lg border border-border bg-background px-4 py-2' : ''}`}
       >
         {/* NOTE: hand-rolled English plural. Swap it for
@@ -121,7 +115,7 @@ export function SaveBar({
           role="status"
           accessibilityLiveRegion="polite"
           // Out of flow when empty, so it adds no gap beside the button.
-          style={showsMessage ? (layout === 'flow' ? flowSummaryStyle : undefined) : visuallyHidden}
+          style={showsMessage ? summaryStyle : visuallyHidden}
         >
           <IosAnnouncement
             text={uploadingText ?? attentionText ?? (showsMessage ? validationError : undefined)}
@@ -148,7 +142,7 @@ export function SaveBar({
         {needsAttention ? (
           <Animated.View
             entering={FadeIn.duration(150).reduceMotion(ReduceMotion.System)}
-            style={layout === 'flow' ? flowSummaryStyle : undefined}
+            style={summaryStyle}
           >
             <AppButton variant="ghost" onPress={onErrorSummaryPress ?? onPrimaryPress}>
               {attentionText}
@@ -222,22 +216,21 @@ function UploadProgressBar({ progress }: { progress: ImageUploadProgress }) {
 
 // 24px = right-6/bottom-6; getFloatingPosition() docks to the viewport ('fixed' on web).
 const DOCK_BOTTOM = 24;
+// left: 16 caps the dock at the screen width on a 320px phone; the summary then wraps
+// above the button. Taps pass through the empty strip to the content beneath.
 const floatingStyle: ViewStyle = {
   position: getFloatingPosition(),
+  left: 16,
   right: 24,
+  alignItems: 'flex-end',
+  pointerEvents: 'box-none',
 };
 
-// The phone gutter (PageContainer's px-4), so the button does not sit flush on the screen edge.
-const flowStyle: ViewStyle = {
-  width: '100%',
-  paddingHorizontal: 16,
-};
-
-const flowRowStyle: ViewStyle = {
+const rowStyle: ViewStyle = {
   flexWrap: 'wrap',
+  maxWidth: '100%',
 };
 
-const flowSummaryStyle: ViewStyle = {
-  flexBasis: '100%',
+const summaryStyle: ViewStyle = {
   flexShrink: 1,
 };

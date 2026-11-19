@@ -61,6 +61,8 @@ async def page_product_revisions(
     session: AsyncSession, product: Product, viewer: User | None
 ) -> Page[ProductRevisionRead]:
     """Page ``product``'s revisions, newest first."""
+    # Attribution reads the owner's privacy settings, and Product.owner is lazy="raise".
+    await session.refresh(product, attribute_names=["owner"])
     statement = (
         select(ProductRevision)
         .where(ProductRevision.product_id == product.id)

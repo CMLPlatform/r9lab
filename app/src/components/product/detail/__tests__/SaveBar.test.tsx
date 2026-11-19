@@ -19,10 +19,9 @@ afterEach(() => {
   jest.mocked(getImageUploadProgress).mockReturnValue(null);
 });
 
-it('flow layout fills available width, wraps content, and is not positioned', async () => {
+it('floats at the bottom right at every width, clearing the tab bar and wrapping its content', async () => {
   await renderWithProviders(
     <SaveBar
-      layout="flow"
       bottomOffset={60}
       entityRole="product"
       editMode
@@ -37,13 +36,12 @@ it('flow layout fills available width, wraps content, and is not positioned', as
   );
 
   const style = StyleSheet.flatten(screen.getByTestId('save-bar-dock').props.style);
-  expect(style).toEqual(expect.objectContaining({ width: '100%', marginBottom: 60 }));
+  expect(style).toEqual(
+    expect.objectContaining({ position: 'absolute', right: 24, left: 16, bottom: 84 }),
+  );
   expect(StyleSheet.flatten(screen.getByTestId('save-bar-row').props.style)).toEqual(
     expect.objectContaining({ flexWrap: 'wrap' }),
   );
-  expect(style.position).toBeUndefined();
-  expect(style.right).toBeUndefined();
-  expect(style.bottom).toBeUndefined();
 });
 
 it('save bar shows error count and routes to the first error', async () => {
@@ -397,29 +395,25 @@ it('blocks the press with no inline message when the form supplies no validation
   expect(screen.queryByText('Name is required')).toBeNull();
 });
 
-// Flow layout stacks: the inline error takes a full row so it wraps below the
-// button instead of squeezing it. The floating layout lets it sit inline.
-it('gives the inline validation error its own row in flow layout only', async () => {
-  const props = {
-    bottomOffset: 0,
-    entityRole: 'product' as const,
-    editMode: true,
-    isDirty: true,
-    isSaving: false,
-    isPaused: false,
-    validationValid: false,
-    validationError: 'Name is required',
-    onPrimaryPress: jest.fn(),
-    canModerate: true,
-  };
-
-  const flow = await renderWithProviders(<SaveBar layout="flow" {...props} />);
-  expect(StyleSheet.flatten(flow.getByTestId('save-bar-status').props.style)).toEqual(
-    expect.objectContaining({ flexBasis: '100%' }),
+// On a 320px phone the inline error must shrink and wrap instead of pushing the button off screen.
+it('lets the inline validation error shrink beside the button', async () => {
+  await renderWithProviders(
+    <SaveBar
+      bottomOffset={0}
+      entityRole="product"
+      editMode
+      isDirty
+      isSaving={false}
+      isPaused={false}
+      validationValid={false}
+      validationError="Name is required"
+      onPrimaryPress={jest.fn()}
+      canModerate
+    />,
   );
-
-  const floating = await renderWithProviders(<SaveBar {...props} />);
-  expect(StyleSheet.flatten(floating.getByTestId('save-bar-status').props.style)).toBeUndefined();
+  expect(StyleSheet.flatten(screen.getByTestId('save-bar-status').props.style)).toEqual(
+    expect.objectContaining({ flexShrink: 1 }),
+  );
 });
 
 it('announces upload progress through a polite status region', async () => {

@@ -1,7 +1,8 @@
 import { describe, expect, it, jest } from '@jest/globals';
 import { fireEvent, screen } from '@testing-library/react-native';
 import { ProductPageContent } from '@/components/product/detail/Content';
-import { baseProduct, renderWithProviders } from '@/test-utils/index';
+import { PRODUCTS_LIST_FAB_CLEARANCE } from '@/components/product/products-screen/shared';
+import { baseProduct, getHostByType, renderWithProviders } from '@/test-utils/index';
 
 jest.mock('expo-image', () =>
   jest
@@ -48,6 +49,19 @@ function renderContent(overrides: Partial<Parameters<typeof ProductPageContent>[
     { withDialog: true, withAuth: true },
   );
 }
+
+describe('ProductPageContent — floating action clearance', () => {
+  it.each([false, true])(
+    'pads the scroll end above the floating button (editMode %s)',
+    async (editMode) => {
+      await renderContent({ editMode });
+      const scroll = getHostByType('RCTScrollView');
+      expect(scroll.props.contentContainerStyle.paddingBottom).toBeGreaterThanOrEqual(
+        PRODUCTS_LIST_FAB_CLEARANCE,
+      );
+    },
+  );
+});
 
 describe('ProductPageContent — editing-someone-else notice', () => {
   it('shows the notice when a superuser edits a product they do not own', async () => {

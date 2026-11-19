@@ -29,7 +29,7 @@ beforeEach(() => {
 });
 
 describe('ProductFabControls — responsive action layout', () => {
-  it('uses a flow SaveBar below md in edit mode and no FAB', async () => {
+  it('floats the SaveBar below md in edit mode and no FAB', async () => {
     await render(<ProductFabControls {...baseProps} editMode />);
 
     expect(screen.getByTestId('save-bar-dock')).toBeOnTheScreen();
@@ -68,9 +68,10 @@ function fabButton() {
 // and on web it is viewport-fixed, escaping the container these controls are
 // laid out in. Both docked controls have to lift themselves clear of it.
 describe.each([
-  ['the FAB below md', false, () => screen.getByRole('button')],
-  ['the SaveBar dock at md', true, () => screen.getByTestId('save-bar-dock')],
-])('tab-bar clearance for %s', (_label, isMd, dock) => {
+  ['the FAB below md', false, false, () => screen.getByRole('button')],
+  ['the SaveBar dock below md', false, true, () => screen.getByTestId('save-bar-dock')],
+  ['the SaveBar dock at md', true, false, () => screen.getByTestId('save-bar-dock')],
+])('tab-bar clearance for %s', (_label, isMd, editMode, dock) => {
   afterEach(restorePlatform);
 
   function dockedBottom() {
@@ -80,11 +81,11 @@ describe.each([
   it('bumps its floating offset by BOTTOM_NAV_CLEARANCE on web when BottomNav is visible', async () => {
     mockPlatform('web');
     mockUseBreakpoint.mockReturnValue({ isMd });
-    const { rerender } = await render(<ProductFabControls {...baseProps} />);
+    const { rerender } = await render(<ProductFabControls {...baseProps} editMode={editMode} />);
     const hiddenBottom = dockedBottom();
 
     mockUseBottomNavVisible.mockReturnValue(true);
-    await rerender(<ProductFabControls {...baseProps} />);
+    await rerender(<ProductFabControls {...baseProps} editMode={editMode} />);
 
     expect(dockedBottom() - hiddenBottom).toBe(BOTTOM_NAV_CLEARANCE);
   });
@@ -92,11 +93,11 @@ describe.each([
   it('adds no clearance on native, where the tab bar is in normal flow', async () => {
     mockPlatform('ios');
     mockUseBreakpoint.mockReturnValue({ isMd });
-    const { rerender } = await render(<ProductFabControls {...baseProps} />);
+    const { rerender } = await render(<ProductFabControls {...baseProps} editMode={editMode} />);
     const hiddenBottom = dockedBottom();
 
     mockUseBottomNavVisible.mockReturnValue(true);
-    await rerender(<ProductFabControls {...baseProps} />);
+    await rerender(<ProductFabControls {...baseProps} editMode={editMode} />);
 
     expect(dockedBottom()).toBe(hiddenBottom);
   });

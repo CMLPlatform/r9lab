@@ -63,7 +63,6 @@ export function ProductFabControls({
       <LayoutAnimationConfig skipExiting>
         {isMd || editMode ? (
           <SaveBar
-            layout={isMd ? 'floating' : 'flow'}
             bottomOffset={bottomOffset}
             entityRole={entityRole}
             editMode={editMode}
