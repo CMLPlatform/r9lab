@@ -36,6 +36,15 @@ describe('ExternalTextLink', () => {
     expect(link.props.hrefAttrs).toEqual({ target: '_blank', rel: 'noopener noreferrer' });
   });
 
+  it('leaves navigation to the anchor on web, so this tab stays put', async () => {
+    mockPlatform('web');
+    await renderWithProviders(
+      <ExternalTextLink url="https://example.org/a">Read</ExternalTextLink>,
+    );
+    await user.press(screen.getByRole('link', { name: 'Read' }));
+    expect(mockOpen).not.toHaveBeenCalled();
+  });
+
   it('renders plain text without a usable URL', async () => {
     await renderWithProviders(<ExternalTextLink url={undefined}>Read</ExternalTextLink>);
     expect(screen.getByText('Read')).toBeOnTheScreen();

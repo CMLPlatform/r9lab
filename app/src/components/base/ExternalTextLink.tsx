@@ -27,13 +27,14 @@ export function ExternalTextLink({
     if (safeUrl) void openExternalUrl(safeUrl);
   }, [safeUrl]);
   if (!safeUrl) return <AppText className={className} {...rest} />;
-  const webProps = Platform.OS === 'web' ? { href: safeUrl, ...WEB_ANCHOR_PROPS } : {};
+  // Web gets the anchor alone: with onPress as well, the click would also navigate this tab.
+  const behaviour =
+    Platform.OS === 'web' ? { href: safeUrl, ...WEB_ANCHOR_PROPS } : { onPress: open };
   return (
     <AppText
       accessibilityRole="link"
-      onPress={open}
       className={cn('underline', className)}
-      {...webProps}
+      {...behaviour}
       {...rest}
     />
   );

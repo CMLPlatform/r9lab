@@ -79,7 +79,7 @@ describe('ProfileAboutSection', () => {
   ])('opens %s on the website', async (name, path) => {
     await renderWithProviders(<ProfileAboutSection />);
 
-    await user.press(screen.getByRole('button', { name }));
+    await user.press(screen.getByRole('link', { name }));
 
     expect(mockOpenExternalUrl).toHaveBeenCalledWith(new URL(path, WEBSITE_URL).toString());
   });

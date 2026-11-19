@@ -171,7 +171,12 @@ export default function UserProfileScreen() {
     <>
       <Head>
         <title>{`${title} · R9lab`}</title>
-        <meta name="description" content={`Products documented by ${title} on R9lab.`} />
+        {profile ? (
+          <meta
+            name="description"
+            content={`Products documented by ${profile.username} on R9lab.`}
+          />
+        ) : null}
       </Head>
       {/* Plain text: the username below is the screen's one h1 (see PlainHeaderTitle). */}
       <Stack.Screen

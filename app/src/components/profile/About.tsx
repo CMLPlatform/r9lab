@@ -1,5 +1,6 @@
 import { useCallback } from 'react';
 import { View } from 'react-native';
+import { ExternalTextLink } from '@/components/base/ExternalTextLink';
 import { DOCS_URL, WEBSITE_URL } from '@/config';
 import { openExternalUrl } from '@/services/externalLinks';
 import { ProfileAction } from './shared';
@@ -14,11 +15,18 @@ const LEGAL_LINKS = [
   { title: 'Accessibility statement', path: '/accessibility' },
 ] as const;
 
-function WebsiteAction({ title, path }: { title: string; path: string }) {
-  const open = useCallback(() => {
-    if (WEBSITE_URL) void openExternalUrl(new URL(path, WEBSITE_URL).toString());
-  }, [path]);
-  return <ProfileAction title={title} onPress={open} />;
+// A link row, not a button: on web it is an anchor that opens in a new tab.
+function LegalLink({ title, path }: { title: string; path: string }) {
+  return (
+    <View className="min-h-11 justify-center px-4 py-2.5">
+      <ExternalTextLink
+        url={WEBSITE_URL ? new URL(path, WEBSITE_URL).toString() : undefined}
+        className="font-semibold"
+      >
+        {title}
+      </ExternalTextLink>
+    </View>
+  );
 }
 
 /** Background/links section: the 9R framework the mark's nine nods to, the glossary and the legal pages. */
@@ -48,7 +56,7 @@ export function ProfileAboutSection() {
         subtitle="The nine circular-economy strategies behind R9lab"
         onPress={openNineRFramework}
       />
-      {WEBSITE_URL ? LEGAL_LINKS.map((link) => <WebsiteAction key={link.path} {...link} />) : null}
+      {WEBSITE_URL ? LEGAL_LINKS.map((link) => <LegalLink key={link.path} {...link} />) : null}
     </View>
   );
 }
