@@ -82,6 +82,21 @@ def set_pkce_cookie(response: Response, cookie_settings: OAuthCookieSettings, co
     _set_flow_cookie(response, cookie_settings, PKCE_VERIFIER_COOKIE_NAME, code_verifier)
 
 
+def delete_flow_cookies(response: Response, cookie_settings: OAuthCookieSettings) -> None:
+    """Expire the CSRF and PKCE verifier cookies once the callback has used them."""
+    for name in (cookie_settings.name, PKCE_VERIFIER_COOKIE_NAME):
+        # A browser deletes a cookie only when name, path, domain, and the
+        # `__Host-` prefix's Secure all match the cookie it holds.
+        response.delete_cookie(
+            name,
+            path=cookie_settings.path,
+            domain=cookie_settings.domain,
+            secure=True,
+            httponly=cookie_settings.httponly,
+            samesite=cookie_settings.samesite,
+        )
+
+
 def _set_flow_cookie(response: Response, cookie_settings: OAuthCookieSettings, name: str, value: str) -> None:
     response.set_cookie(
         name,

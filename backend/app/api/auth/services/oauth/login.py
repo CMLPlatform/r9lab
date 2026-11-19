@@ -33,6 +33,7 @@ from .utils import (
     FRONTEND_REDIRECT_URI_KEY,
     OAuth2AuthorizeResponse,
     OAuthCookieSettings,
+    delete_flow_cookies,
 )
 
 COOKIE_BACKEND_NAME = "cookie"
@@ -134,7 +135,35 @@ async def handle_oauth_login_callback(
     associate_by_email: bool,
     is_verified_by_default: bool,
 ) -> Response:
-    """Handle one OAuth login callback after httpx-oauth token exchange."""
+    """Handle one OAuth login callback after httpx-oauth token exchange.
+
+    Every response it returns expires the flow's CSRF and PKCE verifier cookies.
+    """
+    response = await _login_callback_response(
+        config,
+        backend,
+        request,
+        access_token_state,
+        user_manager,
+        strategy,
+        associate_by_email=associate_by_email,
+        is_verified_by_default=is_verified_by_default,
+    )
+    delete_flow_cookies(response, config.cookie_settings)
+    return response
+
+
+async def _login_callback_response(
+    config: OAuthFlowConfig,
+    backend: AuthenticationBackend[User, UUID4],
+    request: Request,
+    access_token_state: tuple[OAuth2Token, str],
+    user_manager: UserManager,
+    strategy: Strategy[User, UUID4],
+    *,
+    associate_by_email: bool,
+    is_verified_by_default: bool,
+) -> Response:
     token, state = access_token_state
     state_data = verify_oauth_state(config, request, state)
     frontend_redirect = state_data.get(FRONTEND_REDIRECT_URI_KEY)

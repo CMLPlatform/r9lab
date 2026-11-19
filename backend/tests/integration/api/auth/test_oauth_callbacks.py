@@ -7,7 +7,7 @@ from urllib.parse import parse_qs, urlparse
 from uuid import uuid4
 
 import pytest
-from fastapi import HTTPException, status
+from fastapi import HTTPException, Response, status
 from fastapi_users.exceptions import UserAlreadyExists
 from fastapi_users.router.common import ErrorCode
 
@@ -40,6 +40,17 @@ if TYPE_CHECKING:
     from sqlalchemy.ext.asyncio import AsyncSession
 
 pytestmark = pytest.mark.api
+
+FLOW_COOKIES = {"__Host-r9lab-oauth-csrf", "__Host-r9lab-oauth-pkce"}
+
+
+def _expired_cookies(response: Response) -> set[str]:
+    """Names the response deletes with the attributes the flow cookies were set with."""
+    return {
+        header.split("=", 1)[0]
+        for header in response.headers.getlist("set-cookie")
+        if "Max-Age=0" in header and "Path=/" in header and "Secure" in header and "SameSite=lax" in header
+    }
 
 
 async def test_callback_passes_associate_by_email_false(redis_client: Redis) -> None:
@@ -74,6 +85,7 @@ async def test_callback_passes_associate_by_email_false(redis_client: Redis) -> 
     )
     assert response.status_code == status.HTTP_204_NO_CONTENT
     set_cookie_headers = response.headers.getlist("set-cookie")
+    assert _expired_cookies(response) == FLOW_COOKIES
     assert any(header.startswith("__Host-r9lab-auth=") for header in set_cookie_headers)
     assert any(header.startswith("__Host-r9lab-refresh=") for header in set_cookie_headers)
     cast("MagicMock", config.oauth_client).get_id_email.assert_awaited_once_with("provider-access-token")
@@ -423,6 +435,7 @@ async def test_associate_callback_links_provider_for_current_user() -> None:
     user_manager.user_db.session = mock_session
     user_manager.oauth_associate_callback = AsyncMock(return_value=current_user)
 
+    response = Response()
     result = cast(
         "Mapping[str, Any]",
         await handle_oauth_associate_callback(
@@ -432,10 +445,13 @@ async def test_associate_callback_links_provider_for_current_user() -> None:
             access_token_state,
             user_manager,
             user_schema=user_schema,
+            response=response,
         ),
     )
 
     assert result["email"] == TEST_EMAIL
+    # The route's response carries these headers onto the JSON body.
+    assert _expired_cookies(response) == FLOW_COOKIES
     assert user_manager.oauth_associate_callback.await_count == 1
 
 
@@ -464,6 +480,7 @@ async def test_associate_callback_rejects_provider_linked_to_other_user() -> Non
             access_token_state,
             user_manager,
             user_schema=user_schema,
+            response=Response(),
         )
 
     assert exc_info.value.status_code == status.HTTP_400_BAD_REQUEST
@@ -496,6 +513,7 @@ async def test_associate_callback_rejects_standard_google_state_for_youtube_flow
             access_token_state,
             user_manager,
             user_schema=user_schema,
+            response=Response(),
         )
 
     assert exc_info.value.status_code == status.HTTP_400_BAD_REQUEST
@@ -605,11 +623,13 @@ async def test_associate_callback_redirects_errors_to_the_frontend(failure: str,
         (cast("Any", {"access_token": "provider-access-token"}), state),
         user_manager,
         user_schema=user_schema,
+        response=Response(),
     )
 
     fragment = parse_qs(urlparse(response.headers["location"]).fragment)
     assert fragment["status"] == ["error"]
     assert fragment["error"] == [expected_error]
+    assert _expired_cookies(response) == FLOW_COOKIES
 
 
 @pytest.mark.parametrize(
@@ -647,7 +667,7 @@ async def test_associate_callback_keeps_a_stored_grant_the_new_one_cannot_replac
     user_manager.user_db.update_oauth_account = AsyncMock(return_value=current_user)
 
     await handle_oauth_associate_callback(
-        config, request, current_user, (token, state), user_manager, user_schema=user_schema
+        config, request, current_user, (token, state), user_manager, user_schema=user_schema, response=Response()
     )
 
     assert user_manager.user_db.update_oauth_account.await_count == int(updates)

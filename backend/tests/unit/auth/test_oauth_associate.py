@@ -10,6 +10,7 @@ from urllib.parse import parse_qs, urlparse
 from uuid import UUID, uuid4
 
 import pytest
+from fastapi import Response
 
 from app.api.auth.exceptions import (
     OAuthAccountAlreadyLinkedError,
@@ -179,6 +180,7 @@ async def test_same_user_reassociate_updates_token_in_place() -> None:
         access_token_state,
         um,  # ty: ignore[invalid-argument-type]
         user_schema=user_schema,
+        response=Response(),
     )
 
     oauth_client.get_id_email.assert_awaited_once_with("new-access")
@@ -219,6 +221,7 @@ async def test_new_account_invokes_associate_callback() -> None:
             access_token_state,
             um,  # ty: ignore[invalid-argument-type]
             user_schema=user_schema,
+            response=Response(),
             background_tasks=background_tasks,
         )
 
@@ -255,6 +258,7 @@ async def test_frontend_redirect_returns_fragment_status() -> None:
         access_token_state,
         um,  # ty: ignore[invalid-argument-type]
         user_schema=MagicMock(),
+        response=Response(),
     )
 
     assert result.status_code in (302, 307)
