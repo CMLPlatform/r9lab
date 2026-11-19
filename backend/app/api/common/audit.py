@@ -14,6 +14,7 @@ _audit_logger = logging.getLogger("audit")
 class AuditAction(StrEnum):
     """Supported audit action names."""
 
+    CREATE = "create"
     DELETE = "delete"
     UPDATE = "update"
     DEACTIVATE = "deactivate"

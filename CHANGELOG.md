@@ -158,6 +158,8 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Security
 
+- Every admin change to reference data (taxonomies, categories, materials, product types, their
+  category links and media) and every cache clear writes an audit event naming the admin.
 - Pillow is updated to 13.0.0, which fixes a heap buffer overflow in its JPEG decoder
   ([GHSA-8g5g-8vmr-9782](https://github.com/advisories/GHSA-8g5g-8vmr-9782), critical).
 - Only the latest release gets security fixes; SECURITY.md now says so, and how a report is

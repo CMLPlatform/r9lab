@@ -1,5 +1,6 @@
 """Integration tests for reference-data HTTP contracts."""
 
+import logging
 from typing import TYPE_CHECKING
 
 import pytest
@@ -285,6 +286,46 @@ async def test_product_type_in_use_cannot_be_deleted(
 
     assert response.status_code == status.HTTP_409_CONFLICT
     assert "product" in response.json()["detail"].lower()
+
+
+def _audit_records(caplog: pytest.LogCaptureFixture) -> list[tuple[object, ...]]:
+    return [
+        tuple(getattr(r, field, None) for field in ("action", "resource_type", "resource_id", "operation"))
+        for r in caplog.records
+        if getattr(r, "audit", False) and r.name == "audit"
+    ]
+
+
+async def test_admin_reference_data_writes_are_audited(
+    api_client_superuser: AsyncClient, db_material: Material, caplog: pytest.LogCaptureFixture
+) -> None:
+    """Every completed admin write, the cache clear included, leaves one audit event."""
+    with caplog.at_level(logging.INFO, logger="audit"):
+        create = await api_client_superuser.post(
+            "/v1/admin/taxonomies", json={"name": TAXONOMY_NAME, "version": TAXONOMY_VERSION, "domains": ["materials"]}
+        )
+        update = await api_client_superuser.patch(f"/v1/admin/materials/{db_material.id}", json={"name": "Renamed"})
+        delete = await api_client_superuser.delete(f"/v1/admin/materials/{db_material.id}")
+        clear = await api_client_superuser.post("/v1/admin/cache/clear/reference-data")
+
+    assert [create.status_code, update.status_code, delete.status_code, clear.status_code] == [201, 200, 204, 200]
+    assert _audit_records(caplog) == [
+        ("create", "taxonomies", None, "create_taxonomy_endpoint"),
+        ("update", "materials", str(db_material.id), "update_material"),
+        ("delete", "materials", str(db_material.id), "delete_material"),
+        ("delete", "cache", "reference-data", "clear_cache_by_namespace"),
+    ]
+
+
+async def test_refused_admin_write_is_not_audited(
+    api_client_superuser: AsyncClient, caplog: pytest.LogCaptureFixture
+) -> None:
+    """A write the route refuses is not recorded as done."""
+    with caplog.at_level(logging.INFO, logger="audit"):
+        response = await api_client_superuser.delete(f"/v1/admin/materials/{NONEXISTENT_ID}")
+
+    assert response.status_code == status.HTTP_404_NOT_FOUND
+    assert _audit_records(caplog) == []
 
 
 async def test_units_endpoint_returns_available_units(api_client: AsyncClient) -> None:
