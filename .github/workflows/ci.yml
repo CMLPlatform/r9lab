@@ -155,6 +155,32 @@ jobs:
           network-prefix: backend/app/
           artifact-path: backend/reports/coverage/coverage.xml
 
+  # Its own job rather than part of test-ci: each Schemathesis test is one pytest item
+  # whose coverage phase takes minutes, so inside the suite it held back the whole run.
+  backend-fuzz:
+    name: Backend API Fuzzing
+    needs: changes
+    if: needs.changes.outputs.backend == 'true'
+    runs-on: ubuntu-26.04
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up runtime
+        uses: ./.github/actions/setup-runtime
+        with:
+          setup-python: "true"
+          uv-cache-dependency-glob: backend/uv.lock
+
+      - name: Install dependencies
+        run: just backend/install
+
+      - name: Fuzz the public API
+        run: just backend/fuzz 5
+
   web:
     name: ${{ matrix.subrepo }}
     needs: changes
@@ -641,6 +667,7 @@ jobs:
       - changes
       - automation
       - backend
+      - backend-fuzz
       - api-diff
       - web
       - e2e-www

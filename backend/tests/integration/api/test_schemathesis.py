@@ -2,9 +2,9 @@
 
 The only pass over the route handlers, which mutmut skips. Requests go through the
 in-process `api_client`, so they hit the test Postgres. `SCHEMATHESIS_MAX_EXAMPLES`
-sets the fuzzed examples per operation: small here, larger in the weekly Ops run.
-`SCHEMATHESIS_COVERAGE=1` adds the coverage phase, which sends hundreds of boundary
-cases per operation regardless of the example count, so only `just fuzz` turns it on.
+sets the fuzzed examples per operation. `SCHEMATHESIS_COVERAGE=1` adds the coverage
+phase, which sends hundreds of boundary cases per operation whatever the example
+count; `just fuzz` turns it on, and a plain `just test` leaves it off to stay fast.
 """
 
 import os
@@ -28,11 +28,13 @@ from scripts.seed.factories.models import UserFactory
 from .auth.shared import TEST_PASSWORD, hash_test_password, login_bearer
 
 MAX_EXAMPLES = int(os.environ.get("SCHEMATHESIS_MAX_EXAMPLES", "5"))
-PHASES = ["examples", "fuzzing"] + (["coverage"] if os.environ.get("SCHEMATHESIS_COVERAGE") == "1" else [])
+COVERAGE = os.environ.get("SCHEMATHESIS_COVERAGE") == "1"
+PHASES = ["examples", "fuzzing"] + (["coverage"] if COVERAGE else [])
 
 # Each test is one pytest item covering every GET operation, so the suite's 60s limit
-# is far too short; this one grows with the examples per operation.
-pytestmark = [pytest.mark.api, pytest.mark.timeout(60 * MAX_EXAMPLES)]
+# is far too short; this one grows with the examples per operation, and the coverage
+# phase alone took about 190s per test in CI.
+pytestmark = [pytest.mark.api, pytest.mark.fuzz, pytest.mark.timeout(60 * MAX_EXAMPLES + (900 if COVERAGE else 0))]
 
 CHECKS: list[CheckFunction] = [not_a_server_error, response_schema_conformance]
 FUZZ_SETTINGS = settings(

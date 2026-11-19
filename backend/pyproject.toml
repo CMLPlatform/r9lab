@@ -165,6 +165,7 @@ mutation = [
   markers = [
     "api: API endpoint tests (E2E, full stack)",
     "db: Database-backed persistence and ORM tests",
+    "fuzz: Schemathesis API fuzzing, run as its own CI job (just fuzz)",
     "flow: Cross-boundary user journeys spanning multiple services or routers",
     "migration: Database migration tests",
     "slow: Intentionally slower tests (for example subprocess, migration, or heavy end-to-end checks)",
