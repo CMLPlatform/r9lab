@@ -84,6 +84,8 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Removed
 
+- The landing page no longer reads a theme choice stored under the old `relab-theme` key; visitors
+  who set one before the rename see the system theme until they choose again.
 - The legacy admin path `/v1/admin/plugins/rpi-cam` is no longer served. The device and
   user-facing legacy camera paths stay until 2027-01-31.
 - The docs site's Prerequisites, Configure, Deploy and Upgrade and backup pages. Their URLs

@@ -4,8 +4,7 @@
 // script-src 'self' without inline-script hashes. Mirrors STORAGE_KEY/logic in
 // src/scripts/theme.ts.
 (() => {
-  // TODO(drop-by 2027-01-31): drop the relab-theme fallback
-  const stored = localStorage.getItem('r9lab-theme') ?? localStorage.getItem('relab-theme');
+  const stored = localStorage.getItem('r9lab-theme');
   const pref = stored === 'light' || stored === 'dark' || stored === 'system' ? stored : 'system';
   const resolved =
     pref === 'system'

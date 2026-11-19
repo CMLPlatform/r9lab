@@ -40,8 +40,8 @@ resource "github_repository_environment" "publish" {
   # a release deploys staging's sites, and prod's follow once someone has checked
   # staging and approved. Staging needs it while its CLOUDFLARE_API_TOKEN holds
   # Workers Scripts: Edit on all Workers, a grant not scoped to one environment.
-  # TODO(drop-by 2027-01-31): drop staging's reviewer once each Environment's token is limited to its own
-  # Workers.
+  # TODO: staging's reviewer is not needed once each Environment's token is limited to its own
+  # Workers. That scoping change, not a date, is the trigger.
   reviewers {
     users = [for user in data.github_user.reviewer : user.id]
   }

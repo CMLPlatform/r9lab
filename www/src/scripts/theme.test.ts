@@ -49,9 +49,9 @@ afterEach(() => {
 });
 
 describe('getStoredTheme', () => {
-  it('falls back to the pre-rename storage key', () => {
+  it('ignores the pre-rename storage key', () => {
     window.localStorage.setItem('relab-theme', 'dark');
-    expect(getStoredTheme()).toBe('dark');
+    expect(getStoredTheme()).toBe('system');
     window.localStorage.setItem(STORAGE_KEY, 'light');
     expect(getStoredTheme()).toBe('light');
   });
