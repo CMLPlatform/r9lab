@@ -280,7 +280,7 @@ async def test_patch_component_without_changes_returns_the_component(
 @pytest.mark.parametrize(
     ("headers", "expected"),
     [
-        ({}, status.HTTP_422_UNPROCESSABLE_CONTENT),
+        ({}, status.HTTP_428_PRECONDITION_REQUIRED),
         ({"If-Match": '"2"'}, status.HTTP_412_PRECONDITION_FAILED),
         ({"If-Match": 'W/"1"'}, status.HTTP_412_PRECONDITION_FAILED),
     ],
@@ -294,6 +294,25 @@ async def test_patch_component_enforces_if_match(
     )
 
     assert response.status_code == expected
+
+
+@pytest.mark.parametrize(
+    ("target", "amount"),
+    [("component", None), ("product", COMPONENT_AMOUNT)],
+    ids=["null-on-component", "value-on-base-product"],
+)
+async def test_patch_breaking_product_role_is_a_bad_request(
+    api_client_superuser: AsyncClient, setup_product_graph: ProductGraph, target: str, amount: int | None
+) -> None:
+    """A PATCH that breaks the component/base-product amount rule is refused with 400, not a 500."""
+    record = getattr(setup_product_graph, target)
+    route = "components" if target == "component" else "products"
+    response = await api_client_superuser.patch(
+        f"/v1/{route}/{record.id}", json={"amount_in_parent": amount}, headers=IF_MATCH_FRESH
+    )
+
+    assert response.status_code == status.HTTP_400_BAD_REQUEST
+    assert "amount_in_parent" in response.json()["detail"]
 
 
 async def test_non_owner_cannot_patch_component(

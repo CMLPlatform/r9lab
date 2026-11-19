@@ -111,7 +111,10 @@ async def create_product(
     response_model=ProductRead,
     summary="Update base product",
     dependencies=[API_WRITE_RATE_LIMIT_DEPENDENCY],
-    responses={412: {"description": "The record changed since the `version` sent in `If-Match`."}},
+    responses={
+        412: {"description": "The record changed since the `version` sent in `If-Match`."},
+        428: {"description": "The `If-Match` header is missing."},
+    },
 )
 async def update_product(
     product_update: ProductUpdate,

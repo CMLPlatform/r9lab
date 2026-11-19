@@ -8213,9 +8213,9 @@ export interface operations {
   update_product_v1_products__product_id__patch: {
     parameters: {
       query?: never;
-      header: {
-        /** @description The `version` field from the product's last read, quoted: `"3"`. Not the `ETag` a GET returns: that one also changes with media. A stale or malformed value is refused with 412. */
-        'if-match': string;
+      header?: {
+        /** @description Required. The `version` field from the product's last read, quoted: `"3"`. Not the `ETag` a GET returns: that one also changes with media. A missing header is refused with 428, a stale or malformed value with 412. */
+        'if-match'?: string | null;
       };
       path: {
         product_id: number;
@@ -8252,6 +8252,13 @@ export interface operations {
         content: {
           'application/json': components['schemas']['HTTPValidationError'];
         };
+      };
+      /** @description The `If-Match` header is missing. */
+      428: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
       };
     };
   };
@@ -8986,9 +8993,9 @@ export interface operations {
   update_component_v1_components__component_id__patch: {
     parameters: {
       query?: never;
-      header: {
-        /** @description The `version` field from the product's last read, quoted: `"3"`. Not the `ETag` a GET returns: that one also changes with media. A stale or malformed value is refused with 412. */
-        'if-match': string;
+      header?: {
+        /** @description Required. The `version` field from the product's last read, quoted: `"3"`. Not the `ETag` a GET returns: that one also changes with media. A missing header is refused with 428, a stale or malformed value with 412. */
+        'if-match'?: string | null;
       };
       path: {
         component_id: number;
@@ -9025,6 +9032,13 @@ export interface operations {
         content: {
           'application/json': components['schemas']['HTTPValidationError'];
         };
+      };
+      /** @description The `If-Match` header is missing. */
+      428: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
       };
     };
   };

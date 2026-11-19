@@ -192,10 +192,10 @@ async def test_update_product(api_client_superuser: AsyncClient, setup_product: 
 
 
 async def test_update_product_requires_if_match(api_client_superuser: AsyncClient, setup_product: Product) -> None:
-    """PATCH /products/{id} without If-Match is refused as invalid."""
+    """PATCH /products/{id} without If-Match is refused as a missing precondition."""
     response = await api_client_superuser.patch(f"/v1/products/{setup_product.id}", json={"name": UPDATED_PRODUCT_NAME})
 
-    assert response.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
+    assert response.status_code == status.HTTP_428_PRECONDITION_REQUIRED
 
 
 @pytest.mark.parametrize("if_match", ['"2"', "1", 'W/"1"', "*", '"1", "2"'])

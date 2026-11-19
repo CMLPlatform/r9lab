@@ -21,6 +21,8 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   - Rolling back past the rename is not supported once traffic reopens.
 - **Breaking:** `just deploy` uses the ssh alias `r9lab-<env>` by default. Rename your ssh
   aliases, or set `R9LAB_DEPLOY_HOST`.
+- **Breaking:** API clients: `PATCH /v1/products/{id}` and `PATCH /v1/components/{id}`
+  without an `If-Match` header answer 428 Precondition Required instead of 422.
 - Developers: run `docker compose -p relab_dev down` (and `relab_test`, `relab_e2e`) before the
   first `just dev-up`. The old dev database is not carried over, so seed it again. Rebuild the
   devcontainer: the workspace is now `/opt/r9lab`.
@@ -110,6 +112,8 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - The products list no longer says "No products yet" under a failed load. Only deleting the
   account is red on the account screen, not signing out or unlinking a provider, and "Connected
   as" no longer ends empty when a provider gave no email.
+- A product or component edit that sets `amount_in_parent` on a base product, or clears it on a
+  component, answers 400 instead of 500.
 - Registration and verification emails said the link expires in 1 hour. They now state the
   real lifetime, 1 day, and the reset email states its own.
 - Public profile statistics are counted from the owner's products and photos, so they stay

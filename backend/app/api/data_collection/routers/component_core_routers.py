@@ -106,7 +106,10 @@ async def add_component_to_component(
     response_model=ComponentRead,
     summary="Update component",
     dependencies=[API_WRITE_RATE_LIMIT_DEPENDENCY],
-    responses={412: {"description": "The record changed since the `version` sent in `If-Match`."}},
+    responses={
+        412: {"description": "The record changed since the `version` sent in `If-Match`."},
+        428: {"description": "The `If-Match` header is missing."},
+    },
 )
 async def update_component(
     component_update: ProductUpdate,
