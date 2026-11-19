@@ -200,3 +200,17 @@ async def test_moderator_identity_is_shown_to_admins_only(
     assert as_owner["editor_username"] is None
     assert as_admin["by_moderator"] is True
     assert as_admin["editor_username"] == db_superuser.username
+
+
+async def test_history_loads_the_owner_itself(
+    api_client_light: AsyncClient, db_session: AsyncSession, private_owner_product: Product
+) -> None:
+    """The route reads an owner's edit without the owner already in the session."""
+    product_id = private_owner_product.id
+    # A real request starts with an empty session; this one already holds the owner.
+    db_session.expunge_all()
+
+    response = await api_client_light.get(f"/v1/products/{product_id}/revisions")
+
+    assert response.status_code == status.HTTP_200_OK
+    assert response.json()["items"][0]["editor_username"] is None
