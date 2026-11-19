@@ -120,6 +120,50 @@ describe('ProductMetaData', () => {
       expect(screen.getByRole('button', { name: HIDE_HISTORY_PATTERN })).toBeOnTheScreen();
     });
 
+    it('words an unknown editor, a missing field list and an unmapped field plainly', async () => {
+      server.use(
+        http.get(`${API_URL}/products/42/revisions`, () =>
+          HttpResponse.json({
+            items: [
+              revision({ id: 2, changed_fields: ['physical_properties'] }),
+              revision({ id: 1, changed_fields: [] }),
+            ],
+            total: 2,
+            page: 1,
+            size: 50,
+            pages: 1,
+          }),
+        ),
+      );
+      const product = { ...baseProduct, updatedAt: '2026-11-19T10:00:00Z' };
+      await renderWithProviders(<ProductMetaData product={product} />, { withAuth: true });
+
+      await user.press(screen.getByRole('button', { name: SHOW_HISTORY_PATTERN }));
+
+      expect(await screen.findByText('Changed physical properties')).toBeOnTheScreen();
+      expect(screen.getByText('No field changes')).toBeOnTheScreen();
+      const date = new Date('2026-11-19T10:00:00Z').toLocaleDateString();
+      expect(screen.getAllByText(`${date} · Unknown editor`)).toHaveLength(2);
+      expect(screen.queryByText('Hidden')).toBeNull();
+    });
+
+    it('announces the loading state as a status', async () => {
+      server.use(
+        http.get(`${API_URL}/products/42/revisions`, async () => {
+          await new Promise(() => undefined);
+        }),
+      );
+      const product = { ...baseProduct, updatedAt: '2026-11-19T10:00:00Z' };
+      await renderWithProviders(<ProductMetaData product={product} />, { withAuth: true });
+
+      await user.press(screen.getByRole('button', { name: SHOW_HISTORY_PATTERN }));
+
+      const region = await screen.findByTestId('edit-history-loading');
+      expect(region.props.role).toBe('status');
+      expect(region).toHaveProp('accessibilityLiveRegion', 'polite');
+      expect(region).toHaveTextContent('Loading edits…');
+    });
+
     it("reads a component's history from the component route", async () => {
       server.use(
         http.get(`${API_URL}/components/42/revisions`, () =>

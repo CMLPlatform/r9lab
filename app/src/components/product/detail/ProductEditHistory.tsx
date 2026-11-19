@@ -25,17 +25,19 @@ const FIELD_LABELS: Record<string, string> = {
 
 function editorLabel(revision: ApiProductRevision): string {
   if (revision.editor_username) return revision.editor_username;
-  return revision.by_moderator ? 'A moderator' : 'Hidden';
+  return revision.by_moderator ? 'A moderator' : 'Unknown editor';
 }
 
 function RevisionRow({ revision }: { revision: ApiProductRevision }) {
-  const fields = revision.changed_fields.map((field) => FIELD_LABELS[field] ?? field).join(', ');
+  const fields = revision.changed_fields
+    .map((field) => FIELD_LABELS[field] ?? field.replaceAll('_', ' '))
+    .join(', ');
   return (
     <View className="gap-0.5 py-1">
       <AppText variant="caption" className="text-muted-foreground">
-        {new Date(revision.created_at).toLocaleString()} · {editorLabel(revision)}
+        {new Date(revision.created_at).toLocaleDateString()} · {editorLabel(revision)}
       </AppText>
-      <AppText variant="data">Changed {fields || 'nothing'}</AppText>
+      <AppText variant="data">{fields ? `Changed ${fields}` : 'No field changes'}</AppText>
     </View>
   );
 }
@@ -63,7 +65,11 @@ export default function ProductEditHistory({ product }: { product: Product }) {
     );
   }
   if (!query.data) {
-    return <AppText variant="caption">Loading edits…</AppText>;
+    return (
+      <View testID="edit-history-loading" role="status" accessibilityLiveRegion="polite">
+        <AppText variant="caption">Loading edits…</AppText>
+      </View>
+    );
   }
   const { items, total } = query.data;
   return (
