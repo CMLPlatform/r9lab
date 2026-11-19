@@ -1003,6 +1003,29 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/v1/products/{product_id}/revisions': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get a base product's edit history
+     * @description Get a page of the product's recorded edits, newest first.
+     *
+     *     Covers the product's own fields, not its media, components or bill of materials, and
+     *     only edits made since the history was introduced. Revisions are kept for two years.
+     */
+    get: operations['get_product_revisions_v1_products__product_id__revisions_get'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/v1/products/suggestions/brands': {
     parameters: {
       query?: never;
@@ -1168,6 +1191,26 @@ export interface paths {
      * @description Update a component. Response is the lean :class:`ComponentRead` shape (no relationships).
      */
     patch: operations['update_component_v1_components__component_id__patch'];
+    trace?: never;
+  };
+  '/v1/components/{component_id}/revisions': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get a component's edit history
+     * @description Get a page of the component's recorded edits, newest first, as ``GET /products/{id}/revisions`` does.
+     */
+    get: operations['get_component_revisions_v1_components__component_id__revisions_get'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
     trace?: never;
   };
   '/v1/components/{component_id}/components': {
@@ -4746,6 +4789,20 @@ export interface components {
       pages: number;
       readonly links: components['schemas']['Links'];
     };
+    /** Page[TypeVar]Customized[ProductRevisionRead] */
+    Page_TypeVar_Customized_ProductRevisionRead_: {
+      /** Items */
+      items: components['schemas']['ProductRevisionRead'][];
+      /** Total */
+      total: number;
+      /** Page */
+      page: number;
+      /** Size */
+      size: number;
+      /** Pages */
+      pages: number;
+      readonly links: components['schemas']['Links'];
+    };
     /** Page[TypeVar]Customized[str] */
     Page_TypeVar_Customized_str_: {
       /** Items */
@@ -5156,6 +5213,46 @@ export interface components {
        * @description List of component products
        */
       components?: components['schemas']['ComponentRead'][];
+    };
+    /**
+     * ProductRevisionRead
+     * @description One recorded edit of a product's own fields, newest first in the history list.
+     */
+    ProductRevisionRead: {
+      /** Id */
+      id: number;
+      /**
+       * Version
+       * @description The product's version after this edit.
+       */
+      version: number;
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string;
+      /**
+       * Changed Fields
+       * @description Names of the fields this edit changed.
+       */
+      changed_fields: string[];
+      /**
+       * Snapshot
+       * @description The product's editable fields as this edit left them.
+       */
+      snapshot: {
+        [key: string]: unknown;
+      };
+      /**
+       * By Moderator
+       * @description Whether someone other than the owner made the edit.
+       */
+      by_moderator: boolean;
+      /**
+       * Editor Username
+       * @description Hidden when the viewer may not see the editor's profile, for a moderator's edit unless the viewer is an admin, and once the editor's account is deleted.
+       */
+      editor_username?: string | null;
     };
     /**
      * ProductSummary
@@ -8580,6 +8677,42 @@ export interface operations {
       };
     };
   };
+  get_product_revisions_v1_products__product_id__revisions_get: {
+    parameters: {
+      query?: {
+        /** @description Page number */
+        page?: number;
+        /** @description Page size */
+        size?: number;
+      };
+      header?: never;
+      path: {
+        product_id: number;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['Page_TypeVar_Customized_ProductRevisionRead_'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
   get_brand_suggestions_v1_products_suggestions_brands_get: {
     parameters: {
       query?: {
@@ -9065,6 +9198,42 @@ export interface operations {
           [name: string]: unknown;
         };
         content?: never;
+      };
+    };
+  };
+  get_component_revisions_v1_components__component_id__revisions_get: {
+    parameters: {
+      query?: {
+        /** @description Page number */
+        page?: number;
+        /** @description Page size */
+        size?: number;
+      };
+      header?: never;
+      path: {
+        component_id: number;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['Page_TypeVar_Customized_ProductRevisionRead_'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
       };
     };
   };

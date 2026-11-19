@@ -17,7 +17,7 @@ from app.api.data_collection.exceptions import (
     ProductTreeTooDeepError,
     ProductVersionMismatchError,
 )
-from app.api.data_collection.models.product import MaterialProductLink, Product
+from app.api.data_collection.models.product import MaterialProductLink, Product, ProductRevision
 from app.api.data_collection.schemas import ComponentCreateWithComponents, ProductCreateWithComponents, ProductUpdate
 from app.api.file_storage.models import Video
 from app.api.file_storage.upload_quota import lock_product_owner, recompute_user_upload_quota
@@ -146,6 +146,14 @@ def apply_product_update(db_product: Product, product: ProductUpdate) -> None:
         setattr(db_product, key, value)
 
 
+# The fields a revision snapshots: everything an update may change on the row itself.
+REVISION_FIELDS = tuple(ProductUpdate.model_fields)
+
+
+def _editable_fields(db_product: Product) -> dict[str, Any]:
+    return {field: getattr(db_product, field) for field in REVISION_FIELDS}
+
+
 async def update_product(
     db: AsyncSession, product_id: int, product: ProductUpdate, *, if_match_version: int, user_id: UUID4
 ) -> Product:
@@ -154,9 +162,16 @@ async def update_product(
     Under the row lock, an update that changes a field must name the stored version, and
     bumps it. An update that changes nothing succeeds whatever version it names, so a
     retry of a save that already landed is not reported as a conflict.
+
+    A changing update records a ``ProductRevision`` in the same transaction.
     """
+    # Owner first, as every product writer does: the revision's editor foreign key locks
+    # the editor's user row, which for an owner's own edit is the owner's. Taken after the
+    # product row, that would deadlock against an erasure of that owner.
+    await lock_product_owner(db, product_id=product_id)
     db_product = await require_locked_model(db, Product, product_id)
     await validate_product_type(db, product.product_type_id)
+    before = _editable_fields(db_product)
     apply_product_update(db_product, product)
     if not db.is_modified(db_product):
         # The fields were still set, so the next autoflush expires the first-image column;
@@ -167,6 +182,16 @@ async def update_product(
         raise ProductVersionMismatchError
 
     db_product.version += 1
+    after = _editable_fields(db_product)
+    db.add(
+        ProductRevision(
+            product_id=product_id,
+            editor_id=user_id,
+            version=db_product.version,
+            changed_fields=[field for field in REVISION_FIELDS if before[field] != after[field]],
+            snapshot=after,
+        )
+    )
 
     res = await commit_and_refresh(db, db_product)
     if user_id != db_product.owner_id:

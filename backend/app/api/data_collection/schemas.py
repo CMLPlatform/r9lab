@@ -1,7 +1,8 @@
 """Pydantic models used to validate CRUD operations for data collection data."""
 
 import logging
-from typing import TYPE_CHECKING, Self
+from datetime import datetime  # Pydantic resolves it at runtime
+from typing import TYPE_CHECKING, Any, Self
 
 from pydantic import (
     UUID4,
@@ -318,3 +319,21 @@ class ProductUpdate(BaseUpdateSchema, ProductCircularityPropertiesInputFields):
     height_cm: float | None = Field(default=None, gt=0)
     width_cm: float | None = Field(default=None, gt=0)
     depth_cm: float | None = Field(default=None, gt=0)
+
+
+class ProductRevisionRead(BaseModel):
+    """One recorded edit of a product's own fields, newest first in the history list."""
+
+    id: PositiveInt
+    version: PositiveInt = Field(description="The product's version after this edit.")
+    created_at: datetime
+    changed_fields: list[str] = Field(description="Names of the fields this edit changed.")
+    snapshot: dict[str, Any] = Field(description="The product's editable fields as this edit left them.")
+    by_moderator: bool = Field(description="Whether someone other than the owner made the edit.")
+    editor_username: str | None = Field(
+        default=None,
+        description=(
+            "Hidden when the viewer may not see the editor's profile, for a moderator's edit unless the "
+            "viewer is an admin, and once the editor's account is deleted."
+        ),
+    )

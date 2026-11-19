@@ -5,8 +5,13 @@ data they contributed is the admin's choice at deletion time; self-service delet
 always anonymizes:
 
 - ``anonymize`` (default) reassigns their products to a dedicated, permanently
-  inactive system account, so published research data survives the account.
-- ``delete`` removes the owned product subtrees, their media rows, and the bytes.
+  inactive system account, so published research data survives the account. The edit
+  history of those products is deleted: it can hold text the owner removed.
+- ``delete`` removes the owned product subtrees, their media rows, and the bytes. Their
+  edit history goes with them through the foreign key.
+
+Either way, edits the user made to other people's products stay in those products'
+history with the editor cleared (the foreign key sets it NULL).
 
 Cameras and OAuth links are personal data and are always hard-deleted.
 
@@ -25,7 +30,7 @@ from typing import TYPE_CHECKING, Literal
 
 from anyio import to_thread
 from pydantic import UUID4, AwareDatetime, BaseModel, ValidationError
-from sqlalchemy import select, update
+from sqlalchemy import delete, select, update
 from sqlalchemy.exc import IntegrityError
 
 from app.api.auth.models import OAuthAccount, User
@@ -41,7 +46,7 @@ from app.api.data_collection.crud.storage import (
     delete_product_rows,
     product_subtree_ids,
 )
-from app.api.data_collection.models.product import Product
+from app.api.data_collection.models.product import Product, ProductRevision
 from app.api.file_storage.upload_quota import recompute_user_upload_quota
 from app.api.plugins.r9cam.models import Camera
 from app.api.plugins.r9cam.runtime.preview import get_preview_thumbnail_path, remove_preview_thumbnail
@@ -126,6 +131,12 @@ async def erase_user(
 
     if content == ANONYMIZE:
         anonymous = await get_or_create_anonymous_user(session)
+        # Before the reassignment, while owner_id still names the user.
+        await session.execute(
+            delete(ProductRevision).where(
+                ProductRevision.product_id.in_(select(Product.id).where(Product.owner_id == user_id))
+            )
+        )
         # owner_id is denormalized onto every row of a product subtree, so a flat
         # update by owner covers base products and their components alike.
         await session.execute(update(Product).where(Product.owner_id == user_id).values(owner_id=anonymous.id))

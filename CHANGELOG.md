@@ -60,6 +60,13 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   material mass shows when every row is in g or kg. A saved record with neither materials nor
   components, or whose material mass is more than 10% off its weight, gets a warning.
   ([#63](https://github.com/CMLPlatform/r9lab/issues/63), [#327](https://github.com/CMLPlatform/r9lab/issues/327))
+- Product edit history. Each change to a product's or component's own fields records who made it,
+  the new version, the changed fields and the values it left, read through
+  `GET /v1/products/{id}/revisions` and `GET /v1/components/{id}/revisions`. The app lists the
+  edits under the "Last updated" date. History starts with this release, covers neither media,
+  components nor materials, and is kept for two years. Erasing an account clears the history of
+  its products. A schema rollback below this release is refused once any edit is recorded: roll
+  back the code only. ([#361](https://github.com/CMLPlatform/r9lab/issues/361))
 - r9cam cameras can sign their device tokens with EdDSA (Ed25519) as well as ES256. Each camera
   may use only the algorithm of the key it paired with. The backend now uses r9cam-models
   0.7.0, which accepts Ed25519 public keys at pairing. ([#501](https://github.com/CMLPlatform/r9lab/issues/501))

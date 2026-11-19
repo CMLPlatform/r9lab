@@ -111,6 +111,18 @@ Security-sensitive areas:
     `/categories/{id}/subcategories/tree`, `/taxonomies/{id}/categories/tree`) page their
     top-level categories and carry the same limit. `test_dos_rate_limit_routes.py` requires the
     read limit on every public route that lists components or returns a tree.
+- product edit history (`product_revision`): every changing update of a product's own fields
+  stores a snapshot of those fields, the editor and the resulting version, written in the update's
+  transaction under the owner and product row locks. It can hold text the owner later removed, so
+  it is not kept for ever:
+  - Revisions older than two years (`REVISION_RETENTION`) are pruned hourly by each API worker.
+  - Erasing an account in anonymize mode deletes the history of that account's products before
+    they move to the system account; in delete mode the history goes with the products. Edits the
+    account made to other people's products stay, with the editor cleared.
+  - `GET /products/{id}/revisions` and `GET /components/{id}/revisions` are as public as the
+    product. An owner's edits follow the product's owner redaction; a moderator's edits are marked
+    as such and name the moderator to admins only.
+  - The migration's downgrade refuses while the table holds rows.
 - cookie-authenticated writes: an unsafe `/v1` request carrying the session cookies, and every
   session login, is refused with 403 when `Sec-Fetch-Site` is `cross-site` or the `Origin` is not
   in the CORS allow-list (`app/core/middleware/cross_site.py`). Requests without either header

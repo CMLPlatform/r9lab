@@ -168,6 +168,16 @@ Each account also has a cap on total file count and storage, set by its role:
 An upload over either cap is rejected; deleting media releases its quota. Images count at the
 size they are stored at.
 
+## Edit history
+
+Tap the "Last updated" date on a product or component to see its edits, newest first: when each
+was made, who made it, and which fields changed. It covers the record's own fields, not photos,
+files, components or materials. The history starts with the release that added it, so older edits
+are not listed. Edits are kept for two years.
+
+The editor's name follows their profile settings. A correction by a moderator is shown as one,
+without the moderator's name.
+
 ## Final check
 
 - Check that each component sits under the right parent.
