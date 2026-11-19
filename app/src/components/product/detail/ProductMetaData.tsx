@@ -1,5 +1,5 @@
 import { useRouter } from 'expo-router';
-import { useCallback } from 'react';
+import { useCallback, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { AppText } from '@/components/base/AppText';
 import { PRESS_TINT } from '@/components/base/pressFeedback';
@@ -7,6 +7,7 @@ import { MIN_TAP_TARGET, WEB_FOCUS_RING } from '@/constants';
 import { entityLabelTitle, type Product } from '@/types/Product';
 import { cn } from '@/utils/cn';
 import { getProfileHref } from '@/utils/router/profiles';
+import ProductEditHistory from './ProductEditHistory';
 
 interface Props {
   product: Product;
@@ -27,6 +28,8 @@ function MetaRow({ label, children }: { label: string; children: React.ReactNode
 export default function ProductMetaData({ product }: Props) {
   const router = useRouter();
   const { ownerUsername } = product;
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const toggleHistory = useCallback(() => setHistoryOpen((open) => !open), []);
   const openOwner = useCallback(() => {
     if (ownerUsername) router.push(getProfileHref(ownerUsername));
   }, [ownerUsername, router]);
@@ -39,9 +42,25 @@ export default function ProductMetaData({ product }: Props) {
       ) : null}
       {product.updatedAt ? (
         <MetaRow label="Last updated">
-          <AppText variant="data">{new Date(product.updatedAt).toLocaleDateString()}</AppText>
+          {typeof product.id === 'number' ? (
+            <Pressable
+              onPress={toggleHistory}
+              accessibilityRole="button"
+              accessibilityState={{ expanded: historyOpen }}
+              accessibilityLabel={`${historyOpen ? 'Hide' : 'Show'} edit history`}
+              className={cn('justify-center rounded-md', PRESS_TINT, WEB_FOCUS_RING)}
+              style={styles.link}
+            >
+              <AppText variant="data" className="text-primary underline">
+                {new Date(product.updatedAt).toLocaleDateString()}
+              </AppText>
+            </Pressable>
+          ) : (
+            <AppText variant="data">{new Date(product.updatedAt).toLocaleDateString()}</AppText>
+          )}
         </MetaRow>
       ) : null}
+      {historyOpen ? <ProductEditHistory product={product} /> : null}
       <MetaRow label="Owner">
         {product.ownerUsername ? (
           // 44px floor via padding that a negative margin lets overlap the row,
@@ -51,7 +70,7 @@ export default function ProductMetaData({ product }: Props) {
             accessibilityRole="link"
             accessibilityLabel={`View ${product.ownerUsername}'s profile`}
             className={cn('justify-center rounded-md', PRESS_TINT, WEB_FOCUS_RING)}
-            style={styles.ownerLink}
+            style={styles.link}
           >
             <AppText variant="data" className="text-primary underline">
               {product.ownerUsername}
@@ -68,8 +87,9 @@ export default function ProductMetaData({ product }: Props) {
   );
 }
 
+// Shared by the owner and edit-history links.
 const styles = StyleSheet.create({
-  ownerLink: {
+  link: {
     minHeight: MIN_TAP_TARGET,
     // A short username ("bob") left a ~25px-wide target; nothing sits to its right.
     minWidth: MIN_TAP_TARGET,

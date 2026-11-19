@@ -14,6 +14,7 @@ import type {
   ApiImageRead,
   ApiMaterialLink,
   ApiPaginatedProducts,
+  ApiPaginatedRevisions,
   ApiVideoRead,
 } from '@/types/api';
 import type { Product, ProductMaterial } from '@/types/Product';
@@ -226,6 +227,23 @@ export async function getComponentTree(id: number): Promise<Product[] | null> {
   const data = (await response.json()) as ApiComponentTreeItem[];
   // NOTE: no viewer lookup, so `ownedBy` is never 'me'; callers read the measurements only.
   return data.map((component) => toComponent(component));
+}
+
+// The history list shows one page; older edits are rare enough not to page through.
+export const REVISIONS_PAGE_SIZE = 50;
+
+/** The newest recorded edits of a product or component, with the API's editor redaction. */
+export async function getRevisions(
+  id: number,
+  role: Product['role'],
+): Promise<ApiPaginatedRevisions> {
+  const url = new URL(
+    `${baseUrl}/${role === 'component' ? 'components' : 'products'}/${id}/revisions`,
+  );
+  url.searchParams.set('size', String(REVISIONS_PAGE_SIZE));
+  const response = await apiFetch(url, { method: 'GET' });
+  if (!response.ok) await throwFromResponse(response, "Couldn't load the edit history. Try again.");
+  return (await response.json()) as ApiPaginatedRevisions;
 }
 
 export function newProduct(

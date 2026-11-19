@@ -1,7 +1,10 @@
 import { describe, expect, it } from '@jest/globals';
 import { screen } from '@testing-library/react-native';
+import { HttpResponse, http } from 'msw';
 import ProductMetaData from '@/components/product/detail/ProductMetaData';
-import { baseProduct as _base, renderWithProviders } from '@/test-utils/index';
+import { API_URL } from '@/config';
+import { baseProduct as _base, renderWithProviders, setupUser } from '@/test-utils/index';
+import { server } from '@/test-utils/server';
 import type { Product } from '@/types/Product';
 
 const baseProduct: Product = { ..._base, id: 42 };
@@ -12,6 +15,8 @@ const OWNER_PATTERN = /Owner:/;
 const ANONYMOUS_PATTERN = /Anonymous/;
 const TESTUSER_PATTERN = /testuser/;
 const COMPONENT_ID_PATTERN = /Component ID:/;
+const MODERATOR_PATTERN = /A moderator/;
+const NO_EDITS_PATTERN = /No edits recorded/;
 
 describe('ProductMetaData', () => {
   it('shows the product ID', async () => {
@@ -62,5 +67,68 @@ describe('ProductMetaData', () => {
     expect(screen.getByText(TESTUSER_PATTERN)).toBeOnTheScreen();
     const link = screen.getByRole('link', { name: "View testuser's profile" });
     expect(link).toHaveStyle({ minHeight: 44, minWidth: 44 });
+  });
+
+  describe('edit history', () => {
+    const user = setupUser();
+    const revision = (over: Record<string, unknown>) => ({
+      id: 1,
+      version: 2,
+      created_at: '2026-11-19T10:00:00Z',
+      changed_fields: ['name'],
+      snapshot: {},
+      by_moderator: false,
+      editor_username: null,
+      ...over,
+    });
+
+    it('lists edits with their editor and changed fields from the "Last updated" date', async () => {
+      server.use(
+        http.get(`${API_URL}/products/42/revisions`, () =>
+          HttpResponse.json({
+            items: [
+              revision({
+                id: 2,
+                changed_fields: ['weight_g', 'brand'],
+                editor_username: 'testuser',
+              }),
+              revision({ id: 1, by_moderator: true }),
+            ],
+            total: 2,
+            page: 1,
+            size: 50,
+            pages: 1,
+          }),
+        ),
+      );
+      const product = { ...baseProduct, updatedAt: '2026-11-19T10:00:00Z' };
+      await renderWithProviders(<ProductMetaData product={product} />);
+
+      await user.press(screen.getByRole('button', { name: 'Show edit history' }));
+
+      expect(await screen.findByText('Changed weight, brand')).toBeOnTheScreen();
+      expect(screen.getByText(TESTUSER_PATTERN)).toBeOnTheScreen();
+      expect(screen.getByText(MODERATOR_PATTERN)).toBeOnTheScreen();
+      expect(screen.getByRole('button', { name: 'Hide edit history' })).toBeOnTheScreen();
+    });
+
+    it("reads a component's history from the component route", async () => {
+      server.use(
+        http.get(`${API_URL}/components/42/revisions`, () =>
+          HttpResponse.json({ items: [], total: 0, page: 1, size: 50, pages: 0 }),
+        ),
+      );
+      const component = {
+        ...baseProduct,
+        role: 'component' as const,
+        parentID: 1,
+        updatedAt: '2026-11-19T10:00:00Z',
+      };
+      await renderWithProviders(<ProductMetaData product={component} />);
+
+      await user.press(screen.getByRole('button', { name: 'Show edit history' }));
+
+      expect(await screen.findByText(NO_EDITS_PATTERN)).toBeOnTheScreen();
+    });
   });
 });
