@@ -65,6 +65,8 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   titled "R9lab documentation" and has an Install card, the 404 page links back into the docs,
   and the menu button on a phone is flat in light mode too.
   ([#506](https://github.com/CMLPlatform/r9lab/issues/506))
+- The docs accessibility scan covers every built page at desktop and phone width, and the
+  accessibility statement says it runs on every pull request.
 - The welcome card on the products screen has even inner padding, the mark lines up with the
   text, and "Sign in" is a solid primary button. On wide screens the actions sit beside the text.
 - The `r9lab-backup` image is built on Debian slim with only the PostgreSQL client, not the

@@ -1,3 +1,5 @@
+import { readdirSync, readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import AxeBuilder from '@axe-core/playwright';
 import { expect, type Page, test } from '@playwright/test';
 
@@ -46,48 +48,52 @@ async function switchToDarkTheme(page: Page) {
 }
 
 test.describe('Accessibility', () => {
-  test('homepage has no accessibility violations', async ({ page }) => {
-    await page.goto('/');
-    const results = await analyzePage(page);
-    expect(results.violations).toEqual([]);
-  });
-
   test('homepage has no accessibility violations in dark theme', async ({ page }) => {
     await page.goto('/');
     await switchToDarkTheme(page);
     const results = await analyzePage(page);
     expect(results.violations).toEqual([]);
   });
-
-  test('getting started guide has no accessibility violations', async ({ page }) => {
-    await page.goto('/user-guides/getting-started/');
-    const results = await analyzePage(page);
-    expect(results.violations).toEqual([]);
-  });
-
-  test('data model page (mermaid diagrams) has no accessibility violations', async ({ page }) => {
-    await page.goto('/architecture/datamodel/');
-    const results = await analyzePage(page);
-    expect(results.violations).toEqual([]);
-  });
-
-  test('app flow page (mermaid diagrams) has no accessibility violations', async ({ page }) => {
-    await page.goto('/architecture/app-flow/');
-    const results = await analyzePage(page);
-    expect(results.violations).toEqual([]);
-  });
-
-  for (const path of ['/api/public/', '/api/device/', '/api/r9cam/']) {
-    test(`${path} chrome has no accessibility violations`, async ({ page }) => {
-      await page.goto(path);
-      // #api-reference is filled client-side by the third-party Scalar bundle;
-      // its markup isn't ours to fix, so scan only the repo-authored switcher
-      // nav and noscript fallback around it.
-      const results = await analyzePage(page, { exclude: ['#api-reference'] });
-      expect(results.violations).toEqual([]);
-    });
-  }
 });
+
+// Every built page, so a new page or a new component cannot ship a violation
+// unnoticed. The list comes from dist/, which the test recipe builds first;
+// redirect stubs are skipped. #api-reference is filled client-side by the
+// third-party Scalar bundle; its markup isn't ours to fix, so only the
+// repo-authored switcher nav and noscript fallback around it are scanned.
+const DIST = join(import.meta.dirname, '..', 'dist');
+
+function builtPages(dir = DIST): string[] {
+  return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
+    const path = join(dir, entry.name);
+    if (entry.isDirectory()) return builtPages(path);
+    if (!entry.name.endsWith('.html')) return [];
+    if (readFileSync(path, 'utf8').includes('http-equiv="refresh"')) return [];
+    return [path];
+  });
+}
+
+function routeOf(file: string): string {
+  const route = `/${file.slice(DIST.length + 1).replace(/(^|\/)index\.html$/, '')}`;
+  // The 404 page is only served for an address that does not exist.
+  return route === '/404.html' ? '/no-such-page/' : route;
+}
+
+// Wide tables and code blocks only overflow, and so only fail the scrollable-region
+// rule, on a phone: scan at both widths.
+for (const width of [1280, 375]) {
+  test.describe(`Accessibility, every page at ${width}px`, () => {
+    test.use({ viewport: { width, height: 800 } });
+
+    for (const route of builtPages().map(routeOf)) {
+      test(`${route} has no accessibility violations`, async ({ page }) => {
+        await page.goto(route);
+        const results = await analyzePage(page, { exclude: ['#api-reference'] });
+        expect(results.violations).toEqual([]);
+      });
+    }
+  });
+}
 
 // WCAG 4.1.3: Pagefind writes the result count into a plain paragraph, so a screen
 // reader hears nothing after typing. src/scripts/search-status.ts mirrors it into a
