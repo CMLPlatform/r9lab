@@ -8,6 +8,7 @@ jest.mock('@/services/externalLinks', () => ({
   openExternalUrl: jest.fn(),
 }));
 
+const NEW_TAB_HINT = /opens in new tab/;
 const mockOpen = openExternalUrl as jest.MockedFunction<typeof openExternalUrl>;
 
 afterEach(() => {
@@ -31,7 +32,7 @@ describe('ExternalTextLink', () => {
     await renderWithProviders(
       <ExternalTextLink url="https://example.org/a">Read</ExternalTextLink>,
     );
-    const link = screen.getByRole('link', { name: 'Read' });
+    const link = screen.getByRole('link', { name: 'Read (opens in new tab)' });
     expect(link.props.href).toBe('https://example.org/a');
     expect(link.props.hrefAttrs).toEqual({ target: '_blank', rel: 'noopener noreferrer' });
   });
@@ -41,8 +42,27 @@ describe('ExternalTextLink', () => {
     await renderWithProviders(
       <ExternalTextLink url="https://example.org/a">Read</ExternalTextLink>,
     );
-    await user.press(screen.getByRole('link', { name: 'Read' }));
+    await user.press(screen.getByRole('link', { name: 'Read (opens in new tab)' }));
     expect(mockOpen).not.toHaveBeenCalled();
+  });
+
+  it('says on web that a labelled link opens a new tab', async () => {
+    mockPlatform('web');
+    await renderWithProviders(
+      <ExternalTextLink url="https://example.org/a" accessibilityLabel="Learn more about cameras">
+        Learn more
+      </ExternalTextLink>,
+    );
+    expect(
+      screen.getByRole('link', { name: 'Learn more about cameras (opens in new tab)' }),
+    ).toBeOnTheScreen();
+  });
+
+  it('adds no new-tab hint on native, where no tab opens', async () => {
+    await renderWithProviders(
+      <ExternalTextLink url="https://example.org/a">Read</ExternalTextLink>,
+    );
+    expect(screen.queryByText(NEW_TAB_HINT)).toBeNull();
   });
 
   it('renders plain text without a usable URL', async () => {

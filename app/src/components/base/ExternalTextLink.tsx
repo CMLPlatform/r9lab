@@ -1,5 +1,5 @@
 import { type ComponentProps, useCallback } from 'react';
-import { Platform } from 'react-native';
+import { Platform, StyleSheet, Text } from 'react-native';
 import { AppText } from '@/components/base/AppText';
 import { openExternalUrl } from '@/services/externalLinks';
 import { cn } from '@/utils/cn';
@@ -10,6 +10,8 @@ import { normalizeHttpUrl } from '@/utils/urlSafety';
 const WEB_ANCHOR_PROPS = {
   hrefAttrs: { target: '_blank', rel: 'noopener noreferrer' },
 };
+// Read out, not shown, so a screen-reader user knows the link leaves this tab.
+const NEW_TAB_HINT = ' (opens in new tab)';
 
 /**
  * Inline link to an http(s) URL inside running text. Renders plain text when
@@ -27,15 +29,32 @@ export function ExternalTextLink({
     if (safeUrl) void openExternalUrl(safeUrl);
   }, [safeUrl]);
   if (!safeUrl) return <AppText className={className} {...rest} />;
+  if (Platform.OS !== 'web') {
+    return (
+      <AppText
+        accessibilityRole="link"
+        className={cn('underline', className)}
+        onPress={open}
+        {...rest}
+      />
+    );
+  }
   // Web gets the anchor alone: with onPress as well, the click would also navigate this tab.
-  const behaviour =
-    Platform.OS === 'web' ? { href: safeUrl, ...WEB_ANCHOR_PROPS } : { onPress: open };
+  const { accessibilityLabel, children, ...textProps } = rest;
   return (
     <AppText
       accessibilityRole="link"
       className={cn('underline', className)}
-      {...behaviour}
-      {...rest}
-    />
+      {...{ href: safeUrl, ...WEB_ANCHOR_PROPS }}
+      {...textProps}
+      accessibilityLabel={accessibilityLabel ? `${accessibilityLabel}${NEW_TAB_HINT}` : undefined}
+    >
+      {children}
+      <Text style={styles.visuallyHidden}>{NEW_TAB_HINT}</Text>
+    </AppText>
   );
 }
+
+const styles = StyleSheet.create({
+  visuallyHidden: { position: 'absolute', width: 1, height: 1, overflow: 'hidden', opacity: 0 },
+});
