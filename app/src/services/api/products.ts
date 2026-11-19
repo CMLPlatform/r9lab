@@ -16,7 +16,7 @@ import type {
   ApiPaginatedProducts,
   ApiVideoRead,
 } from '@/types/api';
-import type { Product } from '@/types/Product';
+import type { Product, ProductMaterial } from '@/types/Product';
 import { apiFetch } from './client';
 import { throwFromResponse } from './errors';
 import { resolveApiMediaUrl, resolveApiMediaUrlMap } from './media';
@@ -53,6 +53,19 @@ type ProductMapperPayload =
   | ApiComponentChildItem
   | ApiComponentDetail
   | ApiComponentTreeItem;
+
+/** Sorted by name here because the API relationship has no order_by. */
+export function toProductMaterials(links: ApiMaterialLink[]): ProductMaterial[] {
+  return links
+    .map((link) => ({
+      materialID: link.material_id,
+      name: link.material.name,
+      quantity: link.quantity,
+      unit: link.unit,
+      ...(link.material.source ? { source: link.material.source } : {}),
+    }))
+    .sort((a, b) => a.name.localeCompare(b.name));
+}
 
 // Fields mapped identically for base products and components.
 function commonProductFields(data: ProductMapperPayload, meId?: string) {
@@ -112,16 +125,10 @@ function commonProductFields(data: ProductMapperPayload, meId?: string) {
     // undefined = the payload has no bill of materials (list rows, nested
     // children); [] = loaded and empty. ProductMaterials renders nothing for
     // the former, so a list row never claims a record has no materials.
-    // Sorted by name here because the API relationship has no order_by.
-    materials: ('bill_of_materials' in data ? data.bill_of_materials : undefined)
-      ?.map((link: ApiMaterialLink) => ({
-        materialID: link.material_id,
-        name: link.material.name,
-        quantity: link.quantity,
-        unit: link.unit,
-        ...(link.material.source ? { source: link.material.source } : {}),
-      }))
-      .sort((a, b) => a.name.localeCompare(b.name)),
+    materials:
+      'bill_of_materials' in data && data.bill_of_materials
+        ? toProductMaterials(data.bill_of_materials)
+        : undefined,
     thumbnailUrl: resolveApiMediaUrl(data.thumbnail_url),
     thumbnailUrls: resolveApiMediaUrlMap(data.thumbnail_urls),
     ...(productTypeName ? { productTypeName } : {}),

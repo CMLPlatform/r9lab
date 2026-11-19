@@ -68,6 +68,28 @@ export const handlers = [
   }),
   // The detail page's weight total. Empty, so the line stays hidden unless a test sets a tree.
   http.get(`${API_URL}/products/:id/components/tree`, () => HttpResponse.json([])),
+  // Bill-of-materials routes, the same for products and components. Happy-path
+  // echoes: a test that cares about the body or a failure overrides them.
+  http.get(`${API_URL}/materials`, () =>
+    HttpResponse.json({ items: [], total: 0, page: 1, size: 100, pages: 1 }),
+  ),
+  http.get(`${API_URL}/:root/:id/materials`, () => HttpResponse.json([])),
+  http.post(`${API_URL}/:root/:id/materials/:materialId`, async ({ request, params }) =>
+    HttpResponse.json(
+      { material_id: Number(params.materialId), ...((await request.json()) as object) },
+      { status: 201 },
+    ),
+  ),
+  http.patch(`${API_URL}/:root/:id/materials/:materialId`, async ({ request, params }) =>
+    HttpResponse.json({
+      material_id: Number(params.materialId),
+      ...((await request.json()) as object),
+    }),
+  ),
+  http.delete(
+    `${API_URL}/:root/:id/materials/:materialId`,
+    () => new HttpResponse(null, { status: 204 }),
+  ),
   http.get(`${API_URL}/stats/categories`, () =>
     HttpResponse.json({ generated_at: '', limit: 10, scope: 'all', categories: [] }),
   ),

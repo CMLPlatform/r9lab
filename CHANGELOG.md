@@ -55,6 +55,11 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   written fails instead of committing; a replay with no ledger file fails unless run with
   `--empty-ok`.
   ([#523](https://github.com/CMLPlatform/r9lab/issues/523))
+- Edit the bill of materials of a saved product or component in the app: pick a material from a
+  searchable list, set its quantity and unit (default `g`), change it or remove it. The total
+  material mass shows when every row is in g or kg. A saved record with neither materials nor
+  components, or whose material mass is more than 10% off its weight, gets a warning.
+  ([#63](https://github.com/CMLPlatform/r9lab/issues/63), [#327](https://github.com/CMLPlatform/r9lab/issues/327))
 - r9cam cameras can sign their device tokens with EdDSA (Ed25519) as well as ES256. Each camera
   may use only the algorithm of the key it paired with. The backend now uses r9cam-models
   0.7.0, which accepts Ed25519 public keys at pairing. ([#501](https://github.com/CMLPlatform/r9lab/issues/501))
@@ -100,6 +105,8 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   ([#506](https://github.com/CMLPlatform/r9lab/issues/506))
 - The docs accessibility scan covers every built page at desktop and phone width, and the
   accessibility statement says it runs on every pull request.
+- Creating a product or component with the same material twice in its bill of materials is now
+  rejected with a validation error. ([#327](https://github.com/CMLPlatform/r9lab/issues/327))
 - The welcome card on the products screen has even inner padding, the mark lines up with the
   text, and "Sign in" is a solid primary button. On wide screens the actions sit beside the text.
 - The `r9lab-backup` image is built on Debian slim with only the PostgreSQL client, not the

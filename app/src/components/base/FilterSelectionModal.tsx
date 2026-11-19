@@ -253,9 +253,11 @@ type SingleSelectProps = {
   searchQuery: string;
   onSearchChange: (q: string) => void;
   searchPlaceholder?: string;
+  /** Offer the typed text as a new value. Off for closed lists such as materials. Defaults to true. */
+  allowNew?: boolean;
 };
 
-/** Single-select filter modal: a tap confirms and closes. Typed values not in `items` can be added. */
+/** Single-select filter modal: a tap confirms and closes. Typed values not in `items` can be added unless `allowNew` is false. */
 export function SingleSelectFilterModal({
   visible,
   onDismiss,
@@ -268,6 +270,7 @@ export function SingleSelectFilterModal({
   searchQuery,
   onSearchChange,
   searchPlaceholder,
+  allowNew = true,
 }: SingleSelectProps) {
   const selectedValues = value ? [value] : [];
   const selectValue = useCallback(
@@ -284,6 +287,7 @@ export function SingleSelectFilterModal({
 
   const trimmedQuery = searchQuery.trim();
   const canAddNew =
+    allowNew &&
     trimmedQuery.length > 0 &&
     !items.some((v) => v.toLowerCase() === trimmedQuery.toLowerCase()) &&
     trimmedQuery.toLowerCase() !== value.toLowerCase();
