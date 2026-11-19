@@ -41,4 +41,6 @@ load, disk, network and `hwmon` temperatures.
 - Redis serves caching and parts of the authentication and token flow. A partial Redis outage has
   user-facing effects.
 - Scaling and secret rotation are manual. The Compose setup trades automation for a single VPS.
-- For scheduled jobs and the watchdog, see [Backups and recovery](/operations/backups/#scheduled-work).
+- Scheduled work (hourly backup, daily backup maintenance, hourly watchdog, monthly restore check)
+  runs from systemd timers, which catch up on runs missed while the host was off. Each job pings a
+  dead-man's switch that bypasses the collector, so it still reports when telemetry is down.

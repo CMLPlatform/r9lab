@@ -638,6 +638,6 @@ previous key. Rotating it needs a planned re-encryption path and a check of back
 Existing encrypted backups depend on the old key until their retention window passes. Never rotate
 `restic_password` (1.1).
 
-`just stack prod up` runs `deploy/postgres/initdb/provision.sh`
+**Database roles:** `just stack prod up` runs `deploy/postgres/initdb/provision.sh`
 against the live database before the API starts. It creates the roles, moves table ownership to the
 migration role and installs the superuser-only extensions, so an existing volume needs no rebuild.

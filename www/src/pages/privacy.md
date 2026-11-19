@@ -26,7 +26,7 @@ Product records, files, and images you upload are public. We store uploads on ou
 
 Dataset releases are openly licensed under CC BY 4.0. No release has been published yet. Publication is irreversible: once a release is out, copies exist elsewhere and cannot be recalled. Deleting your account removes your records from the live platform, but it cannot retract anything already included in a published release.
 
-We keep an edit history of each product record: when it was edited, by whom, and what its fields said afterwards. It is public like the record, and the editor's name follows their profile settings. Earlier versions of your text stay in it for two years, even after you change or remove that text.
+We keep an edit history of each product record: when it was edited, by whom, which fields changed, and what they said afterwards. Anyone can see when a record was edited, by whom and which fields changed; the editor's name follows their profile settings. What the fields said is visible only to the record's owner and the admins. Earlier versions of your text stay in the history for two years, even after you change or remove that text.
 
 You can delete your products and uploaded images in the app. If you need help, contact us and we will remove the related uploads and records.
 

@@ -3,11 +3,11 @@ title: Configure uploads
 description: The operator settings that cap uploads, images and per-account storage.
 ---
 
-These settings set the limits contributors meet when they upload photos and files. The
-[photos guide](/user-guides/photos/) shows what a contributor sees. Set a value in the root `.env`
-of the host. The deployed stack passes it to the API, and each setting falls back to the default
-below when unset. See [Secrets and rotation](/operations/secrets/) for where each kind of setting
-lives.
+These settings set the limits contributors meet when they upload photos and files. The [photos
+guide](/user-guides/photos/) shows what a contributor sees. Set a value in the root `.env` of the
+host. The deployed stack passes it to the API, and each setting falls back to the deployed stack's
+default below when unset. See [Secrets and rotation](/operations/secrets/) for where each kind of
+setting lives.
 
 ## Request and file size
 

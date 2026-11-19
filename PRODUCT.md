@@ -141,8 +141,8 @@ sequential. Quotas are tiered by role (contributor 1,000 files / 3 GB; lab 20,00
 **Idempotency.** Creates carry an `Idempotency-Key` minted once per draft, so a retry, a rehydrated
 draft, or a second Save press cannot double-create.
 
-**CPV taxonomy.** Product and component types come from the EU procurement taxonomy, shipped as a
-~2 MB bundled `cpv.json` loaded once per session.
+**CPV taxonomy.** Product and component types come from the EU procurement taxonomy, browsed and
+searched through the API and cached on the device, so the picker works offline after its first load.
 
 **Auth.** Password plus exactly two OAuth providers (Google, GitHub). MFA is TOTP with single-use
 recovery codes. OAuth-only accounts have no usable password, which changes whether unlinking a
