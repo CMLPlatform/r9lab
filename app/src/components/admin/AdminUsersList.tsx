@@ -1,6 +1,6 @@
 import { useRouter } from 'expo-router';
 import Head from 'expo-router/head';
-import { useCallback, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
 import { useDebounce } from 'use-debounce';
 import { AppButton } from '@/components/base/AppButton';
@@ -75,6 +75,7 @@ function FilterButton({
 
 export function AdminUsersList() {
   const router = useRouter();
+  const scrollRef = useRef<ScrollView>(null);
   const { isLg } = useBreakpoint();
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState<AdminUsersFilter>('all');
@@ -99,12 +100,16 @@ export function AdminUsersList() {
     setFilter(key);
     setPage(1);
   }, []);
-  const previousPage = useCallback(() => setPage((p) => p - 1), []);
-  const nextPage = useCallback(() => setPage((p) => p + 1), []);
+  const goToPage = useCallback((step: number) => {
+    setPage((p) => p + step);
+    scrollRef.current?.scrollTo({ y: 0 });
+  }, []);
+  const previousPage = useCallback(() => goToPage(-1), [goToPage]);
+  const nextPage = useCallback(() => goToPage(1), [goToPage]);
   const goToAccount = useCallback(() => router.replace('/account'), [router]);
 
   return (
-    <ScrollView contentContainerStyle={{ paddingBottom: 40 }}>
+    <ScrollView ref={scrollRef} contentContainerStyle={{ paddingBottom: 40 }}>
       <Head>
         <title>Users · R9lab</title>
       </Head>
@@ -146,9 +151,16 @@ export function AdminUsersList() {
         {query.data && query.data.items.length === 0 ? (
           <MutedText className="px-4 py-6">No users match.</MutedText>
         ) : null}
-        {query.data?.items.map((user) => (
-          <UserRow key={user.id} user={user} onPress={openUser} />
-        ))}
+        {/* Previous results stay until the new ones arrive: dim them so they do not pass as current. */}
+        <View
+          testID="user-rows"
+          aria-busy={query.isPlaceholderData}
+          className={cn(query.isPlaceholderData && 'opacity-50')}
+        >
+          {query.data?.items.map((user) => (
+            <UserRow key={user.id} user={user} onPress={openUser} />
+          ))}
+        </View>
 
         {pages > 1 ? (
           <View className="flex-row items-center justify-between border-t border-border pt-3">

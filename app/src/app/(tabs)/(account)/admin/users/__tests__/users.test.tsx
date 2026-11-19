@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { act, screen, waitFor } from '@testing-library/react-native';
 import { useRouter } from 'expo-router';
 import { HttpResponse, http } from 'msw';
+import { ScrollView } from 'react-native';
 import AdminUsersScreen from '@/app/(tabs)/(account)/admin/users/index';
 import { API_URL } from '@/config';
 import {
@@ -131,6 +132,43 @@ describe('Admin users screen', () => {
     await user.press(screen.getByRole('button', { name: 'Next' }));
     await waitFor(() => expect(screen.getByText('page2@example.org')).toBeOnTheScreen());
     expect(screen.getByText('Page 2 of 2')).toBeOnTheScreen();
+  });
+
+  it('dims the previous rows and scrolls to the top while the next page loads', async () => {
+    mockUseAuth.mockReturnValue({
+      user: mockUser({ isSuperuser: true, mfaEnabled: true }),
+      isLoading: false,
+    });
+    let release: () => void = () => undefined;
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    server.use(
+      http.get(`${API_URL}/admin/users`, async ({ request }) => {
+        const page = Number(new URL(request.url).searchParams.get('page'));
+        if (page === 2) await gate;
+        return HttpResponse.json({
+          items: [mockAdminUser({ email: `page${page}@example.org` })],
+          total: 30,
+          page,
+          size: 25,
+          pages: 2,
+        });
+      }),
+    );
+    const scrollTo = jest.spyOn(ScrollView.prototype, 'scrollTo' as never) as unknown as jest.Mock;
+
+    await renderWithProviders(<AdminUsersScreen />, { withDialog: true });
+    await waitFor(() => expect(screen.getByText('page1@example.org')).toBeOnTheScreen());
+    expect(screen.getByTestId('user-rows')).toHaveProp('aria-busy', false);
+    await user.press(screen.getByRole('button', { name: 'Next' }));
+
+    await waitFor(() => expect(screen.getByTestId('user-rows')).toHaveProp('aria-busy', true));
+    expect(screen.getByText('page1@example.org')).toBeOnTheScreen();
+    expect(scrollTo).toHaveBeenCalledWith({ y: 0 });
+    release();
+    await waitFor(() => expect(screen.getByText('page2@example.org')).toBeOnTheScreen());
+    expect(screen.getByTestId('user-rows')).toHaveProp('aria-busy', false);
   });
 
   it('steps back to the last page when the page it shows no longer exists', async () => {
