@@ -40,6 +40,8 @@ class AuditContext:
     operation: str | None = None
     status_code: int | None = None
     error_code: str | None = None
+    # Every path parameter of the request, for routes whose target sits below a parent.
+    path_params: dict[str, str] | None = None
 
 
 def _resource_type_name(resource_type: type[object] | str) -> str:
@@ -49,6 +51,8 @@ def _resource_type_name(resource_type: type[object] | str) -> str:
 
 
 def _safe_extra_value(value: object) -> object:
+    if isinstance(value, dict):
+        return {sanitize_log_value(key): sanitize_log_value(item) for key, item in value.items()}
     if isinstance(value, str | StrEnum):
         return sanitize_log_value(value)
     if value is None or isinstance(value, bool | int | float):
@@ -97,6 +101,7 @@ def audit_event(
                 "operation": audit_context.operation,
                 "status_code": audit_context.status_code,
                 "error_code": audit_context.error_code,
+                "path_params": audit_context.path_params,
             },
         ),
     }

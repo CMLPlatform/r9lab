@@ -26,7 +26,9 @@ async def audit_admin_mutation(request: Request, actor: CurrentActiveSuperUserDe
     """Write one audit event for every admin write that completes without an error.
 
     The code after ``yield`` does not run when the route raises, so refused writes are not
-    recorded as done. A create has no id in its path, so its event carries none.
+    recorded as done. The target is the last path parameter, so a nested route such as
+    ``/materials/{material_id}/images/{image_id}`` records the image, with every path
+    parameter in the context. A create has no id in its path, so its event carries none.
     """
     yield
     if request.method in {"GET", "HEAD", "OPTIONS"}:
@@ -38,8 +40,8 @@ async def audit_admin_mutation(request: Request, actor: CurrentActiveSuperUserDe
         actor.id,
         _ROUTE_ACTIONS.get(route_name) or _METHOD_ACTIONS.get(request.method, AuditAction.DELETE),
         resource_type,
-        next(iter(request.path_params.values()), None),
-        context=AuditContext(operation=route_name),
+        next(reversed(request.path_params.values()), None),
+        context=AuditContext(operation=route_name, path_params=dict(request.path_params) or None),
     )
 
 

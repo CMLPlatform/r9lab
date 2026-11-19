@@ -8,6 +8,7 @@ from dirty_equals import IsInt, IsPositive, IsStr
 from fastapi import status
 
 from app.api.data_collection.models.product import MaterialProductLink
+from app.api.file_storage.models import Image, MediaParentType
 from app.api.reference_data.models import TaxonomyDomain
 from scripts.seed.factories.models import CategoryFactory, ProductTypeFactory, TaxonomyFactory
 
@@ -315,6 +316,32 @@ async def test_admin_reference_data_writes_are_audited(
         ("delete", "materials", str(db_material.id), "delete_material"),
         ("delete", "cache", "reference-data", "clear_cache_by_namespace"),
     ]
+
+
+async def test_nested_admin_write_audits_the_child_it_changed(
+    api_client_superuser: AsyncClient,
+    db_session: AsyncSession,
+    db_material: Material,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """Deleting a material's image records the image as the target, with the material in the context."""
+    image = Image(
+        filename="m.png",
+        file="m.png",
+        upload_size_bytes=1,
+        parent_type=MediaParentType.MATERIAL,
+        parent_id=db_material.id,
+    )
+    db_session.add(image)
+    await db_session.flush()
+
+    with caplog.at_level(logging.INFO, logger="audit"):
+        response = await api_client_superuser.delete(f"/v1/admin/materials/{db_material.id}/images/{image.id}")
+
+    assert response.status_code == status.HTTP_204_NO_CONTENT
+    assert _audit_records(caplog) == [("delete", "materials", str(image.id), "delete_material_image")]
+    record = next(r for r in caplog.records if getattr(r, "audit", False))
+    assert getattr(record, "path_params", None) == {"material_id": str(db_material.id), "image_id": str(image.id)}
 
 
 async def test_refused_admin_write_is_not_audited(
