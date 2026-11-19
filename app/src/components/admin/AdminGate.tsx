@@ -18,6 +18,10 @@ export function AdminGate({ redirectTo, children }: { redirectTo: string; childr
   const access = useAdminAccess();
   useRequireAuth(redirectTo);
   const goToAccount = useCallback(() => router.navigate('/account'), [router]);
+  const goToSecurity = useCallback(
+    () => router.navigate({ pathname: '/account', params: { section: 'security' } }),
+    [router],
+  );
 
   // Only hit for the one-render window before useRequireAuth's redirect completes.
   if (!user) return <CenteredSpinner />;
@@ -41,7 +45,7 @@ export function AdminGate({ redirectTo, children }: { redirectTo: string; childr
         title="Turn on two-step verification first"
         message="Admin tools need two-step verification on your own account. Turn it on under Security & sessions, then come back."
         actionLabel="Set up two-step verification"
-        onRetry={goToAccount}
+        onRetry={goToSecurity}
       />
     );
   }

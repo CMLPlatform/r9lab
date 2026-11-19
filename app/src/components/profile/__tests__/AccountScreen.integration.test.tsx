@@ -9,6 +9,7 @@ const mockRouterReplace = jest.fn();
 const mockRouterPush = jest.fn();
 const mockUseRpiIntegration = jest.fn();
 const mockScrollTo = jest.fn();
+const mockSetParams = jest.fn();
 
 jest.mock('expo-router', () => {
   const React = require('react');
@@ -17,7 +18,7 @@ jest.mock('expo-router', () => {
       push: mockRouterPush,
       replace: mockRouterReplace,
       back: jest.fn(),
-      setParams: jest.fn(),
+      setParams: mockSetParams,
     }),
     useSegments: () => [],
     useLocalSearchParams: jest.fn().mockReturnValue({}),
@@ -233,6 +234,32 @@ describe('AccountScreen', () => {
     const chips = screen.getByTestId('section-nav-chips');
     await fireEvent.press(within(chips).getByText('Danger zone'));
     expect(mockScrollTo).toHaveBeenCalledWith('danger');
+  });
+
+  it('scrolls to the section named in the section param, then clears it', async () => {
+    const { useLocalSearchParams } = require('expo-router');
+    useLocalSearchParams.mockReturnValue({ section: 'security' });
+    try {
+      await renderAccount();
+      expect(mockScrollTo).toHaveBeenCalledWith('security');
+      expect(mockSetParams).toHaveBeenCalledWith({ section: undefined });
+    } finally {
+      useLocalSearchParams.mockReturnValue({});
+    }
+  });
+
+  it('keeps the section param until the profile has loaded', async () => {
+    const { useLocalSearchParams } = require('expo-router');
+    const { useAuth } = require('@/context/auth.ts');
+    useLocalSearchParams.mockReturnValue({ section: 'security' });
+    (useAuth as jest.Mock).mockReturnValue({ user: null, refetch: mockRefetch });
+    try {
+      await renderAccount();
+      expect(mockScrollTo).not.toHaveBeenCalled();
+      expect(mockSetParams).not.toHaveBeenCalled();
+    } finally {
+      useLocalSearchParams.mockReturnValue({});
+    }
   });
 
   it('shows no admin section to an account that is not a superuser', async () => {

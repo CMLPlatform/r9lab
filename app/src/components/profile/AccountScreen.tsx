@@ -1,6 +1,6 @@
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import Head from 'expo-router/head';
-import { useCallback, useContext, useRef } from 'react';
+import { useCallback, useContext, useEffect, useRef } from 'react';
 import type { NativeScrollEvent, NativeSyntheticEvent, ScrollView } from 'react-native';
 import { View } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
@@ -80,6 +80,17 @@ export function AccountScreen() {
   const { isLg } = useBreakpoint();
   const scrollRef = useRef<ScrollView>(null);
   const nav = useSectionNav((y) => scrollRef.current?.scrollTo({ y, animated: true }));
+  // Other screens link to a section as /account?section=<key> (the admin gate sends people to Security).
+  const { section } = useLocalSearchParams<{ section?: string }>();
+  const { scrollTo } = nav;
+  // Sections render only with the profile; a jump asked for before then would expire unseen.
+  const loaded = Boolean(profile.profile);
+  useEffect(() => {
+    if (!section || !loaded) return;
+    scrollTo(section);
+    // Consumed: the same link must work again on the next visit.
+    router.setParams({ section: undefined });
+  }, [section, loaded, scrollTo, router]);
   const goToCameras = useCallback(() => router.navigate('/cameras'), [router]);
   const goToAdminUsers = useCallback(() => router.push('/admin/users'), [router]);
   const logoutTriggerRef = useRef<View>(null);
