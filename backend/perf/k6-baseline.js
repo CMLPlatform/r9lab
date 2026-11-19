@@ -6,7 +6,7 @@ import { WebSocket } from "k6/websockets";
 
 const baseUrl = __ENV.BASE_URL || "http://127.0.0.1:8010";
 const productListPath = __ENV.PERF_PRODUCT_LIST_PATH || "/v1/products?size=20";
-const livePath = __ENV.PERF_LIVE_PATH || "/live";
+const livePath = __ENV.PERF_LIVE_PATH || "/livez";
 const loginEmail = __ENV.PERF_USER_EMAIL;
 const loginPassword = __ENV.PERF_USER_PASSWORD;
 const mediaUrl = __ENV.PERF_MEDIA_URL;

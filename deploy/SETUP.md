@@ -109,8 +109,8 @@ BACKEND_MIGRATIONS_INCLUDE_TAXONOMY_SEED_DEPS=true just stack prod migrate YES
 
 ## 6. Verify
 
-`/live` on the API is the shallow process check that Compose uses; `/health` also checks
-PostgreSQL and Redis. Log in as the bootstrap superuser and enrol two-factor authentication in the
+`/livez` on the API is the shallow process check that Compose uses; `/readyz` also checks
+PostgreSQL and Redis, each with a 2 s timeout. Log in as the bootstrap superuser and enrol two-factor authentication in the
 account settings: the `/admin` routes refuse a superuser without it. Then try one upload, and read
 `just stack prod logs`.
 

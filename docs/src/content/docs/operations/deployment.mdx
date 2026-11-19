@@ -146,7 +146,7 @@ Backend dotenv files are local and test inputs only; prod and staging do not use
 
 ### Rotation and break-glass
 
-To rotate an app secret, replace the file under `secrets/<env>/`, restart the affected service, and verify `/live` and `/health`. Rotating `AUTH_TOKEN_SECRET` invalidates existing login, reset, and verification tokens. For OAuth or email provider secrets, rotate the upstream credential first, update the matching file, then restart `api`.
+To rotate an app secret, replace the file under `secrets/<env>/`, restart the affected service, and verify `/livez` and `/readyz`. Rotating `AUTH_TOKEN_SECRET` invalidates existing login, reset, and verification tokens. For OAuth or email provider secrets, rotate the upstream credential first, update the matching file, then restart `api`.
 
 To rotate a database role password, change the PostgreSQL role password, then update the matching file under `secrets/<env>/` and restart the affected service (`api`, `migrator`, or `backup`). Redis rotation requires restarting `redis` and its consumers such as `api`.
 

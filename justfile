@@ -848,7 +848,7 @@ docker-orchestration-smoke:
     set -euo pipefail
     trap 'just _docker-smoke-down "postgres redis api migrator"' EXIT
     just _docker-smoke-up "postgres redis api migrator" 120
-    {{ ci_compose }} exec -T api python -c 'import json; from urllib.request import urlopen; resp = urlopen("http://localhost:8000/health", timeout=5); data = json.load(resp); assert resp.status == 200, resp.status; assert data["status"] == "healthy", data; assert data["checks"]["database"]["status"] == "healthy", data; assert data["checks"]["redis"]["status"] == "healthy", data' >/dev/null
+    {{ ci_compose }} exec -T api python -c 'import json; from urllib.request import urlopen; resp = urlopen("http://localhost:8000/readyz", timeout=5); data = json.load(resp); assert resp.status == 200, resp.status; assert data["status"] == "healthy", data; assert data["checks"]["database"]["status"] == "healthy", data; assert data["checks"]["redis"]["status"] == "healthy", data' >/dev/null
 
 # Run all Docker smoke tests sequentially (CI runs them in parallel per-service)
 [group('verify')]

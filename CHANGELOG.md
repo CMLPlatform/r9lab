@@ -23,6 +23,10 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   aliases, or set `R9LAB_DEPLOY_HOST`.
 - **Breaking:** API clients: `PATCH /v1/products/{id}` and `PATCH /v1/components/{id}`
   without an `If-Match` header answer 428 Precondition Required instead of 422.
+- **Breaking:** the API's health probes move: `/live` is now `/livez` and `/health` is now
+  `/readyz`. The old paths answer 404. Point any external monitor at the new paths. `/readyz`
+  gives each database and Redis check 2 seconds, sends `Cache-Control: no-store` and no longer
+  names the database driver.
 - Developers: run `docker compose -p relab_dev down` (and `relab_test`, `relab_e2e`) before the
   first `just dev-up`. The old dev database is not carried over, so seed it again. Rebuild the
   devcontainer: the workspace is now `/opt/r9lab`.

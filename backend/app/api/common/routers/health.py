@@ -15,6 +15,9 @@ from app.core.runtime import get_connection_services
 if TYPE_CHECKING:
     from typing import Any
 
+# A probe must answer before the orchestrator gives up on it (5 s in Compose), and not wait
+# out the database pool's 30 s checkout timeout when the pool is exhausted.
+READINESS_CHECK_TIMEOUT_SECONDS = 2
 HEALTHY_STATUS = "healthy"
 UNHEALTHY_STATUS = "unhealthy"
 
@@ -23,12 +26,9 @@ logger = logging.getLogger(__name__)
 router = APIRouter(tags=["health"])
 
 
-def healthy_check(component: str, *, details: dict[str, Any] | None = None) -> dict[str, Any]:
+def healthy_check(component: str) -> dict[str, Any]:
     """Return a healthy check payload."""
-    payload: dict[str, Any] = {"component": component, "status": HEALTHY_STATUS}
-    if details:
-        payload["details"] = details
-    return payload
+    return {"component": component, "status": HEALTHY_STATUS}
 
 
 def unhealthy_check(component: str, error: str) -> dict[str, Any]:
@@ -39,9 +39,10 @@ def unhealthy_check(component: str, error: str) -> dict[str, Any]:
 async def check_database() -> dict[str, Any]:
     """Check PostgreSQL database connectivity."""
     try:
-        await check_database_connection()
-        return healthy_check("database", details={"driver": "postgresql"})
-    except SQLAlchemyError, OSError, RuntimeError:
+        async with asyncio.timeout(READINESS_CHECK_TIMEOUT_SECONDS):
+            await check_database_connection()
+        return healthy_check("database")
+    except SQLAlchemyError, OSError, RuntimeError, TimeoutError:
         logger.exception("Database health check failed")
         return unhealthy_check("database", "Database connection failed")
 
@@ -54,7 +55,8 @@ async def check_redis(request: Request) -> dict[str, Any]:
         return unhealthy_check("redis", "Redis client not initialized")
 
     try:
-        ping = await ping_redis(redis_client)
+        async with asyncio.timeout(READINESS_CHECK_TIMEOUT_SECONDS):
+            ping = await ping_redis(redis_client)
         if ping:
             return healthy_check("redis")
         return unhealthy_check("redis", "Redis ping returned False")
@@ -73,14 +75,14 @@ async def perform_health_checks(request: Request) -> dict[str, dict[str, Any]]:
     }
 
 
-@router.get("/live", include_in_schema=False)
+@router.get("/livez", include_in_schema=False)
 async def liveness_probe() -> JSONResponse:
     """Liveness probe: signals the container is running."""
     # Unauthenticated and internet-reachable: no version or environment disclosure.
     return JSONResponse(content={"status": "alive"}, status_code=200)
 
 
-@router.get("/health", include_in_schema=False)
+@router.get("/readyz", include_in_schema=False)
 async def readiness_probe(request: Request) -> JSONResponse:
     """Readiness probe: signals the application is ready to serve requests.
 
@@ -100,4 +102,4 @@ async def readiness_probe(request: Request) -> JSONResponse:
         "checks": checks,
     }
 
-    return JSONResponse(content=response_data, status_code=status_code)
+    return JSONResponse(content=response_data, status_code=status_code, headers={"Cache-Control": "no-store"})

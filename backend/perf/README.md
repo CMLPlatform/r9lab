@@ -6,7 +6,7 @@ A small `k6` suite that catches latency regressions in common backend paths and 
 
 | Scenario            | Path           | Enabled when                                   |
 | ------------------- | -------------- | ---------------------------------------------- |
-| `live_probe`        | `/live`        | always                                         |
+| `live_probe`        | `/livez`       | always                                         |
 | `product_list_read` | `/v1/products` | always                                         |
 | `product_search_read` | `/v1/products?search=` | always                                     |
 | `product_detail_read` | `/v1/products/{id}` | always                                        |
