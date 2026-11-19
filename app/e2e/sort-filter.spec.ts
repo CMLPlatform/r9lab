@@ -12,6 +12,7 @@ import { expect, test } from '@playwright/test';
 import {
   loginAndReachProducts,
   openMenu,
+  openNewProductPage,
   openProductFilters,
   reachProductsPage,
   selectMenuItem,
@@ -285,5 +286,77 @@ test.describe('My Products filter', () => {
     // Click "Mine" again to toggle back to all
     await page.getByText('Mine', { exact: true }).click();
     await expect(page).toHaveURL(FILTER_MODE_ALL_URL_PATTERN, { timeout: 3_000 });
+  });
+});
+
+// ─── Has components / Complete records ────────────────────────────────────────
+
+// Seeded: the HP ProBook has components, the iPhone 12 (brand "apple") has none,
+// and both are complete records. A product created with only a name is not.
+const HAS_COMPONENTS_URL_PATTERN = /components=1/;
+const COMPLETE_URL_PATTERN = /complete=1/;
+const FILTERED_EMPTY_TEXT = 'No products match these filters.';
+
+test.describe('Has components and Complete records filters', () => {
+  test('"Has components" drops a product without components', async ({ page }) => {
+    // Searching keeps the lookup independent of how many products other specs created.
+    await page.goto('/products?q=iPhone');
+    await openProductFilters(page);
+    await expect(page.getByText('iPhone 12', { exact: true }).first()).toBeVisible({
+      timeout: 20_000,
+    });
+
+    await page.getByRole('button', { name: 'Has components' }).click();
+    await expect(page).toHaveURL(HAS_COMPONENTS_URL_PATTERN, { timeout: 3_000 });
+    await expect(page.getByTestId('products-empty-state')).toBeVisible({ timeout: 20_000 });
+    await expect(page.getByText('iPhone 12', { exact: true })).toHaveCount(0);
+
+    await page.goto('/products?q=ProBook&components=1');
+    await expect(page.getByText('HP ProBook 430 G2', { exact: true }).first()).toBeVisible({
+      timeout: 20_000,
+    });
+  });
+
+  test('"Complete records" drops a name-only product', async ({ page }) => {
+    const name = `Probe${Date.now()}`;
+    await loginAndReachProducts(page);
+    await openNewProductPage(page);
+    await page.getByRole('textbox', { name: 'Name' }).fill(name);
+    await page.getByRole('button', { name: 'Create product' }).click();
+    await expect(page).toHaveURL(/products\/\d+/, { timeout: 15_000 });
+
+    await page.goto(`/products?q=${name}`);
+    await expect(page.getByText(name, { exact: true }).first()).toBeVisible({ timeout: 20_000 });
+
+    await openProductFilters(page);
+    await page.getByRole('button', { name: 'Complete records' }).click();
+    await expect(page).toHaveURL(COMPLETE_URL_PATTERN, { timeout: 3_000 });
+    await expect(page.getByTestId('products-empty-state')).toBeVisible({ timeout: 20_000 });
+    await expect(page.getByText(name, { exact: true })).toHaveCount(0);
+
+    // A complete seeded record stays.
+    await page.goto('/products?q=ProBook&complete=1');
+    await expect(page.getByText('HP ProBook 430 G2', { exact: true }).first()).toBeVisible({
+      timeout: 20_000,
+    });
+  });
+
+  test('a combination with no results shows the filtered empty state', async ({ page }) => {
+    // The only "apple" product has no components.
+    await page.goto('/products?brands=apple');
+    await expect(page.getByText('iPhone 12', { exact: true }).first()).toBeVisible({
+      timeout: 20_000,
+    });
+    await openProductFilters(page);
+
+    await page.getByRole('button', { name: 'Has components' }).click();
+    await expect(page.getByTestId('products-empty-state')).toContainText(FILTERED_EMPTY_TEXT, {
+      timeout: 20_000,
+    });
+
+    await page.getByRole('button', { name: 'Clear Has components filter' }).click();
+    await expect(page.getByText('iPhone 12', { exact: true }).first()).toBeVisible({
+      timeout: 20_000,
+    });
   });
 });
