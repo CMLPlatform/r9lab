@@ -11722,6 +11722,13 @@ export interface operations {
           'application/json': components['schemas']['UserRead'];
         };
       };
+      /** @description The target is the acting administrator's own account. */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
       /** @description The target is the anonymous system account. */
       409: {
         headers: {
@@ -11754,6 +11761,13 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description The target is the acting administrator's own account. */
+      400: {
         headers: {
           [name: string]: unknown;
         };
@@ -11802,6 +11816,13 @@ export interface operations {
           'application/json': components['schemas']['UserRead'];
         };
       };
+      /** @description The target is the acting administrator's own account. */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
       /** @description The target is the anonymous system account. */
       409: {
         headers: {
@@ -11845,7 +11866,7 @@ export interface operations {
           'application/json': components['schemas']['UserRead'];
         };
       };
-      /** @description An administrator cannot suspend their own account. */
+      /** @description The target is the acting administrator's own account. */
       400: {
         headers: {
           [name: string]: unknown;

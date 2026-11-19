@@ -34,13 +34,24 @@ from app.api.common.routers.dependencies import AsyncSessionDep
 
 router = AdminAPIRouter(prefix="/admin/users", tags=["admin"], dependencies=[Security(current_active_superuser)])
 
-SYSTEM_ACCOUNT_CONFLICT: dict[int | str, dict[str, Any]] = {
-    409: {"description": "The target is the anonymous system account."}
+MANAGEABLE_USER_RESPONSES: dict[int | str, dict[str, Any]] = {
+    400: {"description": "The target is the acting administrator's own account."},
+    409: {"description": "The target is the anonymous system account."},
 }
 
 
-async def get_manageable_user(user: UserByIDDep) -> User:
-    """Load a user an admin may write to: any account but the anonymous system account."""
+async def get_manageable_user(user: UserByIDDep, actor: CurrentActiveSuperUserDep) -> User:
+    """Load a user an admin may write to: any account but their own and the anonymous system account.
+
+    Admin writes skip the re-authentication the self-service flows ask for, so an
+    administrator changes their own account through those flows instead.
+
+    Raises:
+        BadRequestError: when the target is the acting administrator.
+    """
+    if user.id == actor.id:
+        msg = "Change your own account from your account settings."
+        raise BadRequestError(msg)
     require_not_system_account(user)
     return user
 
@@ -89,7 +100,7 @@ async def get_user(user: UserByIDDep) -> User:
     "/{user_id}",  # user_id is bound by the get_user_or_404 dependency
     summary="Update a user by ID",
     response_model=UserRead,
-    responses=SYSTEM_ACCOUNT_CONFLICT,
+    responses=MANAGEABLE_USER_RESPONSES,
 )
 async def update_user(
     user_update: UserUpdate,
@@ -119,7 +130,7 @@ async def update_user(
     "/{user_id}/mfa/reset",  # user_id is bound by the get_user_or_404 dependency
     summary="Reset a user's two-step verification",
     status_code=204,
-    responses=SYSTEM_ACCOUNT_CONFLICT,
+    responses=MANAGEABLE_USER_RESPONSES,
 )
 async def reset_user_mfa(
     user: ManageableUserDep,
@@ -135,7 +146,7 @@ async def reset_user_mfa(
     "/{user_id}/role",  # user_id is bound by the get_user_or_404 dependency
     summary="Set a user's contributor tier",
     response_model=UserRead,
-    responses=SYSTEM_ACCOUNT_CONFLICT,
+    responses=MANAGEABLE_USER_RESPONSES,
 )
 async def set_user_role(
     role_update: UserRoleUpdate,
@@ -173,7 +184,7 @@ async def set_user_role(
     summary="Suspend or reactivate a user",
     response_model=UserRead,
     responses={
-        400: {"description": "An administrator cannot suspend their own account."},
+        **MANAGEABLE_USER_RESPONSES,
         409: {"description": "The target is the anonymous system account or the last active superuser."},
     },
 )
@@ -191,9 +202,6 @@ async def set_user_active(
     self-service `UserUpdate` schema must never carry `is_active`.
     """
     if not active_update.is_active:
-        if user.id == actor.id:
-            msg = "You cannot suspend your own account."
-            raise BadRequestError(msg)
         await require_other_active_superuser(user_manager.user_db.session, user, action="suspended")
         # Before the write, so a Redis failure aborts rather than leaving a suspended user with live sessions.
         await revoke_user_refresh_tokens(user.id, request)

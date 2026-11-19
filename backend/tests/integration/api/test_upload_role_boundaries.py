@@ -134,11 +134,14 @@ class TestResearchFileUploadRequiresLab:
             )
 
     async def test_role_route_refuses_to_demote_a_superuser(
-        self, api_client_superuser: AsyncClient, db_superuser: User
+        self, api_client_superuser: AsyncClient, db_session: AsyncSession
     ) -> None:
         """Demoting a superuser is a 400 with a reason, not a constraint error."""
+        other_admin = await UserFactory.create_async(
+            session=db_session, is_superuser=True, is_active=True, role=UserRole.LAB
+        )
         response = await api_client_superuser.put(
-            f"/v1/admin/users/{db_superuser.id}/role", json={"role": "contributor"}
+            f"/v1/admin/users/{other_admin.id}/role", json={"role": "contributor"}
         )
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST, response.text

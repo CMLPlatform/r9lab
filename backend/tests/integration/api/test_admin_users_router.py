@@ -153,6 +153,46 @@ class TestAdminUsersActions:
         assert db_superuser.is_active is True
         revoke.assert_not_awaited()
 
+    # Admin writes skip the step-up the self-service flows ask for, so a stolen admin
+    # session must not reach its own password, email, MFA, role or status through them.
+    @pytest.mark.parametrize(
+        ("method", "path_suffix", "body"),
+        [
+            ("patch", "", {"password": "a-long-enough-password-1"}),
+            ("patch", "", {"email": "taken-over@example.com"}),
+            ("post", "/mfa/reset", None),
+            ("put", "/role", {"role": "lab"}),
+            ("put", "/active", {"is_active": False}),
+            ("put", "/active", {"is_active": True}),
+            ("delete", "", None),
+        ],
+    )
+    async def test_admin_writes_refuse_the_actors_own_account(
+        self,
+        api_client_superuser,
+        db_session: AsyncSession,
+        db_superuser: User,
+        method: str,
+        path_suffix: str,
+        body: dict[str, object] | None,
+    ) -> None:
+        """Every admin write on the actor's own id is a 400 that changes nothing."""
+        email, hashed_password = db_superuser.email, db_superuser.hashed_password
+        kwargs = {"json": body} if body is not None else {}
+        with patch(REVOKE) as revoke, patch(AUDIT) as log_audit:
+            response = await getattr(api_client_superuser, method)(
+                f"{ADMIN_USERS}/{db_superuser.id}{path_suffix}", **kwargs
+            )
+
+        assert response.status_code == 400, response.text
+        await db_session.refresh(db_superuser)
+        assert db_superuser.email == email
+        assert db_superuser.hashed_password == hashed_password
+        assert db_superuser.mfa_enabled is True
+        assert db_superuser.is_active is True
+        revoke.assert_not_awaited()
+        log_audit.assert_not_called()
+
     async def test_superuser_updates_a_user_and_audits_the_actor(
         self, api_client_superuser, db_superuser: User, db_user: User
     ) -> None:

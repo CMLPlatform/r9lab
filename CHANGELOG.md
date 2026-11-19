@@ -73,10 +73,12 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   accounts do not see the section.
 - Admin API: `PUT /v1/admin/users/{user_id}/active` with `{"is_active": false}` suspends an
   account and ends its sessions; `true` reactivates it. Products stay. An admin cannot suspend
-  their own account or the last active superuser. Both actions are audited
-  (`deactivate`, `reactivate`).
+  the last active superuser. Both actions are audited (`deactivate`, `reactivate`).
 - Admin API: the anonymous system account no longer appears in `GET /v1/admin/users`, and every
-  admin write to it (update, role, two-step reset, suspend or reactivate) answers 409.
+  admin write to it (update, role, two-step reset, suspend or reactivate) answers 409. Every
+  admin write to the acting admin's own account, delete included, answers 400: an admin changes
+  their own password, email or two-step verification from their account settings, which ask them
+  to sign in again.
 - r9cam cameras can sign their device tokens with EdDSA (Ed25519) as well as ES256. Each camera
   may use only the algorithm of the key it paired with. The backend now uses r9cam-models
   0.7.0, which accepts Ed25519 public keys at pairing. ([#501](https://github.com/CMLPlatform/r9lab/issues/501))
