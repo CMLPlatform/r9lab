@@ -420,6 +420,9 @@ jobs:
         uses: actions/dependency-review-action@a1d282b36b6f3519aa1f3fc636f609c47dddb294 # v5.0.0
         with:
           fail-on-severity: moderate
+          # Licences that cannot ship inside an AGPL-3.0-or-later project (GPL-2.0-only
+          # conflicts with it; the others restrict use). A new dependency under one fails.
+          deny-licenses: GPL-2.0-only, BUSL-1.1, SSPL-1.0, CC-BY-NC-4.0, CC-BY-NC-SA-4.0
           # Every entry here needs a reachable-but-unfixable justification and a
           # condition for removing it, and a matching ignoreGhsas entry in
           # pnpm-workspace.yaml so `just audit` enforces the same policy.

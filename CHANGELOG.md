@@ -49,6 +49,10 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Product lists filter on `has_components` (`true` or `false`) and on `completeness`
   (`completeness[ge]=1` keeps complete records). The app's product filters gain "Has components"
   and "Complete records" chips. ([#113](https://github.com/CMLPlatform/r9lab/issues/113))
+- A `/.well-known/security.txt` on the website (RFC 9116) and alt text on the social preview image.
+- Pull requests fail when they change the public or device OpenAPI document in a breaking way
+  (label `breaking-api` marks an intended break), or add a dependency under a licence that cannot
+  ship in an AGPL-3.0-or-later project.
 
 ### Changed
 

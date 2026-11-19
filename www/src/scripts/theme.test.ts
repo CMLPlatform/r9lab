@@ -105,6 +105,10 @@ describe('applyTheme', () => {
 });
 
 describe('initThemeControl', () => {
+  afterEach(() => {
+    (document as unknown as { startViewTransition?: unknown }).startViewTransition = undefined;
+  });
+
   function buildControl() {
     document.body.innerHTML = `
       <div data-theme-control>
@@ -189,10 +193,6 @@ describe('initThemeControl', () => {
       startViewTransition;
     return startViewTransition;
   }
-
-  afterEach(() => {
-    (document as unknown as { startViewTransition?: unknown }).startViewTransition = undefined;
-  });
 
   it('crossfades the theme swap through a View Transition', () => {
     mockQueries({ prefersReducedMotion: false });
