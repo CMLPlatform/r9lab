@@ -11,17 +11,18 @@ type RecentCategoriesState = {
   recordRecent: (category: CPVCategory) => void;
 };
 
-/** Last few CPV categories picked, most-recent-first, deduped by id, persisted across sessions. */
+/** Last few CPV categories picked, most-recent-first, deduped by stored name, persisted across sessions. */
 export const useRecentCategories = create<RecentCategoriesState>()(
   persist(
     (set) => ({
       recents: [],
       recordRecent: (category) =>
         set((state) => ({
-          // allChildren is never read from a persisted recent; strip it.
+          // A recent is a plain card: no browse link, and its id may be a category id.
+          // The name is the stable key.
           recents: [
-            { ...category, allChildren: [] },
-            ...state.recents.filter((c) => c.id !== category.id),
+            { ...category, childCount: 0 },
+            ...state.recents.filter((c) => c.name !== category.name),
           ].slice(0, MAX_RECENTS),
         })),
     }),

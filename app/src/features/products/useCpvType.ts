@@ -12,8 +12,7 @@ export type CpvTypeState =
 /**
  * Resolves a product type database id to its name and description. A `recorded` type whose
  * id matches is shown as the API returned it; otherwise the type is fetched by id. The
- * bundled CPV snapshot is not consulted: its ids match the database's only by seeding order.
- * A failed fetch is an `error` state with `retry`.
+ * database row is the source of truth. A failed fetch is an `error` state with `retry`.
  */
 export function useCpvType(
   typeID: number | undefined,

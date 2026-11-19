@@ -66,9 +66,6 @@ module.exports = {
     '!**/coverage/**',
     '!**/node_modules/**',
     '!src/app/_layout.tsx',
-    // Platform fork of cpv.ts that Jest never resolves (it always takes the
-    // native file), so it can only ever read as 0%.
-    '!src/services/cpv.web.ts',
     '!src/components/base/SVGCube.tsx',
     // Vendored react-native-reusables primitives, upstream's components, wrapped
     // by our own in src/components/base/, which is where our behaviour is tested.

@@ -3,6 +3,8 @@ import type { components } from './api.generated';
 
 type ApiSchemaName = keyof components['schemas'];
 
+export type ApiCategoryTreeNode = components['schemas']['CategoryReadWithRecursiveSubCategories'];
+
 // ─── Products ────────────────────────────────────────────────────────────────
 // Detail payloads returned by the stable role-specific resource URLs.
 export type ApiBaseProductDetail =

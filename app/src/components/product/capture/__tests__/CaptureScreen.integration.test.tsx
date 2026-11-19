@@ -5,7 +5,6 @@ import type { ReactNode } from 'react';
 import { CaptureScreen } from '@/components/product/capture/CaptureScreen';
 import { takePendingTypeSelection } from '@/features/products/pendingTypeSelection';
 import { PRODUCT_NAME_MAX_LENGTH } from '@/services/api/validation/productSchema';
-import { loadCPV } from '@/services/cpv';
 import { queryAllHostsByType, renderWithProviders } from '@/test-utils/index';
 
 const NAME_PLACEHOLDER = /e\.g\. (Cordless drill|Battery pack)/i;
@@ -107,17 +106,14 @@ jest.mock('@/components/product/ProductImageGallery', () => {
   };
 });
 
-jest.mock('@/services/cpv');
 jest.mock('@/features/products/pendingTypeSelection', () => ({
   takePendingTypeSelection: jest.fn(),
   setPendingTypeSelection: jest.fn(),
 }));
 
-const mockedLoadCPV = jest.mocked(loadCPV);
 const mockedTakePending = jest.mocked(takePendingTypeSelection);
 
-// Renders and flushes the type row's loadCPV() resolution, so tests don't
-// leave a pending act() warning from the async setSelectedType update.
+// Renders and waits for the type row, so tests don't leave a pending act() warning.
 async function renderCapture(props: Parameters<typeof CaptureScreen>[0]) {
   const result = await renderWithProviders(<CaptureScreen {...props} />, { withDialog: true });
   // Role-agnostic: the invite's wording differs per role, and this only waits
@@ -134,17 +130,6 @@ describe('CaptureScreen', () => {
     mockIsLg = false;
     mockAddListenerImpl = () => jest.fn();
     mockUseAuth.mockReturnValue({ user: { id: '1', username: 'owner' } });
-    mockedLoadCPV.mockResolvedValue({
-      root: {
-        id: 0,
-        name: 'root',
-        description: 'All categories',
-        allChildren: [],
-        directChildren: [],
-        updatedAt: '',
-        createdAt: '',
-      },
-    });
     mockedTakePending.mockReturnValue(null);
   });
 

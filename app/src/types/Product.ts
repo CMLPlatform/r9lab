@@ -16,7 +16,7 @@ export type Product = {
   version?: number;
   productTypeID?: number;
   productTypeName?: string;
-  /** The type as the API recorded it. Its id is the database's, which the bundled CPV snapshot does not share. */
+  /** The type as the API recorded it, with its database id. */
   productType?: Pick<ApiProductTypeRead, 'id' | 'name' | 'description'>;
   componentIDs: number[];
   components?: Product[];
