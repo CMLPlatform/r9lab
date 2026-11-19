@@ -65,6 +65,10 @@ class _RelayWebSocketSession:
     camera_id: UUID4
     manager: CameraConnectionManager
     redis: Redis
+    # The credential the socket authenticated with; the heartbeat closes it once the
+    # camera's stored credential differs.
+    relay_key_id: str | None = None
+    relay_public_key_jwk: dict | None = None
     last_pong_at: float = field(default_factory=monotonic)
     # FIFO of headers awaiting their binary frame: WebSocket frames arrive in order.
     pending_binary_responses: deque[_PendingBinaryResponse] = field(
@@ -129,7 +133,8 @@ async def camera_websocket_connect(websocket: WebSocket, camera_id: UUID4) -> No
         )
         return
 
-    if not await _authenticate(websocket, camera_id):
+    camera = await _authenticate(websocket, camera_id)
+    if camera is None:
         return
 
     await websocket.accept()
@@ -139,7 +144,13 @@ async def camera_websocket_connect(websocket: WebSocket, camera_id: UUID4) -> No
 
     redis = require_connection_redis(websocket)
 
-    session = _RelayWebSocketSession(camera_id=camera_id, manager=manager, redis=redis)
+    session = _RelayWebSocketSession(
+        camera_id=camera_id,
+        manager=manager,
+        redis=redis,
+        relay_key_id=camera.relay_key_id,
+        relay_public_key_jwk=camera.relay_public_key_jwk,
+    )
     heartbeat = asyncio.create_task(
         _heartbeat_loop(websocket, session),
         name=f"ws-heartbeat-{camera_id}",
@@ -193,30 +204,30 @@ async def _enforce_ws_auth_rate_limit(websocket: WebSocket, client_ip_bucket: st
     return True
 
 
-async def _authenticate(websocket: WebSocket, camera_id: UUID4) -> bool:
-    """Validate a short-lived signed camera device assertion."""
+async def _authenticate(websocket: WebSocket, camera_id: UUID4) -> Camera | None:
+    """Validate a short-lived signed camera device assertion; return the camera, or None after closing."""
     client_ip = extract_client_ip(websocket.headers, websocket.client.host if websocket.client else "unknown")
     client_ip_bucket = rate_limit_bucket_key("r9cam:ws-auth:ip", client_ip)
     camera_key = str(camera_id)
     if not await _enforce_ws_auth_rate_limit(websocket, client_ip_bucket, camera_key):
-        return False
+        return None
 
     assertion = _extract_bearer_token(websocket)
     if not assertion:
         await websocket.close(code=status.WS_1008_POLICY_VIOLATION, reason="Missing Authorization header.")
-        return False
+        return None
 
     camera = await _get_camera(camera_id)
     if not camera_may_authenticate(camera):
         await websocket.close(code=status.WS_1008_POLICY_VIOLATION, reason="Authentication failed.")
-        return False
+        return None
 
     try:
         redis = require_connection_redis(websocket)
     except RequiredServiceUnavailableError as exc:
         logger.warning("Redis is required for RPi camera relay assertion replay protection: %s", exc)
         await websocket.close(code=status.WS_1011_INTERNAL_ERROR, reason="Authentication service unavailable.")
-        return False
+        return None
 
     try:
         payload = await verify_device_assertion(assertion, camera, redis)
@@ -228,7 +239,7 @@ async def _authenticate(websocket: WebSocket, camera_id: UUID4) -> bool:
             sanitize_log_value(exc),
         )
         await websocket.close(code=status.WS_1008_POLICY_VIOLATION, reason="Authentication failed.")
-        return False
+        return None
 
     await mark_camera_online(redis, camera_id)
     logger.info(
@@ -237,7 +248,7 @@ async def _authenticate(websocket: WebSocket, camera_id: UUID4) -> bool:
         client_ip_bucket,
         sanitize_log_value(payload.get("kid") or camera.relay_key_id),
     )
-    return True
+    return camera
 
 
 def _extract_bearer_token(websocket: WebSocket) -> str:
@@ -248,6 +259,20 @@ def _extract_bearer_token(websocket: WebSocket) -> str:
 async def _get_camera(camera_id: UUID4) -> Camera | None:
     async with async_session_context() as session:
         return await session.get(Camera, camera_id, options=CAMERA_OWNER_LOAD)
+
+
+async def _camera_still_authorised(session: _RelayWebSocketSession) -> bool:
+    """Return whether the camera may still hold the socket with the credential it authenticated with.
+
+    The heartbeat runs this each tick, so revoking or rotating the credential, deleting the
+    camera, or deactivating its owner ends the tunnel within one heartbeat interval.
+    """
+    camera = await _get_camera(session.camera_id)
+    return (
+        camera_may_authenticate(camera)
+        and camera.relay_key_id == session.relay_key_id
+        and camera.relay_public_key_jwk == session.relay_public_key_jwk
+    )
 
 
 async def _heartbeat_loop(websocket: WebSocket, session: _RelayWebSocketSession) -> None:
@@ -263,6 +288,20 @@ async def _heartbeat_loop(websocket: WebSocket, session: _RelayWebSocketSession)
             )
             with contextlib.suppress(Exception):
                 await websocket.close(code=1001)
+            return
+        try:
+            authorised = await _camera_still_authorised(session)
+        except Exception:
+            # Fail closed: the device reconnects and authenticates again once the database answers.
+            logger.exception("Camera %s re-check failed; closing.", sanitize_log_value(session.camera_id))
+            authorised = False
+        if not authorised:
+            logger.warning(
+                "Camera %s credential revoked, rotated or deleted, or owner no longer allowed; closing.",
+                sanitize_log_value(session.camera_id),
+            )
+            with contextlib.suppress(Exception):
+                await websocket.close(code=status.WS_1008_POLICY_VIOLATION, reason="Camera no longer authorised.")
             return
         with contextlib.suppress(Exception):
             await websocket.send_text(json.dumps({"type": RelayMessageType.PING}))

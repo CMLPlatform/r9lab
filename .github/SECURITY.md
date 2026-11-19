@@ -129,6 +129,9 @@ Security-sensitive areas:
     its credential is active and its owner account is active and verified
     (`camera_may_authenticate` in `device_assertion.py`), the same bar a person must clear to upload
     directly. Triggering a capture also needs a verified account.
+  - The relay re-checks the camera on every heartbeat (30 s) and closes the socket with 1008 when
+    the camera is gone, its credential is no longer active or differs from the key the socket
+    authenticated with, or its owner fails the bar above. A failed re-check also closes it.
 - backups, secrets, logs, and telemetry
 - release and security artifacts: the GHCR images the hosts pull, and the landing page and docs
   deploy, whose Cloudflare API token is a GitHub Environment secret holding only Workers
