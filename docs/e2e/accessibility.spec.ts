@@ -8,7 +8,14 @@ import { expect, type Page, test } from '@playwright/test';
 // 2.4.13 have no axe coverage and are verified by hand.
 const WCAG_TAGS = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22a', 'wcag22aa'];
 
+// Mermaid renders after `load`. Until every source block is an SVG, axe would scan
+// the diagram source text instead of the diagrams readers get.
+const UNRENDERED_DIAGRAMS =
+  '.expressive-code pre[data-language="mermaid"], .r9lab-mermaid:not(:has(svg))';
+
 async function analyzePage(page: Page, options: { exclude?: string[] } = {}) {
+  await expect(page.locator(UNRENDERED_DIAGRAMS)).toHaveCount(0, { timeout: 15_000 });
+
   // Neutralize animations so results are deterministic (mirrors www).
   await page.addStyleTag({
     content: `
