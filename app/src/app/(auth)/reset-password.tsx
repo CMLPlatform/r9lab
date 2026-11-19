@@ -34,7 +34,11 @@ export default function ResetPasswordScreen() {
       <AuthScreen>
         <AuthCard title="Reset password">
           {success ? (
+            // Mounted with its text, so a live region alone is often not announced on web and
+            // Android; a status role is.
             <View
+              testID="reset-password-success-status"
+              role="status"
               accessibilityLiveRegion="polite"
               style={{ gap: 12, alignItems: 'center', paddingVertical: 16 }}
             >
