@@ -5,9 +5,11 @@ from uuid import uuid4
 
 import pytest
 
+from app.api.common.crud.exceptions import LinkedItemsAlreadyAssignedError
 from app.api.common.models.enums import Unit
 from app.api.data_collection.crud.material_links import (
     add_material_to_product,
+    add_materials_to_product,
     remove_materials_from_product,
 )
 from app.api.data_collection.crud.product_commands import create_product, delete_product
@@ -136,6 +138,32 @@ async def test_add_material_missing_id(mock_session: AsyncMock) -> None:
 
     with pytest.raises(MaterialIDRequiredError, match="Include a material_id"):
         await add_material_to_product(mock_session, product_id=1, material_link=link_create, material_id=None)
+
+
+async def test_add_materials_rejects_duplicate_in_request(mock_session: AsyncMock) -> None:
+    """The same material twice in one request is a conflict, not a primary-key error."""
+    links = [MaterialProductLinkCreateWithinProduct(material_id=10, quantity=1.0) for _ in range(2)]
+
+    with pytest.raises(LinkedItemsAlreadyAssignedError, match="Materials with id 10 are already assigned"):
+        await add_materials_to_product(mock_session, 1, links)
+
+    mock_session.commit.assert_not_called()
+
+
+async def test_add_materials_rejects_material_already_in_bill_of_materials(mock_session: AsyncMock) -> None:
+    """A material already recorded on the product is a conflict."""
+    db_product = ProductFactory.build(id=1)
+    object.__setattr__(db_product, "bill_of_materials", [MagicMock(material_id=10)])
+    link = MaterialProductLinkCreateWithinProduct(material_id=10, quantity=2.0)
+
+    with (
+        patch("app.api.data_collection.crud.material_links.require_model", return_value=db_product),
+        patch("app.api.data_collection.crud.material_links.require_models"),
+        pytest.raises(LinkedItemsAlreadyAssignedError, match="Materials with id 10 are already assigned"),
+    ):
+        await add_materials_to_product(mock_session, 1, [link])
+
+    mock_session.commit.assert_not_called()
 
 
 async def test_remove_materials_from_product(mock_session: AsyncMock) -> None:

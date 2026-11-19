@@ -211,6 +211,22 @@ def test_bill_of_material_rejects_excessive_quantity() -> None:
         )
 
 
+def test_bill_of_material_rejects_duplicate_materials() -> None:
+    """A material may appear once per bill of materials."""
+    with pytest.raises(ValidationError, match="Materials with id 1 appear more than once"):
+        _validate_model(
+            ProductCreateWithComponents,
+            {
+                "name": "Cordless drill",
+                "bill_of_materials": [
+                    {"material_id": 1, "quantity": 1},
+                    {"material_id": 2, "quantity": 1},
+                    {"material_id": 1, "quantity": 2},
+                ],
+            },
+        )
+
+
 def test_product_brand_lowercased() -> None:
     """Brand field is normalized to lowercase."""
     product = _validate_model(

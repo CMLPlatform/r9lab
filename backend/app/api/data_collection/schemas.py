@@ -9,6 +9,7 @@ from pydantic import (
     ConfigDict,
     Field,
     PositiveInt,
+    field_validator,
     model_validator,
 )
 
@@ -50,12 +51,13 @@ MAX_COMPONENT_AMOUNT = 1_000
 
 
 def validate_material_or_components(bill_of_materials: Collection, components: Collection) -> None:
-    """Log a warning when a product has neither materials nor components; it does not reject it yet."""
+    """Log a warning when a product has neither materials nor components; it does not reject it.
+
+    NOTE: components and materials are added after the product is saved, so creation cannot
+    require either. The app shows the same rule as a warning on the saved record.
+    """
     if len(bill_of_materials) == 0 and len(components) == 0:
-        err_msg = "Product must have at least one material or component"
-        # TODO: raise error again once we implement Bill of materials UI
-        # that allows users to add materials at product creation instead of only components
-        logger.warning("Validation warning: %s. This will become an error in the future.", err_msg)
+        logger.warning("Validation warning: product must have at least one material or component.")
 
 
 class ProductBase(PhysicalPropertiesFields, ProductCircularityPropertiesInputFields, BaseModel):
@@ -121,6 +123,18 @@ class ProductCreateWithRelationships(BaseCreateSchema, ProductBase):
         max_length=MAX_BOM_ENTRIES,
         description="Bill of materials with quantities and units",
     )
+
+    @field_validator("bill_of_materials")
+    @classmethod
+    def reject_duplicate_materials(
+        cls, bill_of_materials: list[MaterialProductLinkCreateWithinProduct]
+    ) -> list[MaterialProductLinkCreateWithinProduct]:
+        """A material appears once per bill of materials: its (product, material) key is unique."""
+        ids = [link.material_id for link in bill_of_materials]
+        if duplicates := sorted({i for i in ids if ids.count(i) > 1}):
+            msg = f"Materials with id {', '.join(map(str, duplicates))} appear more than once"
+            raise ValueError(msg)
+        return bill_of_materials
 
 
 class ProductCreateBaseProduct(ProductCreateWithRelationships):
