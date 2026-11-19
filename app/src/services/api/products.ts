@@ -233,15 +233,17 @@ export async function getComponentTree(id: number): Promise<Product[] | null> {
 export const REVISIONS_PAGE_SIZE = 50;
 
 /** The newest recorded edits of a product or component, with the API's editor redaction. */
+/** The edit history; `signedIn` sends the session, so an owner or admin gets the values too. */
 export async function getRevisions(
   id: number,
   role: Product['role'],
+  signedIn: boolean,
 ): Promise<ApiPaginatedRevisions> {
   const url = new URL(
     `${baseUrl}/${role === 'component' ? 'components' : 'products'}/${id}/revisions`,
   );
   url.searchParams.set('size', String(REVISIONS_PAGE_SIZE));
-  const response = await apiFetch(url, { method: 'GET' });
+  const response = await (signedIn ? fetchWithAuth : apiFetch)(url, { method: 'GET' });
   if (!response.ok) await throwFromResponse(response, "Couldn't load the edit history. Try again.");
   return (await response.json()) as ApiPaginatedRevisions;
 }

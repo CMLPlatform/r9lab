@@ -104,7 +104,8 @@ describe('ProductMetaData', () => {
         ),
       );
       const product = { ...baseProduct, updatedAt: '2026-11-19T10:00:00Z' };
-      await renderWithProviders(<ProductMetaData product={product} />);
+      // The history query is keyed by the signed-in viewer.
+      await renderWithProviders(<ProductMetaData product={product} />, { withAuth: true });
 
       const date = new Date(product.updatedAt).toLocaleDateString();
       // The accessible name starts with the visible date, so voice control finds it (WCAG 2.5.3).
@@ -131,7 +132,7 @@ describe('ProductMetaData', () => {
         parentID: 1,
         updatedAt: '2026-11-19T10:00:00Z',
       };
-      await renderWithProviders(<ProductMetaData product={component} />);
+      await renderWithProviders(<ProductMetaData product={component} />, { withAuth: true });
 
       await user.press(screen.getByRole('button', { name: SHOW_HISTORY_PATTERN }));
 

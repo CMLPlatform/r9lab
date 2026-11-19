@@ -3,6 +3,7 @@ import { useCallback } from 'react';
 import { View } from 'react-native';
 import { AppText } from '@/components/base/AppText';
 import { ErrorState } from '@/components/base/ErrorState';
+import { useAuth } from '@/context/auth';
 import { getRevisions } from '@/services/api/products';
 import type { ApiProductRevision } from '@/types/api';
 import type { Product } from '@/types/Product';
@@ -42,9 +43,11 @@ function RevisionRow({ revision }: { revision: ApiProductRevision }) {
 /** The edit list under "Last updated": time, editor and changed fields, newest first. */
 export default function ProductEditHistory({ product }: { product: Product }) {
   const id = product.id;
+  // The viewer decides what the server returns (values for the owner and admins only).
+  const viewerID = useAuth().user?.id;
   const query = useQuery({
-    queryKey: ['revisions', product.role, id, product.version] as const,
-    queryFn: () => getRevisions(id as number, product.role),
+    queryKey: ['revisions', product.role, id, product.version, viewerID] as const,
+    queryFn: () => getRevisions(id as number, product.role, viewerID !== undefined),
     enabled: typeof id === 'number',
   });
   const retry = useCallback(() => void query.refetch(), [query]);
