@@ -193,7 +193,7 @@ def test_downgrade_refuses_to_drop_recorded_edit_history(
         migration_helper.execute_sql("DELETE FROM \"user\" WHERE email = 'history@example.com'")
         command.upgrade(relab_alembic_config, "head")
 
-    assert migration_helper.current_revision() == "d7fb0e59e51f"
+    assert migration_helper.current_revision() == "6e2b9d4a1c83"
 
 
 @pytest.mark.migration
@@ -205,6 +205,54 @@ def test_offline_downgrade_sql_keeps_the_edit_history_guard(
 
     script = capsys.readouterr().out
     assert script.index("RAISE EXCEPTION") < script.index("DROP TABLE product_revision")
+
+
+@pytest.mark.migration
+def test_cpv_divisions_are_lifted_to_the_top_level(
+    relab_alembic_config: Config, migration_helper: MigrationHelper
+) -> None:
+    """Divisions 31 sat under 30 in CPV; only that taxonomy's division-under-division links clear."""
+    command.downgrade(relab_alembic_config, "d7fb0e59e51f")
+    names = ("Common Procurement Vocabulary (CPV)", "nested-on-purpose")
+    try:
+        for name in names:
+            migration_helper.execute_sql(
+                f"WITH t AS (INSERT INTO taxonomy (name, domains) VALUES ('{name}', '{{PRODUCTS}}') RETURNING id),"  # noqa: S608
+                " d30 AS (INSERT INTO category (name, external_id, taxonomy_id) SELECT 'd30', '30000000', id FROM t"
+                " RETURNING id, taxonomy_id),"
+                " d31 AS (INSERT INTO category (name, external_id, taxonomy_id, supercategory_id)"
+                " SELECT 'd31', '31000000', taxonomy_id, id FROM d30 RETURNING id),"
+                " g30 AS (INSERT INTO category (name, external_id, taxonomy_id, supercategory_id)"
+                " SELECT 'g30', '30100000', taxonomy_id, id FROM d30 RETURNING id)"
+                " INSERT INTO category (name, external_id, taxonomy_id, supercategory_id)"
+                " SELECT 'g31', '31100000', d30.taxonomy_id, d31.id FROM d30, d31"
+            )
+        command.upgrade(relab_alembic_config, "6e2b9d4a1c83")
+
+        def parents(name: str) -> dict[str, str | None]:
+            return dict(
+                migration_helper.execute_sql(
+                    "SELECT c.external_id, p.external_id FROM category c"  # noqa: S608
+                    " LEFT JOIN category p ON p.id = c.supercategory_id"
+                    f" JOIN taxonomy t ON t.id = c.taxonomy_id WHERE t.name = '{name}'"
+                )
+            )
+
+        assert parents(names[0]) == {
+            "30000000": None,
+            "31000000": None,
+            "30100000": "30000000",
+            "31100000": "31000000",
+        }
+        # Another taxonomy may nest codes of the same shape; the migration leaves it alone.
+        assert parents(names[1])["31000000"] == "30000000"
+    finally:
+        for name in names:
+            migration_helper.execute_sql(
+                f"DELETE FROM category WHERE taxonomy_id IN (SELECT id FROM taxonomy WHERE name = '{name}')"  # noqa: S608
+            )
+            migration_helper.execute_sql(f"DELETE FROM taxonomy WHERE name = '{name}'")  # noqa: S608
+        command.upgrade(relab_alembic_config, "head")
 
 
 def _index_is_valid(migration_helper: MigrationHelper, name: str) -> bool | None:
