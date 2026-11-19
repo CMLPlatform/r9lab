@@ -39,7 +39,9 @@ The `erasure-ledger` directory beside it holds the account erasure ledger, which
 on every account deletion. It lives outside Postgres so that `just restore` can erase those
 accounts again after loading an older dump. The API and the migrator refuse to start without it,
 for the same reason as the restic directory. Never delete or truncate it: an entry lost there is an
-erased account that a restore brings back.
+erased account that a restore brings back. Every database snapshot archives it with the dump, so
+the offsite copy carries it; if this disk is lost, erasures since the last offsite copy (up to a
+day) are in no copy.
 
 ```bash
 mkdir -p "${BACKUP_HOST_DIR:-./backups}/restic" "${BACKUP_HOST_DIR:-./backups}/erasure-ledger"
@@ -538,18 +540,26 @@ just restore prod YES <id>    # stops the api, restores, replays erasures, resta
 ```
 
 Before the API starts again, the restore runs `scripts.maintenance.replay_erasures` in the migrator
-image. The migrator entrypoint first brings the schema to the release's head, then the replay reads
-the erasure ledger and erases again every account in it that the restored database still holds,
-through the same code path as a deletion in the API. Accounts already gone are skipped, so running
-it again is harmless. An unreadable ledger line or an account it cannot erase fails the restore and
-leaves the API stopped; the log names the line or the account id. To run it by hand:
+image. The migrator entrypoint first brings the schema to the release's head. The replay then reads
+the live erasure ledger together with the copy in the newest snapshot, and erases again every account
+in either that the restored database still holds, through the same code path as a deletion in the
+API. Accounts already gone are skipped, so running it again is harmless. An unreadable ledger line,
+an account it cannot erase, or no ledger file at all fails the restore and leaves the API stopped;
+the log names the line or the account id. An entry is written before its erasure commits, so an
+erasure whose commit failed still has one, and a later restore erases that account.
+
+On a host where no account was ever erased there is no ledger file yet, and the restore stops at the
+replay. Confirm the ledger directory is the mounted backup disk (`findmnt -T
+"${BACKUP_HOST_DIR:-./backups}/erasure-ledger"`), then finish by hand:
 
 ```bash
-just stack prod compose stop api
 just stack prod compose --profile migrations run --rm --no-deps -T migrator \
-    .venv/bin/python -m scripts.maintenance.replay_erasures
+    .venv/bin/python -m scripts.maintenance.replay_erasures --empty-ok
 just stack prod up YES
 ```
+
+Drop `--empty-ok` to re-run the replay by hand on any host, with `just stack prod compose stop api`
+first.
 
 These restore Postgres only. User uploads need a separate manual restore; see "Marker missing, and
 the volume is genuinely empty" in 1.1.

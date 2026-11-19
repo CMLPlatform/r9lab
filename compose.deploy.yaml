@@ -274,6 +274,13 @@ services:
         condition: service_healthy
     volumes:
       - user_uploads:/data/uploads:ro
+      # Archived with each database dump (ERASURE_LEDGER_DIR); see the api's mount.
+      - type: bind
+        source: ${BACKUP_HOST_DIR:-./backups}/erasure-ledger
+        target: /data/erasure-ledger
+        read_only: true
+        bind:
+          create_host_path: false
       # A short-syntax bind lets Docker create a missing source directory, so a backup
       # disk that failed to mount would get an empty one invented under it and the run
       # would back up into nothing. create_host_path: false fails the run instead, and
@@ -302,6 +309,7 @@ services:
       R9LAB_ENVIRONMENT: ${ENVIRONMENT:?}
       XDG_CACHE_HOME: /tmp/xdg-cache
       UPLOADS_DIR: /data/uploads
+      ERASURE_LEDGER_DIR: /data/erasure-ledger
       BACKUP_WORK_DIR: /tmp/r9lab-backups
       # restic counts distinct HOURS that contain a snapshot, so this is only
       # meaningful with hourly backups (r9lab-backup@.timer): under daily backups 24

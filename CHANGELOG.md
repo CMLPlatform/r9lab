@@ -47,9 +47,13 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   ([#504](https://github.com/CMLPlatform/r9lab/issues/504))
 - Account erasures hold across a database restore. Each erasure is appended to a ledger in
   `BACKUP_HOST_DIR/erasure-ledger`, outside Postgres, holding only the account id, the content
-  policy and the time. `just restore` brings the schema to the release's head and replays the
-  ledger before the API starts, so an account erased after the dump was taken is erased again.
-  An erasure whose ledger entry cannot be written fails instead of committing.
+  policy and the time, and archived with every database snapshot, so the offsite copy carries
+  it. `just restore` brings the schema to the release's head and replays the live ledger and the
+  newest snapshot's copy before the API starts, so an account erased after the dump was taken is
+  erased again. If the backup disk is lost too, erasures since the last offsite copy (up to a
+  day) are in no copy and come back with a restore. An erasure whose ledger entry cannot be
+  written fails instead of committing; a replay with no ledger file fails unless run with
+  `--empty-ok`.
   ([#523](https://github.com/CMLPlatform/r9lab/issues/523))
 - r9cam cameras can sign their device tokens with EdDSA (Ed25519) as well as ES256. Each camera
   may use only the algorithm of the key it paired with. The backend now uses r9cam-models

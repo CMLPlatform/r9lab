@@ -108,11 +108,23 @@ backup_database() {
         return "$status"
     fi
 
+    # The erasure ledger rides in the same snapshot, so the offsite copy carries it and a
+    # restore after losing the backup disk can still replay the erasures it records.
+    local -a paths=("$dump_file")
+    if [[ -n "${ERASURE_LEDGER_DIR:-}" ]]; then
+        if [[ ! -d "$ERASURE_LEDGER_DIR" ]]; then
+            log "ERROR: erasure ledger directory ${ERASURE_LEDGER_DIR} is missing; skipping the postgres snapshot this run"
+            rm -f "$dump_file"
+            return "$EXIT_STEP_ERROR"
+        fi
+        paths+=("$ERASURE_LEDGER_DIR")
+    fi
+
     log "Backing up PostgreSQL dump to restic"
     # run_cycle calls this under `if`, which turns `set -e` off in here, so each failure
     # is returned explicitly. Any restic failure is a step error: its own exit 3 (snapshot
     # written, some files unreadable) must not pass for EXIT_REFUSED.
-    restic backup "$dump_file" --retry-lock "$RESTIC_RETRY_LOCK" --tag postgres --tag relab "${BACKUP_TAG_ARGS[@]}" || status=$?
+    restic backup "${paths[@]}" --retry-lock "$RESTIC_RETRY_LOCK" --tag postgres --tag relab "${BACKUP_TAG_ARGS[@]}" || status=$?
     rm -f "$dump_file"
     ((status == 0)) || return "$EXIT_STEP_ERROR"
 }

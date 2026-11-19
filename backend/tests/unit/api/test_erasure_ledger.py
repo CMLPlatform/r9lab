@@ -1,7 +1,10 @@
 """The erasure ledger file: append, read back, and unreadable lines."""
 
 from typing import TYPE_CHECKING
+from unittest.mock import patch
 from uuid import uuid4
+
+import pytest
 
 from app.api.application.account_erasure import append_erasure, read_erasure_ledger
 
@@ -46,5 +49,24 @@ def test_unreadable_lines_are_reported_by_number_and_the_rest_still_read(tmp_pat
     records, bad_lines = read_erasure_ledger(path)
 
     assert [(r.user_id, r.content) for r in records] == [(kept, "anonymize"), (kept, "delete")]
-    # Line 5 has no time zone: a naive time is refused rather than guessed.
-    assert bad_lines == [2, 4, 5, 6]
+    # Line 6 has no time zone: a naive time is refused rather than guessed.
+    assert bad_lines == [3, 5, 6, 7]
+
+
+def test_a_torn_last_line_does_not_swallow_the_next_record(tmp_path: Path) -> None:
+    """A crash mid-append leaves no newline; the next record still gets a line of its own."""
+    path = tmp_path / "erasures.jsonl"
+    kept = uuid4()
+    path.write_text('{"user_id": "' + str(uuid4()) + '", "cont', encoding="utf-8")
+
+    append_erasure(path, kept, "delete")
+
+    records, bad_lines = read_erasure_ledger(path)
+    assert [(r.user_id, r.content) for r in records] == [(kept, "delete")]
+    assert bad_lines == [1]
+
+
+def test_a_short_write_raises(tmp_path: Path) -> None:
+    """A full disk that takes only part of the record must fail the erasure, not tear the ledger."""
+    with patch("app.api.application.account_erasure.os.write", return_value=1), pytest.raises(OSError, match="Short"):
+        append_erasure(tmp_path / "erasures.jsonl", uuid4(), "anonymize")

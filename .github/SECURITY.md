@@ -142,9 +142,14 @@ Security-sensitive areas:
     (`erasure_ledger_path`). A line holds the account's UUID, the content policy (`anonymize` or
     `delete`) and the UTC time: no email address, name or other account field. The entry is
     fsynced before the erasure commits, and a failed write fails the erasure, so no committed
-    erasure is missing from it. `just restore` replays the ledger through `erase_user` before the
-    API starts, so a restored dump cannot bring an erased account back. The file is mode 0600 and
-    owned by the app uid; only the API appends to it, and the migrator mounts it read-only.
+    erasure is missing from it. Each database snapshot archives the ledger with the dump, so the
+    offsite copy carries it. `just restore` replays the union of the live ledger and the newest
+    snapshot's copy through `erase_user` before the API starts, so a restored dump does not bring
+    an erased account back. The limit: if the backup disk is lost with the live ledger on it,
+    erasures made since the last offsite copy (up to a day) are in no copy, and a restore from
+    offsite brings those accounts back. The file is mode 0600 and owned by the app uid; only the
+    API appends to it, and the migrator and the backup job mount it read-only. Entries are kept
+    indefinitely.
 - release and security artifacts: the GHCR images the hosts pull, and the landing page and docs
   deploy, whose Cloudflare API token is a GitHub Environment secret holding only Workers
   Scripts: Edit. A token granted on all Workers is not scoped to one environment, so every

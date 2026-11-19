@@ -613,8 +613,8 @@ mount_writability_alert() {
                 "busybox chown -R $DEPLOY_APP_UID:$DEPLOY_APP_UID /mnt" >&2
             ;;
         host:*)
-            echo "Docker creates a missing bind-mount directory root-owned." >&2
-            echo "Fix with: sudo chown -R $DEPLOY_APP_UID:$DEPLOY_APP_UID ${target#host:}" >&2
+            echo "The host directory must exist (the stack does not create it) and belong to that uid." >&2
+            echo "Fix with: mkdir -p ${target#host:} && sudo chown -R $DEPLOY_APP_UID:$DEPLOY_APP_UID ${target#host:}" >&2
             ;;
     esac
     return 1

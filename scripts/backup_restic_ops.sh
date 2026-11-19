@@ -691,9 +691,10 @@ restore_postgres() {
     trap restore_cleanup EXIT
 
     build_backup_image
-    mkdir -p "$tmp_root/restore"
-    # The backup image runs as uid 65532, so the restore bind mount must be writable by it.
-    docker run --rm -v "$tmp_root/restore:/work" --entrypoint chown "$ALPINE_IMAGE" -R 65532:65532 /work
+    mkdir -p "$tmp_root/restore" "$tmp_root/ledger"
+    # The backup image runs as uid 65532, so the restore bind mounts must be writable by it.
+    docker run --rm -v "$tmp_root/restore:/work" -v "$tmp_root/ledger:/ledger" --entrypoint chown "$ALPINE_IMAGE" \
+        -R 65532:65532 /work /ledger
 
     docker run --rm \
         -v "$DEPLOY_RESTIC_REPOSITORY:/restic:ro" \
@@ -703,6 +704,17 @@ restore_postgres() {
         --entrypoint restic \
         "$DEPLOY_BACKUP_IMAGE" \
         restore --no-lock "$snapshot" --repo /restic --tag postgres --target /restore
+    # The newest snapshot's copy of the erasure ledger, which the replay unions with the
+    # live file: after losing the backup disk, the offsite copy of it is all that is left.
+    # A snapshot from before the ledger was archived restores nothing here.
+    docker run --rm \
+        -v "$DEPLOY_RESTIC_REPOSITORY:/restic:ro" \
+        -v "$DEPLOY_RESTIC_PASSWORD_FILE:/run/secrets/restic_password:ro" \
+        -v "$tmp_root/ledger:/ledger" \
+        -e RESTIC_PASSWORD_FILE=/run/secrets/restic_password \
+        --entrypoint restic \
+        "$DEPLOY_BACKUP_IMAGE" \
+        restore --no-lock latest --repo /restic --tag postgres --include /data/erasure-ledger --target /ledger
 
     local dump_file
     dump_file="$(find "$tmp_root/restore" -type f -name '*.dump' | sort | tail -n1)"
@@ -740,10 +752,13 @@ restore_postgres() {
     # Accounts erased after the dump was taken came back with it: erase them again from
     # the ledger before the API takes writes. The migrator entrypoint first brings the
     # schema to this release's head, which the erasure code expects. A failed replay
-    # leaves the API stopped.
+    # leaves the API stopped. The backup copy is mounted whole and named by path, since
+    # the host user cannot look inside the 0700 directory to see whether it is there.
     echo "Replaying the erasure ledger"
-    (cd "$ROOT_DIR" && run_deploy_compose "$env" --profile migrations run --rm --no-deps -T migrator \
-        .venv/bin/python -m scripts.maintenance.replay_erasures)
+    (cd "$ROOT_DIR" && run_deploy_compose "$env" --profile migrations run --rm --no-deps -T \
+        -v "$tmp_root/ledger:/run/erasure-ledger-backup:ro" migrator \
+        .venv/bin/python -m scripts.maintenance.replay_erasures \
+        --also /run/erasure-ledger-backup/data/erasure-ledger/erasures.jsonl)
     RESTORE_OK=true
 
     echo "✅ Restored $env from snapshot '$snapshot'"

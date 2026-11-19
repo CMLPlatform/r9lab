@@ -48,6 +48,7 @@ from app.api.plugins.r9cam.runtime.preview import get_preview_thumbnail_path, re
 from app.core.config.core import settings
 
 if TYPE_CHECKING:
+    from collections.abc import Sequence
     from pathlib import Path
 
     from sqlalchemy.ext.asyncio import AsyncSession
@@ -240,12 +241,17 @@ class ErasureRecord(BaseModel):
 
 def append_erasure(path: Path, user_id: UUID4, content: ErasureContent) -> None:
     """Append one record to the erasure ledger and fsync it."""
-    line = ErasureRecord(user_id=user_id, content=content, erased_at=datetime.now(UTC)).model_dump_json() + "\n"
+    record = ErasureRecord(user_id=user_id, content=content, erased_at=datetime.now(UTC))
+    # The leading newline ends a line torn by an earlier crash, so it cannot swallow this one.
+    line = f"\n{record.model_dump_json()}\n".encode()
     path.parent.mkdir(parents=True, exist_ok=True)
     # O_APPEND and one small write per record keep lines from concurrent API workers whole.
     fd = os.open(path, os.O_WRONLY | os.O_APPEND | os.O_CREAT, 0o600)
     try:
-        os.write(fd, line.encode())
+        if (written := os.write(fd, line)) < len(line):
+            # A full disk can take part of the record; the erasure must not commit on that.
+            msg = f"Short write to the erasure ledger {path}: {written} of {len(line)} bytes"
+            raise OSError(msg)
         os.fsync(fd)
     finally:
         os.close(fd)
@@ -277,17 +283,33 @@ def read_erasure_ledger(path: Path) -> tuple[list[ErasureRecord], list[int]]:
     return records, bad_lines
 
 
-async def replay_erasures(session: AsyncSession, path: Path) -> bool:
-    """Erase again every account in the ledger that the database still holds.
+async def replay_erasures(session: AsyncSession, paths: Sequence[Path], *, empty_ok: bool = False) -> bool:
+    """Erase again every account in any of the ledgers that the database still holds.
 
-    Run after a restore, before the API takes writes. Accounts already gone are skipped,
-    so a second run changes nothing. Returns False when a line could not be read or an
-    account could not be erased: the database may still hold an erased account, so the
-    caller must keep the API stopped.
+    Run after a restore, before the API takes writes, with the live ledger and the copy
+    from the newest backup: their union survives the loss of either. Accounts already
+    gone are skipped, so a second run changes nothing. Returns False when a line could
+    not be read, an account could not be erased, or none of the ledgers exists (a wrong
+    mount looks the same as a host with no erasures; ``empty_ok`` accepts the latter).
+    The database may then still hold an erased account, so the caller must keep the API
+    stopped.
     """
-    records, bad_lines = read_erasure_ledger(path)
-    for number in bad_lines:
-        logger.error("Erasure ledger line %d is not a valid record; check it and erase that account by hand", number)
+    if not empty_ok and not any(path.exists() for path in paths):
+        logger.error(
+            "No erasure ledger at %s; pass --empty-ok only if no account was ever erased", ", ".join(map(str, paths))
+        )
+        return False
+
+    records: list[ErasureRecord] = []
+    bad_lines = 0
+    for path in paths:
+        path_records, path_bad_lines = read_erasure_ledger(path)
+        records += path_records
+        bad_lines += len(path_bad_lines)
+        for number in path_bad_lines:
+            logger.error(
+                "Erasure ledger %s line %d is not a valid record; check it and erase that account by hand", path, number
+            )
 
     erased = failed = 0
     for record in records:
@@ -308,6 +330,6 @@ async def replay_erasures(session: AsyncSession, path: Path) -> bool:
         len(records),
         erased,
         failed,
-        len(bad_lines),
+        bad_lines,
     )
     return not bad_lines and not failed
