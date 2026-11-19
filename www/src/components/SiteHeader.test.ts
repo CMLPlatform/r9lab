@@ -18,8 +18,9 @@ describe('SiteHeader', () => {
     expect(html).toContain('href="/"');
     expect(html).toContain('https://app.example.com');
     expect(html).toContain('https://docs.example.com');
-    // Both leave the site, and each says so to a screen reader.
-    expect(html.match(/\(opens in new tab\)/g)).toHaveLength(2);
+    // Only the docs link leaves the product; the app opens in the same tab.
+    expect(html.match(/\(opens in new tab\)/g)).toHaveLength(1);
+    expect(html).not.toMatch(/<a href="https:\/\/app\.example\.com"[^>]*target=/);
   });
 
   it('leaves GitHub to the footer, so no link is offered twice', async () => {

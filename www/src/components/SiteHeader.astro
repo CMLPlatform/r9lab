@@ -35,9 +35,7 @@ const { appUrl, docsUrl, heroBrand = false } = Astro.props;
     </a>
     {/* App and Docs only: GitHub lives once, in the footer. */}
     <nav class="site-header-nav" aria-label="Site">
-      <a href={appUrl} target="_blank" rel="noopener noreferrer"
-        >App<span class="visually-hidden"> (opens in new tab)</span></a
-      >
+      <a href={appUrl}>App</a>
       <a href={docsUrl} target="_blank" rel="noopener noreferrer"
         >Docs<span class="visually-hidden"> (opens in new tab)</span></a
       >

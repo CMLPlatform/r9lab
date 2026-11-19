@@ -47,6 +47,12 @@ describe('MethodSteps', () => {
     expect(perPhase).toEqual([3, 2, 3]);
   });
 
+  it('numbers steps only, not the passes, so no digit repeats', async () => {
+    const html = await render();
+    expect(html).not.toContain('flow-phase-num');
+    expect(html).not.toContain('<h3');
+  });
+
   it('ships each step description as text, not as a hover-only tooltip', async () => {
     const html = await render();
     expect(html.match(/class="flow-step-detail"/g)).toHaveLength(8);
@@ -75,7 +81,9 @@ describe('MethodSteps', () => {
     // Neither paper uses the framework as an analytical frame, so the page
     // marks it as background rather than as part of the method.
     expect(html).toMatch(/Background:/);
-    expect(html).toMatch(/takes its cue from/i);
+    expect(html).toMatch(/nods to the 9R framework/);
+    // Nine in the mark and ten strategies in one sentence reads as a contradiction.
+    expect(html).not.toMatch(/ten circular-economy/);
   });
 
   it('carries no inlined SVG', async () => {

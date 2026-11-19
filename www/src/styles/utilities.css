@@ -99,3 +99,19 @@
   font-size: var(--content-page-body-size);
   line-height: var(--content-page-line-height);
 }
+
+/* First tab stop: hidden until focused, then pinned top-left above the header. */
+.skip-link {
+  position: absolute;
+  inset-block-start: 0.5rem;
+  inset-inline-start: 0.5rem;
+  z-index: 100;
+  padding: 0.6rem 1rem;
+  background: var(--color-surface-raised);
+  color: var(--color-on-surface);
+  transform: translateY(-200%);
+}
+
+.skip-link:focus-visible {
+  transform: none;
+}

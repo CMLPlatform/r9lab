@@ -56,6 +56,10 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Changed
 
+- The landing page shows the example teardown's six photo plates in two columns on a phone, so
+  the "Why" section is not pushed far down. A plate with sub-parts says how many ("258 g · 2
+  parts"). Links to the app open in the same tab; links to other sites still open a new one.
+  The method section numbers only its steps, and a skip link leads to the main content.
 - The welcome card on the products screen has even inner padding, the mark lines up with the
   text, and "Sign in" is a solid primary button. On wide screens the actions sit beside the text.
 - The `r9lab-backup` image is built on Debian slim with only the PostgreSQL client, not the

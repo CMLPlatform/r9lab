@@ -111,6 +111,9 @@ describe('HeroTeardown', () => {
     expect(html).toContain('<summary');
     expect(html).toContain('PCB assembly');
     expect(html).toContain('74 g');
+    // The summary says what opens, so the disclosure is discoverable.
+    expect(html.match(/data-part-count/g)).toHaveLength(1);
+    expect(html).toMatch(/· \d+ parts?/);
 
     const flat = await render({
       teardown: { ...TEARDOWN, parts: [{ name: 'Battery pack', weightG: 212, share: 1 }] },

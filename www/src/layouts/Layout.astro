@@ -82,13 +82,14 @@ const currentYear = new Date().getFullYear();
     <title>{pageTitle}</title>
   </head>
   <body>
+    <a class="skip-link" href="#main">Skip to content</a>
     <SiteHeader
       appUrl={publicSiteConfig.appUrl}
       docsUrl={publicSiteConfig.docsUrl}
       heroBrand={heroBrand}
     />
 
-    <main class="page-shell">
+    <main id="main" class="page-shell">
       <slot />
     </main>
 
