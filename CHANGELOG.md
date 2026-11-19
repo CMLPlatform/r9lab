@@ -164,9 +164,11 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   and the API cannot drift apart.
 - The legacy admin path `/v1/admin/plugins/rpi-cam` is no longer served. The device and
   user-facing legacy camera paths stay until 2027-01-31.
-- The docs site's Prerequisites, Configure, Deploy and Upgrade and backup pages. Their URLs
-  redirect to [Install](https://docs.r9lab.io/operations/install/) and
-  [Deployment and operations](https://docs.r9lab.io/operations/deployment/).
+- The docs site's Prerequisites and Deploy pages. Their URLs redirect to
+  [Install](https://docs.r9lab.io/operations/install/) and
+  [Deployment topology](https://docs.r9lab.io/operations/deployment/). The Upgrade and backup page
+  became Backups and recovery, and `/operations/configure` is now the Configure uploads page (see
+  Changed).
 
 ### Fixed
 
