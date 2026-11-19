@@ -3,6 +3,7 @@
 import importlib
 import io
 import sys
+from datetime import UTC, datetime, timedelta
 from typing import TYPE_CHECKING
 from unittest.mock import AsyncMock, MagicMock
 
@@ -252,3 +253,44 @@ def test_filesystem_backend_ignores_s3_config() -> None:
         s3_bucket="",  # Empty S3 config is OK for filesystem
     )
     assert settings.storage_backend == StorageBackend.FILESYSTEM
+
+
+async def test_list_names_returns_old_flat_objects_under_the_prefix(mock_boto3: MagicMock) -> None:
+    """Only objects past the grace period, directly under the prefix, are listed."""
+    now = datetime.now(UTC)
+    mock_client = MagicMock()
+    mock_boto3.client.return_value = mock_client
+    mock_client.get_paginator.return_value.paginate.return_value = [
+        {
+            "Contents": [
+                {"Key": "files/old.pdf", "LastModified": now - timedelta(hours=2)},
+                {"Key": "files/new.pdf", "LastModified": now - timedelta(minutes=1)},
+                {"Key": "files/nested/old.pdf", "LastModified": now - timedelta(hours=2)},
+            ]
+        },
+        {},
+    ]
+
+    names = await S3Storage(bucket="my-bucket", prefix="files").list_names(min_age_seconds=1800)
+
+    assert names == ["old.pdf"]
+    mock_client.get_paginator.return_value.paginate.assert_called_once_with(Bucket="my-bucket", Prefix="files/")
+
+
+async def test_list_names_translates_listing_failures(mock_boto3: MagicMock) -> None:
+    """A listing error surfaces as StorageBackendError, like a failed delete."""
+    mock_client = MagicMock()
+    mock_boto3.client.return_value = mock_client
+    mock_client.get_paginator.return_value.paginate.side_effect = _make_client_error("AccessDenied")
+
+    with pytest.raises(StorageBackendError):
+        await S3Storage(bucket="my-bucket", prefix="files").list_names(min_age_seconds=0)
+
+
+async def test_list_names_refuses_an_empty_prefix(mock_boto3: MagicMock) -> None:
+    """Without a prefix the listing would be the bucket root, so nothing is listed or swept."""
+    mock_client = MagicMock()
+    mock_boto3.client.return_value = mock_client
+
+    assert await S3Storage(bucket="my-bucket", prefix="").list_names(min_age_seconds=0) == []
+    mock_client.get_paginator.assert_not_called()

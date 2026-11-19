@@ -1,5 +1,7 @@
 """S3-compatible storage backend."""
 
+import logging
+from datetime import UTC, datetime, timedelta
 from importlib import import_module
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
@@ -13,6 +15,8 @@ if TYPE_CHECKING:
     from typing import BinaryIO
 
     from fastapi import UploadFile
+
+logger = logging.getLogger(__name__)
 
 
 # boto3 is an optional dep; its stubs live in boto3-stubs (heavy, not installed).
@@ -91,6 +95,34 @@ class S3Storage(BaseStorage):
     def size(self, name: str) -> int:
         """Return the object's size in bytes from its metadata."""
         return int(self._get_client().head_object(Bucket=self._bucket, Key=self._s3_key(name))["ContentLength"])
+
+    async def list_names(self, *, min_age_seconds: float) -> list[str]:
+        """List the objects directly under the prefix that are at least ``min_age_seconds`` old.
+
+        An empty prefix lists nothing: it would be the bucket root, where other data may live.
+        """
+        if not self._prefix:
+            logger.error("Not listing S3 bucket %s: no key prefix is set, so the sweep skips it.", self._bucket)
+            return []
+        client = self._get_client()
+        bucket = self._bucket
+        key_prefix = f"{self._prefix}/"
+        cutoff = datetime.now(UTC) - timedelta(seconds=min_age_seconds)
+
+        def list_keys() -> list[str]:
+            keys: list[str] = []
+            for page in client.get_paginator("list_objects_v2").paginate(Bucket=bucket, Prefix=key_prefix):
+                keys.extend(obj["Key"] for obj in page.get("Contents", ()) if obj["LastModified"] <= cutoff)
+            return keys
+
+        try:
+            keys = await to_thread.run_sync(list_keys)
+        except _s3_delete_error_types() as e:
+            msg = f"Failed to list S3 objects under {key_prefix!r}: {e}"
+            raise StorageBackendError(msg) from e
+        names = (key.removeprefix(key_prefix) for key in keys)
+        # Only flat names: a nested key was not written through this backend.
+        return [name for name in names if name and Path(name).name == name]
 
     def get_name(self, name: str) -> str:
         """Normalize a file name for storage."""

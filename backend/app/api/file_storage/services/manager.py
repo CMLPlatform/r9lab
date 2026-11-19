@@ -3,7 +3,11 @@
 import logging
 from typing import TYPE_CHECKING
 
-from app.api.file_storage.services.cleanup import cleanup_unreferenced_files, report_orphaned_media
+from app.api.file_storage.services.cleanup import (
+    cleanup_unreferenced_files,
+    cleanup_unreferenced_objects,
+    report_orphaned_media,
+)
 from app.core.background_tasks import PeriodicBackgroundTask
 from app.core.config.core import settings
 
@@ -35,5 +39,6 @@ class FileCleanupManager(PeriodicBackgroundTask):
         logger.info("Starting scheduled background file cleanup...")
         async with self.session_factory() as session:
             await cleanup_unreferenced_files(session, dry_run=False)
+            await cleanup_unreferenced_objects(session, dry_run=False)
             await report_orphaned_media(session)
         logger.info("Finished scheduled background file cleanup.")

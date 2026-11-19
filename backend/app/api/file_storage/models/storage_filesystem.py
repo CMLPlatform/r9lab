@@ -1,5 +1,6 @@
 """Filesystem-backed storage backend."""
 
+import time
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -31,6 +32,18 @@ class FileSystemStorage(BaseStorage):
     def get_name(self, name: str) -> str:
         """Normalize a file name for storage."""
         return secure_filename(Path(name).name)
+
+    async def list_names(self, *, min_age_seconds: float) -> list[str]:
+        """Return the names of files in the directory that are at least ``min_age_seconds`` old."""
+        cutoff = time.time() - min_age_seconds
+        directory = AnyIOPath(self._path)
+        if not await directory.exists():
+            return []
+        return [
+            path.name
+            async for path in directory.iterdir()
+            if await path.is_file() and (await path.stat()).st_mtime <= cutoff
+        ]
 
     def size(self, name: str) -> int:
         """Return the file's size in bytes."""
