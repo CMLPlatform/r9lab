@@ -1,7 +1,16 @@
 import type { ReactNode, RefObject } from 'react';
-import { Modal, Pressable, ScrollView, StyleSheet, type View } from 'react-native';
+import {
+  Modal,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  useWindowDimensions,
+  type View,
+} from 'react-native';
 import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import Animated, { Easing, FadeInUp, ReduceMotion } from 'react-native-reanimated';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { breakpoints } from '@/constants';
 import { swallowKey, useModalPresence } from '@/hooks/useModalPresence';
 import { useReturnFocus } from '@/hooks/useReturnFocus';
 import { useAppTheme } from '@/theme/appThemeContext';
@@ -22,18 +31,24 @@ type AppDialogProps = {
   triggerRef?: RefObject<View | null>;
   /**
    * 'large' holds a fixed 85% height up to 720 wide, for content that scrolls itself
-   * (a FlatList must not sit inside the default ScrollView).
+   * (a FlatList must not sit inside the default ScrollView). Below the md breakpoint it
+   * fills the screen instead: a card with scrim around it leaves too little list once
+   * the keyboard is up.
    */
   size?: 'default' | 'large';
   children: ReactNode;
 };
 
 const NOOP = () => {};
+// The surface's p-4, in px, for the full-screen variant that adds safe-area insets to it.
+const PAD = 16;
 
 // Swallow presses so tapping inside the dialog does not dismiss it.
 function stopPropagation(e: { stopPropagation: () => void }) {
   e.stopPropagation();
 }
+
+const LANDSCAPE_PHONE_MAX_HEIGHT = 500;
 
 /**
  * Shared dialog chrome: a centered surface over a scrim.
@@ -51,6 +66,23 @@ export function AppDialog({
 }: AppDialogProps) {
   const large = size === 'large';
   const theme = useAppTheme();
+  const insets = useSafeAreaInsets();
+  const { width, height } = useWindowDimensions();
+  // A phone either way up: in landscape (about 390 px tall) the card leaves the list a sliver.
+  const fullScreen = large && (width < breakpoints.md || height < LANDSCAPE_PHONE_MAX_HEIGHT);
+  const baseSurface = [theme.tokens.elevation.overlay, large ? styles.fill : styles.shrink];
+  // The surface itself reaches the screen edges; its content clears notch and home bar.
+  const surfaceStyle = fullScreen
+    ? [
+        ...baseSurface,
+        {
+          paddingTop: insets.top + PAD,
+          paddingBottom: insets.bottom + PAD,
+          paddingLeft: insets.left + PAD,
+          paddingRight: insets.right + PAD,
+        },
+      ]
+    : baseSurface;
   // A closing dialog stays mounted through its exit; a second Escape or backdrop
   // press in that window must not dismiss again.
   const handleDismiss = dismissable && visible ? onDismiss : undefined;
@@ -83,7 +115,7 @@ export function AppDialog({
         <Pressable
           accessible={false}
           tabIndex={-1}
-          className="flex-1 items-center justify-center p-4"
+          className={fullScreen ? 'flex-1' : 'flex-1 items-center justify-center p-4'}
           style={{ backgroundColor: theme.tokens.overlay.scrim }}
           onPress={handleDismiss}
         >
@@ -92,7 +124,7 @@ export function AppDialog({
             tabIndex={-1}
             onPress={stopPropagation}
             className="w-full"
-            style={large ? styles.largeWrapper : styles.dialogWrapper}
+            style={fullScreen ? styles.fill : large ? styles.largeWrapper : styles.dialogWrapper}
           >
             <KeyboardAvoidingView behavior="padding" style={large ? styles.fill : styles.shrink}>
               <Animated.View
@@ -102,8 +134,8 @@ export function AppDialog({
                   .reduceMotion(ReduceMotion.System)}
               >
                 <OverlaySurface
-                  className="p-4"
-                  style={[theme.tokens.elevation.overlay, large ? styles.fill : styles.shrink]}
+                  className={fullScreen ? 'rounded-none p-4' : 'p-4'}
+                  style={surfaceStyle}
                   tone="surface"
                 >
                   {large ? (

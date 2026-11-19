@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, jest } from '@jest/globals';
 import { act, screen, within } from '@testing-library/react-native';
 import { createRef } from 'react';
-import { AccessibilityInfo, Text, View } from 'react-native';
+import { AccessibilityInfo, Dimensions, StyleSheet, Text, View } from 'react-native';
 import { AppDialog } from '@/components/base/AppDialog';
 import {
   getHostByType,
@@ -19,6 +19,14 @@ jest.mock('react-native-keyboard-controller', () => {
   };
 });
 
+let mockInsets = { top: 0, right: 0, bottom: 0, left: 0 };
+jest.mock('react-native-safe-area-context', () => ({
+  ...jest.requireActual<typeof import('react-native-safe-area-context')>(
+    'react-native-safe-area-context',
+  ),
+  useSafeAreaInsets: () => mockInsets,
+}));
+
 // The web branch of useReturnFocus reads document.activeElement; the RN test
 // environment has no DOM, so stub the one property it touches.
 function stubDocument(activeElement: unknown) {
@@ -28,7 +36,11 @@ function stubDocument(activeElement: unknown) {
   });
 }
 
+const originalWindow = Dimensions.get('window');
+
 afterEach(() => {
+  Dimensions.set({ window: originalWindow, screen: originalWindow });
+  mockInsets = { top: 0, right: 0, bottom: 0, left: 0 };
   restorePlatform();
   Reflect.deleteProperty(globalThis, 'document');
 });
@@ -245,5 +257,61 @@ describe('AppDialog', () => {
 
     // A stray internal (unattached) ref would be null and never reach the event.
     expect(setFocus).toHaveBeenCalledWith(triggerRef.current as View, 'focus');
+  });
+
+  describe('large size', () => {
+    const renderLarge = () =>
+      renderWithProviders(
+        <AppDialog visible onDismiss={jest.fn()} accessibilityLabel="Browse" size="large">
+          <Text>Body</Text>
+        </AppDialog>,
+      );
+    // The kav's child chain ends at the surface, the one view that carries the dialog padding.
+    const surfaceStyle = () => {
+      let node = screen.getByText('Body').parent;
+      while (node) {
+        const style = StyleSheet.flatten(node.props.style);
+        if (style?.paddingTop !== undefined) return style;
+        node = node.parent;
+      }
+      return undefined;
+    };
+
+    it('fills the screen below the md breakpoint, clear of the safe-area insets', async () => {
+      Dimensions.set({
+        window: { width: 390, height: 700, scale: 2, fontScale: 1 },
+        screen: { width: 390, height: 700, scale: 2, fontScale: 1 },
+      });
+      mockInsets = { top: 47, right: 0, bottom: 34, left: 0 };
+      await renderLarge();
+
+      expect(surfaceStyle()).toMatchObject({ paddingTop: 63, paddingBottom: 50, paddingLeft: 16 });
+      expect(queryAllHostsByProps({ className: 'flex-1' }).length).toBeGreaterThan(0);
+    });
+
+    it('fills the screen on a phone in landscape too', async () => {
+      Dimensions.set({
+        window: { width: 844, height: 390, scale: 3, fontScale: 1 },
+        screen: { width: 844, height: 390, scale: 3, fontScale: 1 },
+      });
+      mockInsets = { top: 0, right: 47, bottom: 21, left: 47 };
+      await renderLarge();
+
+      expect(surfaceStyle()).toMatchObject({ paddingTop: 16, paddingBottom: 37 });
+    });
+
+    it('keeps the centred card from the md breakpoint up', async () => {
+      Dimensions.set({
+        window: { width: 900, height: 700, scale: 2, fontScale: 1 },
+        screen: { width: 900, height: 700, scale: 2, fontScale: 1 },
+      });
+      mockInsets = { top: 47, right: 0, bottom: 34, left: 0 };
+      await renderLarge();
+
+      expect(surfaceStyle()).toBeUndefined();
+      expect(
+        queryAllHostsByProps({ className: 'flex-1 items-center justify-center p-4' }),
+      ).toHaveLength(1);
+    });
   });
 });
