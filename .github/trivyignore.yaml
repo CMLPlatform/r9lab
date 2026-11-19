@@ -6,13 +6,17 @@
 # unscoped id would also hide the finding in the backup and postgres images.
 vulnerabilities:
   # TODO(drop-by 2027-01-14): re-check the caddy digest for golang.org/x/net 0.62.0, then drop this waiver or extend it
-  # caddy:2-alpine (v2.11.9, re-scanned 2026-11-15) is built with Go 1.26.9 and carries the
-  # go-jose fix; the five earlier Go, net/http, crypto/tls and go-jose waivers are gone. It
-  # still links golang.org/x/net v0.60.0, fixed in 0.62.0. Re-check when the digest is bumped.
+  # caddy:2-alpine (v2.11.9) is built with Go 1.27.3 and carries the go-jose fix. It still
+  # links golang.org/x/net v0.60.0, fixed in 0.62.0. Re-check when the digest is bumped.
   - id: CVE-2026-78661
     paths: ["usr/bin/caddy"]
     expired_at: 2027-01-15
     statement: x/net/html quadratic-allocation DoS on crafted HTML; caddy here serves static files and never parses request-supplied HTML.
+  # TODO(drop-by 2026-12-18): bump the caddy digest once an image built with Go 1.27.4 or later is out, then drop this waiver
+  - id: CVE-2026-97054
+    paths: ["usr/bin/caddy"]
+    expired_at: 2026-12-19
+    statement: Go net/http MaxBytesReader flaw; caddy uses MaxBytesReader only for request_body limits, and app/Caddyfile sets none (static files only).
 
 misconfigurations: []
 secrets: []
