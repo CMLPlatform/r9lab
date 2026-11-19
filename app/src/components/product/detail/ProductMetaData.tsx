@@ -2,8 +2,10 @@ import { useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { AppText } from '@/components/base/AppText';
+import { DisclosureChevron } from '@/components/base/DisclosureChevron';
 import { PRESS_TINT } from '@/components/base/pressFeedback';
 import { MIN_TAP_TARGET, WEB_FOCUS_RING } from '@/constants';
+import { useAppTheme } from '@/theme/appThemeContext';
 import { entityLabelTitle, type Product } from '@/types/Product';
 import { cn } from '@/utils/cn';
 import { getProfileHref } from '@/utils/router/profiles';
@@ -27,6 +29,7 @@ function MetaRow({ label, children }: { label: string; children: React.ReactNode
 
 export default function ProductMetaData({ product }: Props) {
   const router = useRouter();
+  const theme = useAppTheme();
   const { ownerUsername } = product;
   const [historyOpen, setHistoryOpen] = useState(false);
   const toggleHistory = useCallback(() => setHistoryOpen((open) => !open), []);
@@ -49,12 +52,13 @@ export default function ProductMetaData({ product }: Props) {
               accessibilityState={{ expanded: historyOpen }}
               // Starts with the visible text, so voice control can name the button (WCAG 2.5.3).
               accessibilityLabel={`Last updated ${new Date(product.updatedAt).toLocaleDateString()}. ${historyOpen ? 'Hide' : 'Show'} edit history`}
-              className={cn('justify-center rounded-md', PRESS_TINT, WEB_FOCUS_RING)}
+              className={cn('flex-row items-center gap-1 rounded-md', PRESS_TINT, WEB_FOCUS_RING)}
               style={styles.link}
             >
               <AppText variant="data" className="text-primary underline">
                 {new Date(product.updatedAt).toLocaleDateString()}
               </AppText>
+              <DisclosureChevron expanded={historyOpen} size="sm" color={theme.colors.primary} />
             </Pressable>
           ) : (
             <AppText variant="data">{new Date(product.updatedAt).toLocaleDateString()}</AppText>

@@ -3,7 +3,12 @@ import { screen } from '@testing-library/react-native';
 import { HttpResponse, http } from 'msw';
 import ProductMetaData from '@/components/product/detail/ProductMetaData';
 import { API_URL } from '@/config';
-import { baseProduct as _base, renderWithProviders, setupUser } from '@/test-utils/index';
+import {
+  baseProduct as _base,
+  getHostByType,
+  renderWithProviders,
+  setupUser,
+} from '@/test-utils/index';
 import { server } from '@/test-utils/server';
 import type { Product } from '@/types/Product';
 
@@ -118,6 +123,13 @@ describe('ProductMetaData', () => {
       expect(screen.getByText(TESTUSER_PATTERN)).toBeOnTheScreen();
       expect(screen.getByText(MODERATOR_PATTERN)).toBeOnTheScreen();
       expect(screen.getByRole('button', { name: HIDE_HISTORY_PATTERN })).toBeOnTheScreen();
+    });
+
+    it('shows a chevron on the "Last updated" button so it reads as expandable', async () => {
+      const product = { ...baseProduct, updatedAt: '2026-11-19T10:00:00Z' };
+      await renderWithProviders(<ProductMetaData product={product} />, { withAuth: true });
+
+      expect(getHostByType('RNSVGSvgView')).toBeOnTheScreen();
     });
 
     it('words an unknown editor, a missing field list and an unmapped field plainly', async () => {
