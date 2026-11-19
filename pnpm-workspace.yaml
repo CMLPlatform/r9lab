@@ -39,6 +39,8 @@ allowBuilds:
   workerd: false
 
 overrides:
+  # Drop when Jest and linkinator accept a patched glob version.
+  "glob@>=13.0.0 <14.0.2": ">=14.0.2 <15" # GHSA-3g3m-2fjr-6pw4
   # Security pins for transitive deps whose parent pins a vulnerable version
   # exactly, so a lockfile refresh cannot lift them. Each names the parent to
   # watch; drop the pin once that parent moves past the vulnerable version.

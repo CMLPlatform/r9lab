@@ -200,7 +200,7 @@ mutation = [
 [tool.ty.rules]
 # Pydantic schemas narrow a parent's field type on purpose (id: int | UUID becomes
 # PositiveInt), and Pydantic checks the narrower type at runtime.
-invalid-mutable-override = "ignore"
+incompatible-mutable-override = "ignore"
 
 [tool.ruff]
   fix            = true

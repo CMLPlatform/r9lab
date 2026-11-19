@@ -174,7 +174,7 @@ class UserManager(UUIDIDMixin, BaseUserManager[User, UUID4]):
 
     # NOTE: the parent types this method generically over its OAuth user protocol, which
     # the concrete User model does not satisfy, so the override narrows it to User.
-    async def oauth_callback(  # ty: ignore[invalid-method-override]
+    async def oauth_callback(  # ty: ignore[incompatible-method-override]
         self,
         oauth_name: str,
         access_token: str,

@@ -460,7 +460,7 @@ def test_multiframe_gif_without_exif_is_left_untouched(tmp_path: Path) -> None:
     with PILImage.open(path) as reopened:
         # n_frames is added by GifImagePlugin at runtime; Pillow's stub only types the
         # base ImageFile.
-        assert reopened.n_frames == 3  # ty: ignore[unresolved-attribute]
+        assert reopened.n_frames == 3  # ty: ignore[missing-attribute]
 
 
 _ANIMATION_COLORS = ((201, 13, 7), (11, 197, 23), (5, 19, 203))
@@ -483,12 +483,12 @@ def _frame_summary(path: Path) -> tuple[int, list[int], list[tuple[int, ...]]]:
         durations, colors = [], []
         # n_frames and seek are added by the format plugins at runtime; Pillow's stub only
         # types the base ImageFile.
-        for index in range(img.n_frames):  # ty: ignore[unresolved-attribute]
+        for index in range(img.n_frames):  # ty: ignore[missing-attribute]
             img.seek(index)
             colors.append(img.convert("RGB").getpixel((0, 0)))
             # WebP sets a frame's duration only once the frame is decoded.
             durations.append(img.info.get("duration"))
-        return img.n_frames, durations, colors  # ty: ignore[unresolved-attribute]
+        return img.n_frames, durations, colors  # ty: ignore[missing-attribute]
 
 
 @pytest.mark.parametrize(
@@ -558,7 +558,7 @@ def test_animation_frame_total_cap(
     _process(path)
     with PILImage.open(path) as result:
         assert not result.info.get("comment")
-        assert result.n_frames == 3  # ty: ignore[unresolved-attribute]
+        assert result.n_frames == 3  # ty: ignore[missing-attribute]
 
 
 def test_lossless_webp_without_exif_is_left_untouched(tmp_path: Path) -> None:

@@ -1987,7 +1987,7 @@ async def _read_inventory(rules: SelectionRules) -> list[dict[str, Any]]:
         await close_async_engine()
 
 
-def inventory(destination: Path | None, rules: SelectionRules = SelectionRules()) -> None:  # noqa: B008
+def inventory(destination: Path | None, rules: SelectionRules = SelectionRules()) -> None:
     """Report what a release would contain and exit without writing an archive.
 
     Read-only by construction: it needs no pseudonymisation salt, takes no owner selection,

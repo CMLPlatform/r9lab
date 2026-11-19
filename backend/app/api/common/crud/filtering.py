@@ -210,10 +210,7 @@ def apply_filter[MT: Base](
         ]
         if sorted_relationship_columns:
             statement = statement.add_columns(*sorted_relationship_columns)
-        statement = cast(
-            "Select[tuple[MT]]",
-            apply_sorting(statement, model_filter.sorting, additional=relationship_columns),
-        )
+        statement = apply_sorting(statement, model_filter.sorting, additional=relationship_columns)
     return statement
 
 

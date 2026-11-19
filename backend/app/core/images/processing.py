@@ -41,7 +41,7 @@ def _animation_save_kwargs(img: PILImage.Image) -> dict[str, Any]:
     reproduce the animation.
     """
     durations = []
-    for index in range(img.n_frames):  # ty: ignore[unresolved-attribute]
+    for index in range(img.n_frames):  # ty: ignore[missing-attribute]
         img.seek(index)
         img.load()  # WebP sets a frame's duration only once it is decoded.
         durations.append(img.info.get("duration", 0))

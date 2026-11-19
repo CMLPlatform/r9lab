@@ -232,7 +232,7 @@ async def test_clamav_scanner_reads_large_spooled_upload_off_the_event_loop(
         spooled.rollover()  # force to disk, mirroring a real large upload's spool behavior
         # `_rolled` is SpooledTemporaryFile's private disk-vs-memory flag, absent from
         # typeshed's public stub; and the same stub is narrower than `BinaryIO`.
-        assert spooled._rolled  # ty: ignore[unresolved-attribute]  # sanity: this file is actually disk-backed
+        assert spooled._rolled  # ty: ignore[missing-attribute]  # sanity: this file is actually disk-backed
 
         scanner = ClamAVScanner(host="clamav", port=3310, timeout_seconds=5)
         await scanner.scan(spooled)  # ty: ignore[invalid-argument-type]

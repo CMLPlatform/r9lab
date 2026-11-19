@@ -75,7 +75,7 @@ def _is_xdist_worker(config: pytest.Config) -> bool:
 
 def _worker_input(config: pytest.Config) -> dict[str, Any]:
     """Return the xdist-supplied `workerinput` dict, present only on worker configs."""
-    return config.workerinput  # ty: ignore[unresolved-attribute]  # xdist attaches this dynamically
+    return config.workerinput  # ty: ignore[missing-attribute]  # xdist attaches this dynamically
 
 
 def _xdist_active(config: pytest.Config) -> bool:
