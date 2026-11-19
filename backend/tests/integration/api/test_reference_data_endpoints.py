@@ -8,10 +8,10 @@ from fastapi import status
 
 from app.api.data_collection.models.product import MaterialProductLink
 from app.api.reference_data.models import TaxonomyDomain
-from scripts.seed.factories.models import CategoryFactory, TaxonomyFactory
+from scripts.seed.factories.models import CategoryFactory, ProductTypeFactory, TaxonomyFactory
 
 if TYPE_CHECKING:
-    from httpx import AsyncClient
+    from httpx import AsyncClient, Response
     from sqlalchemy.ext.asyncio import AsyncSession
 
     from app.api.data_collection.models.product import Product
@@ -292,3 +292,24 @@ async def test_units_endpoint_returns_available_units(api_client: AsyncClient) -
     response = await api_client.get("/v1/units")
     assert response.status_code == status.HTTP_200_OK
     assert "g" in response.json() or "kg" in response.json()
+
+
+async def test_cached_product_type_list_varies_by_search_and_filter(
+    api_client_light: AsyncClient, db_session: AsyncSession
+) -> None:
+    """Filtered lists with the same page size must not share one cache entry.
+
+    The endpoint declares no ``Request`` and its filter set's repr leaves out the search
+    term, so the key must come from the query string the cache reads for every endpoint.
+    """
+    for name in ("Laptop", "Refrigerator"):
+        await ProductTypeFactory.create_async(db_session, name=name)
+
+    def names(response: Response) -> list[str]:
+        assert response.status_code == status.HTTP_200_OK
+        return [item["name"] for item in response.json()["items"]]
+
+    assert names(await api_client_light.get("/v1/product-types?size=10&search=laptop")) == ["Laptop"]
+    assert names(await api_client_light.get("/v1/product-types?size=10&search=refrigerator")) == ["Refrigerator"]
+    assert names(await api_client_light.get("/v1/product-types?size=10&name[ilike]=%25lap%25")) == ["Laptop"]
+    assert names(await api_client_light.get("/v1/product-types?size=10&name[ilike]=%25refr%25")) == ["Refrigerator"]

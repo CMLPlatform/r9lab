@@ -77,6 +77,8 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- Cached public lists, such as product types and taxonomies, are stored per full query string.
+  A search or filter no longer gets the result of an earlier request with the same page size.
 - Registration and verification emails said the link expires in 1 hour. They now state the
   real lifetime, 1 day, and the reset email states its own.
 - Public profile statistics are counted from the owner's products and photos, so they stay
