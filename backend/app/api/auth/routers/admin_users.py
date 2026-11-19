@@ -199,8 +199,11 @@ async def set_user_active(
 
     A suspended account cannot sign in, and its refresh sessions are revoked; its
     products stay. A dedicated route for the same reason as the role route: the
-    self-service `UserUpdate` schema must never carry `is_active`.
+    self-service `UserUpdate` schema must never carry `is_active`. A request that
+    matches the current state changes nothing and is not audited.
     """
+    if user.is_active == active_update.is_active:
+        return user
     if not active_update.is_active:
         await require_other_active_superuser(user_manager.user_db.session, user, action="suspended")
         # Before the write, so a Redis failure aborts rather than leaving a suspended user with live sessions.

@@ -18,6 +18,7 @@ from app.api.application.account_erasure import get_or_create_anonymous_user
 from app.api.auth.account_guards import ANONYMOUS_USER_EMAIL, LEGACY_ANONYMOUS_USER_EMAIL
 from app.api.auth.dependencies import current_active_superuser_account
 from app.api.auth.models import OAuthAccount, User
+from app.api.auth.services.user_database import UserDatabaseAsync
 from app.api.common.audit import AuditAction, AuditContext
 from app.api.data_collection.models.product import Product
 from app.api.plugins.r9cam.models import Camera
@@ -263,6 +264,29 @@ class TestAdminUserSuspension:
         assert db_user.is_active is True
         revoke.assert_not_awaited()
         log_audit.assert_called_once_with(db_superuser.id, AuditAction.REACTIVATE, User, db_user.id)
+
+    @pytest.mark.parametrize("is_active", [True, False])
+    async def test_unchanged_state_is_a_no_op(
+        self, api_client_superuser, db_session: AsyncSession, db_user: User, *, is_active: bool
+    ) -> None:
+        """Asking for the state the account already has writes, revokes and audits nothing."""
+        db_user.is_active = is_active
+        await db_session.commit()
+
+        with (
+            patch(REVOKE) as revoke,
+            patch(AUDIT) as log_audit,
+            patch.object(UserDatabaseAsync, "update") as write,
+        ):
+            response = await api_client_superuser.put(
+                f"{ADMIN_USERS}/{db_user.id}/active", json={"is_active": is_active}
+            )
+
+        assert response.status_code == 200, response.text
+        assert response.json()["is_active"] is is_active
+        write.assert_not_called()
+        revoke.assert_not_awaited()
+        log_audit.assert_not_called()
 
     async def test_admin_cannot_suspend_themselves(
         self, api_client_superuser, db_session: AsyncSession, db_superuser: User
