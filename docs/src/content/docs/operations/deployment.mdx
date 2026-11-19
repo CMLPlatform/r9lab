@@ -128,7 +128,7 @@ App-owned services run with dropped Linux capabilities, `no-new-privileges`, PID
 
 ## Secrets and encrypted fields
 
-Access control, not application-level encryption, protects most R9lab data. Passwords are hashed. Public research records, uploaded media, public RPi camera keys, request IDs, and cache keys are not application-encrypted.
+Access control, not application-level encryption, protects most R9lab data. Passwords are hashed. Public research records, uploaded media, public r9cam keys, request IDs, and cache keys are not application-encrypted.
 
 `deploy/env/variables.toml` is the source-controlled runtime secret inventory: the secret files Compose renders under `secrets/<env>/`. Run `just env-inventory` from the repo root when onboarding a host or reviewing secret-file changes.
 

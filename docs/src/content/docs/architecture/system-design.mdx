@@ -22,7 +22,7 @@ config:
 
 graph TD
     accTitle: R9lab deployment topology
-    accDescr: Three frontends (the Expo app, the Astro landing page, and the Starlight docs) sit beside one FastAPI backend. The Expo app sends API requests to the backend, which reads and writes PostgreSQL and Redis, manages file storage, and integrates with the RPi camera API and the YouTube API.
+    accDescr: Three frontends (the Expo app, the Astro landing page, and the Starlight docs) sit beside one FastAPI backend. The Expo app sends API requests to the backend, which reads and writes PostgreSQL and Redis, manages file storage, and integrates with the r9cam API and the YouTube API.
 
     subgraph Frontends ["Frontends"]
         FrontendApp["Expo app"]
@@ -44,7 +44,7 @@ graph TD
     Backend -->|Upload / process / delete| FileStorage
 
     subgraph External ["External services"]
-        RaspberryPi["RPi camera API"]
+        RaspberryPi["r9cam API"]
         YouTube["YouTube API"]
     end
 

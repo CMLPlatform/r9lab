@@ -3,7 +3,7 @@ title: r9cam setup
 description: Set up and use the R9lab Raspberry Pi camera workflow from the platform side.
 ---
 
-This page covers the platform side: pairing a camera, checking that it is online, and using it
+r9cam is the Raspberry Pi camera plugin. This page covers the platform side: pairing a camera, checking that it is online, and using it
 during documentation. For device installation and plugin deployment, use the
 [r9cam repository](https://github.com/CMLPlatform/r9cam).
 

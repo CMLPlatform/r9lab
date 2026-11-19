@@ -13,10 +13,10 @@ Public traffic enters through Cloudflare: Tunnel for the API and app, Workers st
 - public read APIs and authenticated mutation APIs
 - uploads, media, malware scanning, and file storage
 - admin APIs
-- RPi camera device APIs and WebSocket relay
+- r9cam device APIs and WebSocket relay
 - backups, secrets, logs, telemetry, and release/security artifacts
 
-Assets: accounts, profile/privacy settings, research records, uploaded media/files, OAuth and YouTube tokens, RPi camera credentials, refresh-token state, database dumps, backup material, and runtime secrets.
+Assets: accounts, profile/privacy settings, research records, uploaded media/files, OAuth and YouTube tokens, r9cam credentials, refresh-token state, database dumps, backup material, and runtime secrets.
 
 ## Data protection
 
@@ -25,7 +25,7 @@ Data is classified by the harm its disclosure or misuse would cause:
 - **Public research data:** product records, public catalog/reference data, public dataset metadata, and intentionally public uploaded media. These may be cached when responses are public. Content-addressed assets must return 404 when missing, not fall back to the app shell.
 - **Published dataset releases:** curated, versioned snapshots deposited under an open licence with a DOI. A release is immutable and mirrored by third parties once published, so account and upload deletion remove records from the live platform without retracting anything already released. Everything entering a release is checked before deposit: pseudonymised owner identity, named attribution only for contributors who opted in, and no account, auth, or contact data.
 - **User and account data:** email addresses, usernames, profile preferences, contribution statistics, owner attribution, and account state. These are access-controlled by backend dependencies and privacy policy helpers. Viewer-dependent API responses use `no-store`, and product owner identity is redacted when profile visibility does not allow the current viewer to see it.
-- **Secrets and credentials:** passwords, auth tokens, refresh-token state, OAuth/YouTube tokens, RPi camera credentials, local camera API keys, runtime secrets, encryption keys, database passwords, and backup passwords. These must not appear in URLs, logs, browser local storage, docs examples, or analytics. Browser sessions use secure cookies; native bearer tokens use platform secure storage; local camera API keys use secure storage on native and memory-only storage on web.
+- **Secrets and credentials:** passwords, auth tokens, refresh-token state, OAuth/YouTube tokens, r9cam credentials, local camera API keys, runtime secrets, encryption keys, database passwords, and backup passwords. These must not appear in URLs, logs, browser local storage, docs examples, or analytics. Browser sessions use secure cookies; native bearer tokens use platform secure storage; local camera API keys use secure storage on native and memory-only storage on web.
 - **Uploads and metadata:** uploaded images, generic research files, derived thumbnails, image metadata, video metadata, and RPi capture metadata. Uploads are validated, malware-scanned when enabled, and size-limited before storage. Before an image reaches any storage backend (local disk or S3), it is re-oriented and its EXIF reduced to an allowlist of capture parameters (camera and lens model, exposure, focal length, ISO, white balance); GPS, vendor MakerNote blocks, serial numbers, and everything else identifying are dropped, as are XMP packets, IPTC (Photoshop) blocks, JPEG comments, and PNG text chunks. Research files are stored as submitted, since the file itself is the research artifact.
 - **Operational data:** request IDs, logs, telemetry, database dumps, and backup archives. Logs and traces must avoid tokens, passwords, OAuth material, private URLs, and sensitive personal values. Backups and dumps inherit the highest classification of their contents and are encrypted, access-controlled, and retained only for operational recovery.
 
@@ -63,7 +63,7 @@ The catch-all exception handler logs internal details and stack traces for opera
 
 ## Inbound edge
 
-Production and staging are HTTPS-only behind Cloudflare Tunnel. `infra/cloudflare/` holds the per-environment DNS records, public hostnames, tunnel ingress rules, and the Workers custom domains of the landing page and docs; `infra/cloudflare-zone/` holds the zone-wide TLS minimums, HTTPS redirects, and rulesets. The edge rules rate-limit `/v1/auth/*` per client IP, challenge authentication calls from high-risk countries, and block admin calls from them. Edge rate limiting covers the authentication endpoints only. Upload and RPi camera limits live in the application's Redis-backed limiters, which fail open when Redis is unreachable; the per-user upload quota is then the remaining bound.
+Production and staging are HTTPS-only behind Cloudflare Tunnel. `infra/cloudflare/` holds the per-environment DNS records, public hostnames, tunnel ingress rules, and the Workers custom domains of the landing page and docs; `infra/cloudflare-zone/` holds the zone-wide TLS minimums, HTTPS redirects, and rulesets. The edge rules rate-limit `/v1/auth/*` per client IP, challenge authentication calls from high-risk countries, and block admin calls from them. Edge rate limiting covers the authentication endpoints only. Upload and r9cam limits live in the application's Redis-backed limiters, which fail open when Redis is unreachable; the per-user upload quota is then the remaining bound.
 
 The application's read, write, and upload limits key anonymous requests per client IP (300, 120, and 30 a minute). A request carrying a live access token is keyed per user instead, at 1500, 600, and 300 a minute: a workshop of about 50 people often shares one demo account behind one IP, so a single user bucket has to carry the room. The token only selects the bucket; an unknown or expired token falls back to the IP bucket. The limits are the `API_*_RATE_LIMIT` and `API_*_RATE_LIMIT_PER_USER` settings. Signed-in exports also count against a per-IP ceiling (`API_EXPORT_RATE_LIMIT_SIGNED_IN_PER_IP`, 90 a minute), so throwaway accounts on one IP cannot each claim a fresh export budget. A `429` from these limiters carries `Retry-After` with the seconds left in the current window. The edge rule still counts every `/v1/auth/` request per IP (10 per 10 seconds), so a room signing in within the same few seconds sees brief 429s from the edge and succeeds on retry.
 
@@ -81,9 +81,9 @@ Prefer exact HTTPS URLs. Use trailing-slash prefixes only for integrations with 
 
 ## Denial-of-service controls
 
-Cloudflare handles volumetric attacks, and the source-controlled edge rules cover authentication and admin calls ([Inbound edge](#inbound-edge)). The application bounds uploads, RPi camera traffic, and WebSocket connections.
+Cloudflare handles volumetric attacks, and the source-controlled edge rules cover authentication and admin calls ([Inbound edge](#inbound-edge)). The application bounds uploads, r9cam traffic, and WebSocket connections.
 
-The expensive paths are media uploads, image processing and thumbnails, malware scanning, file cleanup, backups, OpenAPI generation, YouTube API calls, and RPi camera relay and HLS traffic. The backend bounds them with JSON streaming limits, multipart upload caps, file format allowlists, user upload quotas, Redis-backed route rate limits, image worker limits, ClamAV scan timeouts, bounded outbound HTTP timeouts and retries, WebSocket authentication and frame limits, and relay commands that fast-fail for cameras without a live heartbeat.
+The expensive paths are media uploads, image processing and thumbnails, malware scanning, file cleanup, backups, OpenAPI generation, YouTube API calls, and r9cam relay and HLS traffic. The backend bounds them with JSON streaming limits, multipart upload caps, file format allowlists, user upload quotas, Redis-backed route rate limits, image worker limits, ClamAV scan timeouts, bounded outbound HTTP timeouts and retries, WebSocket authentication and frame limits, and relay commands that fast-fail for cameras without a live heartbeat.
 
 Keep long-running maintenance work in `just` tasks, scripts, migrations, or background services, not request handlers. A new API path that can exceed normal client timeouts needs asynchronous processing or explicit limits before exposure.
 
@@ -129,7 +129,7 @@ Dangerous functionality is isolated in small modules and reviewed as a security-
 
 - upload byte handling, public file serving, image processing, archive and office inspection, and malware scanning live in the backend file-storage and image modules
 - outbound HTTP uses the shared client (see [Backend egress](#backend-egress))
-- RPi camera direct and relayed traffic is authenticated, rate-limited, and separated from database and storage services by Compose networks
+- r9cam direct and relayed traffic is authenticated, rate-limited, and separated from database and storage services by Compose networks
 - backup jobs read database and upload volumes but run in dedicated containers with separate secrets
 
 Encapsulate new dangerous functionality near its trust boundary, cover it with focused tests, and document it here when it changes the security model.
@@ -153,7 +153,7 @@ R9lab is a public web platform with open sign-up. We defend against:
 - a hostile web page that tries a cross-site write through a signed-in user's browser, and injected
   content that tries to run script in another user's browser
 - credential stuffing, password guessing, and floods of expensive requests
-- a compromised or misbehaving RPi camera, and an outside provider (OAuth, email, YouTube) that
+- a compromised or misbehaving r9cam, and an outside provider (OAuth, email, YouTube) that
   returns unexpected data
 - a malicious dependency, action, or contributor change that reaches a release
 
@@ -170,7 +170,7 @@ who exposes the data services against the [deployment guide](/operations/deploym
 | API to the browser          | Strict Content-Security-Policy, HSTS, `nosniff`, and `no-store` on viewer-dependent responses (`backend/app/core/middleware/response_policy.py`); `script-src 'self'` on the app and sites; see [Browser runtime policy](#browser-runtime-policy)                                                  |
 | API to data services        | PostgreSQL and Redis on the internal `data` network only, least-privilege database roles, no host ports in prod or staging (`compose.deploy.yaml`); see [Network boundaries](#network-boundaries)                                                                                                |
 | API to outside providers    | One shared client with an egress allowlist, verified TLS, no redirects, and bounded timeouts (`backend/app/core/clients/http.py`); provider tokens stored with AES-256-GCM (`backend/app/core/crypto/storage.py`)                                                                                  |
-| RPi cameras to API          | Short-lived ES256 or EdDSA device assertions checked on every call (`backend/app/api/plugins/r9cam/device_assertion.py`), rate limits, and the relay's method and path allowlist from `r9cam_models`                                                                                                     |
+| r9cams to API          | Short-lived ES256 or EdDSA device assertions checked on every call (`backend/app/api/plugins/r9cam/device_assertion.py`), rate limits, and the relay's method and path allowlist from `r9cam_models`                                                                                                     |
 | Contributors to release     | Pull requests with required CI and a DCO sign-off, digest-pinned actions and base images, Trivy before push, and signed provenance and SBOM attestations on every image (`.github/workflows/`); see [Supply chain](#supply-chain)                                                                |
 
 ### Secure design principles

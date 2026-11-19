@@ -38,7 +38,7 @@ test.describe('API reference pages', () => {
       '/api/device/',
     );
     await expect(apiNav.getByRole('separator')).toBeVisible();
-    await expect(apiNav.getByRole('link', { exact: true, name: 'RPi camera API' })).toHaveAttribute(
+    await expect(apiNav.getByRole('link', { exact: true, name: 'r9cam API' })).toHaveAttribute(
       'href',
       '/api/r9cam/',
     );
@@ -93,10 +93,10 @@ test.describe('API reference pages', () => {
     expect(scalarServiceRequests).toEqual([]);
   });
 
-  test('RPi camera API reference renders from the committed docs schema', async ({ page }) => {
+  test('r9cam API reference renders from the committed docs schema', async ({ page }) => {
     await page.goto('/api/r9cam/');
 
-    await expect(page).toHaveTitle('R9lab RPi camera API · R9lab docs');
+    await expect(page).toHaveTitle('R9lab r9cam API · R9lab docs');
     await expect(page.getByRole('heading', { name: 'Get camera status' })).toBeVisible();
     await expect(page.getByText('/camera').first()).toBeVisible();
     await expect(page.getByText(/Add API/i)).toHaveCount(0);
@@ -129,7 +129,7 @@ test.describe('API reference discoverability', () => {
     );
     await expect(sidebar.getByRole('link', { exact: true, name: 'Public API' })).toHaveCount(0);
     await expect(sidebar.getByRole('link', { exact: true, name: 'Device API' })).toHaveCount(0);
-    await expect(sidebar.getByRole('link', { exact: true, name: 'RPi camera API' })).toHaveCount(0);
+    await expect(sidebar.getByRole('link', { exact: true, name: 'r9cam API' })).toHaveCount(0);
   });
 
   for (const path of [

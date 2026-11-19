@@ -60,6 +60,11 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   the "Why" section is not pushed far down. A plate with sub-parts says how many ("258 g · 2
   parts"). Links to the app open in the same tab; links to other sites still open a new one.
   The method section numbers only its steps, and a skip link leads to the main content.
+- Every docs page links the accessibility statement from its footer. Wide tables and code blocks
+  scroll from the keyboard. The docs call the camera plugin r9cam throughout, the home page is
+  titled "R9lab documentation" and has an Install card, the 404 page links back into the docs,
+  and the menu button on a phone is flat in light mode too.
+  ([#506](https://github.com/CMLPlatform/r9lab/issues/506))
 - The welcome card on the products screen has even inner padding, the mark lines up with the
   text, and "Sign in" is a solid primary button. On wide screens the actions sit beside the text.
 - The `r9lab-backup` image is built on Debian slim with only the PostgreSQL client, not the

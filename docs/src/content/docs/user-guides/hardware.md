@@ -16,12 +16,12 @@ This is enough for useful product documentation. Upload phone photos directly.
 
 ## Tier 2: advanced capture setup
 
-- Raspberry Pi camera with the RPi camera plugin
+- Raspberry Pi camera with the r9cam plugin
 - fixed or repeatable camera position
 - controlled lighting
 - gridded mats or similar backgrounds
 
-Use this for repeatable images across many products. Gridded mats help later size and volume estimation. See [RPi camera integration](../r9cam/) for the platform-side setup.
+Use this for repeatable images across many products. Gridded mats help later size and volume estimation. See [r9cam integration](../r9cam/) for the platform-side setup.
 
 ## Practical advice
 

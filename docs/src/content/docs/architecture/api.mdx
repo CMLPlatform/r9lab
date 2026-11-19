@@ -5,7 +5,7 @@ description: How the R9lab API is organized and how the main domain surfaces fit
 
 Routes are organized by domain. One API serves the research app, the public web frontend, and external tooling. The live OpenAPI docs are the source of truth: see the [API reference overview](/api-reference/) for schemas and the [API interaction guide](../../user-guides/api/) for usage.
 
-Three surfaces: the public app API serves the frontend and external clients, the device API handles Pi-originated HTTP callbacks, and a small private set of data transfer objects (DTOs) covers backend device integration and the RPi camera plugin.
+Three surfaces: the public app API serves the frontend and external clients, the device API handles Pi-originated HTTP callbacks, and a small private set of data transfer objects (DTOs) covers backend device integration and the r9cam plugin.
 
 ## Route organization
 
@@ -76,7 +76,7 @@ Owner attribution is viewer-aware. Public profiles show product owner names to e
 
 - `/v1/plugins/r9cam/*`: camera registration, status, capture, streaming, and remote interactions
 
-The app-facing camera routes appear in the [public API reference](/api/public/). Pairing and Pi-originated callbacks appear in the [device API reference](/api/device/). The separate local camera API served by the plugin appears in the [RPi camera API reference](/api/r9cam/).
+The app-facing camera routes appear in the [public API reference](/api/public/). Pairing and Pi-originated callbacks appear in the [device API reference](/api/device/). The separate local camera API served by the plugin appears in the [r9cam API reference](/api/r9cam/).
 
 ### Supporting services
 
@@ -93,12 +93,12 @@ The app-facing camera routes appear in the [public API reference](/api/public/).
 ```mermaid
 sequenceDiagram
     accTitle: Example product and image capture interaction flow
-    accDescr: A researcher authenticates with the API, then repeatedly creates products, optionally requests an image capture that the API relays through the RPi camera API and stores in file storage, and adds components linked to the parent product.
+    accDescr: A researcher authenticates with the API, then repeatedly creates products, optionally requests an image capture that the API relays through the r9cam API and stores in file storage, and adds components linked to the parent product.
     participant Researcher
     participant API as FastAPI Backend
     participant DB as Database
     participant Storage as File Storage
-    participant RPI as RPi camera API
+    participant RPI as r9cam API
 
     Researcher->>API: Authenticate with bearer or cookie login
     API-->>Researcher: Access token and optional refresh cookie

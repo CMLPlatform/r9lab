@@ -1,7 +1,9 @@
 import process from 'node:process';
+import { satteri } from '@astrojs/markdown-satteri';
 import starlight from '@astrojs/starlight';
 import { defineConfig } from 'astro/config';
 import { securityHeaders } from './src/integrations/security-headers.ts';
+import { tableScroll } from './src/integrations/table-scroll.ts';
 
 const MODE_SITES = {
   dev: 'http://127.0.0.1:8012',
@@ -99,6 +101,7 @@ const STARLIGHT_OPTIONS = {
   head: HEAD_LINKS,
   sidebar: SIDEBAR,
   components: {
+    Footer: './src/components/Footer.astro',
     Head: './src/components/Head.astro',
     SiteTitle: './src/components/SiteTitle.astro',
     SocialIcons: './src/components/SocialIcons.astro',
@@ -124,6 +127,7 @@ export default defineConfig({
     '/operations/deploy': '/operations/deployment/',
     '/operations/upgrade-backup': '/operations/deployment/',
   },
+  markdown: { processor: satteri({ hastPlugins: [tableScroll] }) },
   vite: {
     server: {
       watch: {

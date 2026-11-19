@@ -139,11 +139,11 @@ fields, so attach anything a later reader might want to check.
 A non-image file attached to a record, such as a spreadsheet or a measurement dataset. R9lab
 stores these unchanged, without image processing.
 
-### RPi camera
+### r9cam
 
-An optional Raspberry Pi camera rig that sends photos straight into a record. You set it up once
+The name of the optional Raspberry Pi camera rig that sends photos straight into a record. You set it up once
 per camera, and the integration stays off until you turn it on. See
-[RPi camera integration](/user-guides/r9cam/).
+[r9cam integration](/user-guides/r9cam/).
 
 ### Pairing code
 

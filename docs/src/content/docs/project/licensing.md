@@ -32,7 +32,7 @@ CC licence, and Apache-2.0 carries an explicit patent grant.
 **Generate a client from the public or device schema and you inherit no copyleft.**
 
 The carve-out covers the two schemas this repository generates, `openapi.public.json` and
-`openapi.device.json`. `openapi.r9cam.json` (the [RPi camera API](/api/r9cam/)) is fetched
+`openapi.device.json`. `openapi.r9cam.json` (the [r9cam API](/api/r9cam/)) is fetched
 verbatim from the separate
 [r9cam](https://github.com/CMLPlatform/r9cam) repository and carries
 whatever licence that project sets, currently Apache-2.0 as well. Check there before reusing it.
