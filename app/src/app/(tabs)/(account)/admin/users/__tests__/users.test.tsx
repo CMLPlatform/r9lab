@@ -108,6 +108,41 @@ describe('Admin users screen', () => {
     expect(screen.getAllByText('anon@example.org')).toHaveLength(1);
   });
 
+  it('lists only the exception badges and keeps the rest for the detail view', async () => {
+    mockUseAuth.mockReturnValue({
+      user: mockUser({ isSuperuser: true, mfaEnabled: true }),
+      isLoading: false,
+    });
+    server.use(
+      http.get(`${API_URL}/admin/users`, () =>
+        HttpResponse.json({
+          items: [
+            mockAdminUser({ email: 'plain@example.org' }),
+            mockAdminUser({
+              id: 'b0b0b0b0-0000-4000-8000-000000000002',
+              email: 'lab@example.org',
+              role: 'lab',
+              is_verified: false,
+            }),
+          ],
+          total: 2,
+          page: 1,
+          size: 25,
+          pages: 1,
+        }),
+      ),
+    );
+
+    await renderWithProviders(<AdminUsersScreen />, { withDialog: true });
+
+    await waitFor(() => expect(screen.getByText('lab@example.org')).toBeOnTheScreen());
+    expect(screen.getByText('Lab')).toBeOnTheScreen();
+    // The filter button and the one badge.
+    expect(screen.getAllByText('Unverified')).toHaveLength(2);
+    expect(screen.queryByText('Contributor')).toBeNull();
+    expect(screen.queryByText('Two-step on')).toBeNull();
+  });
+
   it('pages through the results', async () => {
     mockUseAuth.mockReturnValue({
       user: mockUser({ isSuperuser: true, mfaEnabled: true }),

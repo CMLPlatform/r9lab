@@ -65,6 +65,13 @@ describe('Admin user detail screen', () => {
     });
   });
 
+  it('shows the full badge set, including the ordinary states', async () => {
+    await renderDetail();
+
+    expect(screen.getByText('Contributor')).toBeOnTheScreen();
+    expect(screen.getByText('Two-step on')).toBeOnTheScreen();
+  });
+
   it('titles a user without a username by email, once', async () => {
     await renderDetail(mockAdminUser({ id: TARGET_ID, username: null, email: 'anon@example.org' }));
 

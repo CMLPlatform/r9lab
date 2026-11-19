@@ -45,7 +45,7 @@ function UserRow({ user, onPress }: { user: AdminUser; onPress: (id: string) => 
           {user.email}
         </AppText>
       ) : null}
-      <AdminUserBadges user={user} />
+      <AdminUserBadges user={user} exceptionsOnly />
     </Pressable>
   );
 }
