@@ -1,5 +1,7 @@
 """OAuth helper DTOs and token utilities."""
 
+import base64
+import hashlib
 import secrets
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
@@ -20,6 +22,7 @@ OAUTH_PROVIDER_KEY = "oauth_provider"
 OAUTH_FLOW_KEY = "oauth_flow"
 FRONTEND_REDIRECT_URI_KEY = "frontend_redirect_uri"
 CSRF_TOKEN_COOKIE_NAME = "__Host-r9lab-oauth-csrf"  # noqa: S105 # This value is not a secret
+PKCE_VERIFIER_COOKIE_NAME = "__Host-r9lab-oauth-pkce"
 SET_COOKIE_HEADER = b"set-cookie"
 ACCESS_TOKEN_KEY = "access_token"  # noqa: S105 # This value is not a secret
 
@@ -47,6 +50,17 @@ def generate_csrf_token() -> str:
     return secrets.token_urlsafe(32)
 
 
+def generate_pkce_pair() -> tuple[str, str]:
+    """Return a PKCE code verifier and its S256 challenge (RFC 7636).
+
+    The verifier is random, never derived from the state: the state JWT is readable by
+    anyone who sees the authorization URL, so a derived verifier would be public.
+    """
+    verifier = secrets.token_urlsafe(48)
+    digest = hashlib.sha256(verifier.encode("ascii")).digest()
+    return verifier, base64.urlsafe_b64encode(digest).rstrip(b"=").decode("ascii")
+
+
 @dataclass
 class OAuthCookieSettings:
     """Configuration for OAuth CSRF cookies."""
@@ -60,9 +74,18 @@ class OAuthCookieSettings:
 
 def set_csrf_cookie(response: Response, cookie_settings: OAuthCookieSettings, csrf_token: str) -> None:
     """Set the CSRF cookie on the response."""
+    _set_flow_cookie(response, cookie_settings, cookie_settings.name, csrf_token)
+
+
+def set_pkce_cookie(response: Response, cookie_settings: OAuthCookieSettings, code_verifier: str) -> None:
+    """Set the PKCE code verifier cookie on the response, beside the CSRF cookie."""
+    _set_flow_cookie(response, cookie_settings, PKCE_VERIFIER_COOKIE_NAME, code_verifier)
+
+
+def _set_flow_cookie(response: Response, cookie_settings: OAuthCookieSettings, name: str, value: str) -> None:
     response.set_cookie(
-        cookie_settings.name,
-        csrf_token,
+        name,
+        value,
         max_age=auth_settings.oauth_state_token_ttl_seconds,
         path=cookie_settings.path,
         domain=cookie_settings.domain,

@@ -31,13 +31,16 @@ from .utils import (
     OAUTH_FLOW_KEY,
     OAUTH_PROVIDER_KEY,
     OAUTH_STATE_JWT_ALGORITHM,
+    PKCE_VERIFIER_COOKIE_NAME,
     SET_COOKIE_HEADER,
     STATE_TOKEN_AUDIENCE,
     OAuth2AuthorizeResponse,
     OAuthCookieSettings,
     generate_csrf_token,
+    generate_pkce_pair,
     generate_state_token,
     set_csrf_cookie,
+    set_pkce_cookie,
 )
 
 if TYPE_CHECKING:
@@ -75,7 +78,6 @@ def authorize_callback_dependency(
     async def authorize_callback(
         request: Request,
         code: str | None = None,
-        code_verifier: str | None = None,
         state: str | None = None,
         error: str | None = None,
     ) -> tuple[OAuth2Token, str]:
@@ -84,6 +86,11 @@ def authorize_callback_dependency(
         if state is None:
             raise OAuthInvalidStateError
         verify_oauth_state(config, request, state)
+        # The verifier never leaves the browser that started the flow, so a code taken
+        # from the redirect is useless elsewhere (PKCE, RFC 7636).
+        code_verifier = request.cookies.get(PKCE_VERIFIER_COOKIE_NAME)
+        if not code_verifier:
+            raise OAuthInvalidStateError
 
         redirect_url = config.redirect_url or str(request.url_for(callback_route_name))
         try:
@@ -140,14 +147,17 @@ async def build_authorize_response(
         claims[FRONTEND_REDIRECT_URI_KEY] = redirect_uri
 
     state = generate_state_token(build_state_data(config, csrf_token, claims), config.state_secret)
+    code_verifier, code_challenge = generate_pkce_pair()
     authorization_url = await config.oauth_client.get_authorization_url(
         authorize_redirect_url,
         state,
-        None,
+        code_challenge=code_challenge,
+        code_challenge_method="S256",
         extras_params=extras_params,
     )
 
     set_csrf_cookie(response, config.cookie_settings, csrf_token)
+    set_pkce_cookie(response, config.cookie_settings, code_verifier)
     return OAuth2AuthorizeResponse(authorization_url=authorization_url)
 
 

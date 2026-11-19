@@ -158,6 +158,8 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Security
 
+- Google and GitHub sign-in and account linking use PKCE (S256). The OAuth callbacks no longer
+  accept a `code_verifier` query parameter.
 - An open camera relay connection closes within one heartbeat (30 seconds) once the camera is
   deleted, its credential is revoked or its key rotated, or its owner is deactivated or loses
   verification.

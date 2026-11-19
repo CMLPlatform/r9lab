@@ -62,6 +62,10 @@ Security-sensitive areas:
     once the link's deletion is committed. Revocation is best effort: a failure is logged without the token and
     never blocks the unlink or the erasure. GitHub grants are not revoked by the backend; the user
     removes them in their GitHub settings.
+  - Login and account-link flows use PKCE (S256) on top of the CSRF cookie and signed state. The
+    code verifier is random, lives only in the `__Host-r9lab-oauth-pkce` cookie and is never
+    derived from the state, which anyone who sees the authorization URL can read. The callback
+    takes no verifier from the query string.
 - rate limits (the buckets and numbers are in the security reference)
   - Password login is limited per IP and by failed attempts per account, so a shared account is
     not locked by use while guessing stays capped per account.

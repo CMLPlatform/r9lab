@@ -10761,7 +10761,6 @@ export interface operations {
     parameters: {
       query?: {
         code?: string | null;
-        code_verifier?: string | null;
         state?: string | null;
         error?: string | null;
       };
@@ -10822,7 +10821,6 @@ export interface operations {
     parameters: {
       query?: {
         code?: string | null;
-        code_verifier?: string | null;
         state?: string | null;
         error?: string | null;
       };
@@ -10889,7 +10887,6 @@ export interface operations {
     parameters: {
       query?: {
         code?: string | null;
-        code_verifier?: string | null;
         state?: string | null;
         error?: string | null;
       };
@@ -10950,7 +10947,6 @@ export interface operations {
     parameters: {
       query?: {
         code?: string | null;
-        code_verifier?: string | null;
         state?: string | null;
         error?: string | null;
       };
@@ -11011,7 +11007,6 @@ export interface operations {
     parameters: {
       query?: {
         code?: string | null;
-        code_verifier?: string | null;
         state?: string | null;
         error?: string | null;
       };
@@ -11078,7 +11073,6 @@ export interface operations {
     parameters: {
       query?: {
         code?: string | null;
-        code_verifier?: string | null;
         state?: string | null;
         error?: string | null;
       };
@@ -11145,7 +11139,6 @@ export interface operations {
     parameters: {
       query?: {
         code?: string | null;
-        code_verifier?: string | null;
         state?: string | null;
         error?: string | null;
       };

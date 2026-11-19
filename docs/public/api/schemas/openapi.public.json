@@ -12121,22 +12121,6 @@
           },
           {
             "in": "query",
-            "name": "code_verifier",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Code Verifier"
-            }
-          },
-          {
-            "in": "query",
             "name": "state",
             "required": false,
             "schema": {
@@ -12259,22 +12243,6 @@
           },
           {
             "in": "query",
-            "name": "code_verifier",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Code Verifier"
-            }
-          },
-          {
-            "in": "query",
             "name": "state",
             "required": false,
             "schema": {
@@ -12383,22 +12351,6 @@
                 }
               ],
               "title": "Code"
-            }
-          },
-          {
-            "in": "query",
-            "name": "code_verifier",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Code Verifier"
             }
           },
           {
@@ -12543,22 +12495,6 @@
                 }
               ],
               "title": "Code"
-            }
-          },
-          {
-            "in": "query",
-            "name": "code_verifier",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Code Verifier"
             }
           },
           {
@@ -12717,22 +12653,6 @@
           },
           {
             "in": "query",
-            "name": "code_verifier",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Code Verifier"
-            }
-          },
-          {
-            "in": "query",
             "name": "state",
             "required": false,
             "schema": {
@@ -12855,22 +12775,6 @@
           },
           {
             "in": "query",
-            "name": "code_verifier",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Code Verifier"
-            }
-          },
-          {
-            "in": "query",
             "name": "state",
             "required": false,
             "schema": {
@@ -12979,22 +12883,6 @@
                 }
               ],
               "title": "Code"
-            }
-          },
-          {
-            "in": "query",
-            "name": "code_verifier",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Code Verifier"
             }
           },
           {
