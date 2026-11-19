@@ -13,6 +13,9 @@ ______________________________________________________________________
 Once per machine, not per release. `just watchdog prod` reports each missing piece as a distinct
 alert.
 
+Commands in this runbook read `BACKUP_HOST_DIR` from the shell. Load it from the host's `.env`
+first: `export BACKUP_HOST_DIR="$(sed -n 's/^BACKUP_HOST_DIR=//p' .env)"`.
+
 ### 1.0 Docker daemon log rotation (fallback)
 
 The Compose files cap every stack service's logs (`max-size: 10m`, `max-file: 3`). Set the same

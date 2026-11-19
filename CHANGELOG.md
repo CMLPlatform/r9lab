@@ -32,7 +32,7 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   devcontainer: the workspace is now `/opt/r9lab`.
 - Before deploying this release, create the erasure ledger directory on each host; the API and the
   migrator do not start without it:
-  `mkdir -p "${BACKUP_HOST_DIR:-./backups}/erasure-ledger" && sudo chown 65532:65532 "${BACKUP_HOST_DIR:-./backups}/erasure-ledger"`.
+  `dir="$(sed -n 's/^BACKUP_HOST_DIR=//p' .env)"; sudo install -d -o 65532 -g 65532 -m 0700 "${dir:-./backups}/erasure-ledger"`.
 - The repository is now `CMLPlatform/r9lab`. Point existing checkouts at it:
   `git remote set-url origin https://github.com/CMLPlatform/r9lab.git`. GitHub redirects the old
   name for now.
