@@ -41,6 +41,7 @@ from xdist.workermanage import (
     WorkerController,  # noqa: TC002 -- needed at runtime, pytest inspects hook signatures eagerly
 )
 
+from app.core.config.core import settings
 from app.core.logging import setup_logging
 
 if TYPE_CHECKING:
@@ -333,3 +334,11 @@ def mock_google_token_revocation(mocker: MockerFixture) -> AsyncMock:
         "app.api.auth.services.oauth.clients.google_oauth_client.revoke_token",
         new_callable=AsyncMock,
     )
+
+
+@pytest.fixture(autouse=True)
+def erasure_ledger_path(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
+    """Keep every account erasure in a test from appending to the checkout's ledger."""
+    path = tmp_path / "erasure-ledger" / "erasures.jsonl"
+    monkeypatch.setattr(settings, "erasure_ledger_path", path)
+    return path

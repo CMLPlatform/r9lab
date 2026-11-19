@@ -631,6 +631,7 @@ assert_deploy_mounts_writable() {
     backup_dir="$(dotenv_value BACKUP_HOST_DIR)"
     local -a mounts=(
         "api /opt/r9lab/backend/data/uploads volume:user_uploads"
+        "api /opt/r9lab/backend/data/erasure-ledger host:${backup_dir:-./backups}/erasure-ledger"
         "backup /var/cache/restic volume:restic_cache"
         "backup /restic host:${backup_dir:-./backups}/restic"
     )

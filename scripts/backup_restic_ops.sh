@@ -736,6 +736,14 @@ restore_postgres() {
     # is idempotent and already mounted: it hands ownership to the migration role and
     # restores every grant.
     docker exec "$pg_container" bash /docker-entrypoint-initdb.d/provision.sh >/dev/null
+
+    # Accounts erased after the dump was taken came back with it: erase them again from
+    # the ledger before the API takes writes. The migrator entrypoint first brings the
+    # schema to this release's head, which the erasure code expects. A failed replay
+    # leaves the API stopped.
+    echo "Replaying the erasure ledger"
+    (cd "$ROOT_DIR" && run_deploy_compose "$env" --profile migrations run --rm --no-deps -T migrator \
+        .venv/bin/python -m scripts.maintenance.replay_erasures)
     RESTORE_OK=true
 
     echo "✅ Restored $env from snapshot '$snapshot'"

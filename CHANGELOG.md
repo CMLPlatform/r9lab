@@ -30,6 +30,9 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Developers: run `docker compose -p relab_dev down` (and `relab_test`, `relab_e2e`) before the
   first `just dev-up`. The old dev database is not carried over, so seed it again. Rebuild the
   devcontainer: the workspace is now `/opt/r9lab`.
+- Before deploying this release, create the erasure ledger directory on each host; the API and the
+  migrator do not start without it:
+  `mkdir -p "${BACKUP_HOST_DIR:-./backups}/erasure-ledger" && sudo chown 65532:65532 "${BACKUP_HOST_DIR:-./backups}/erasure-ledger"`.
 - The repository is now `CMLPlatform/r9lab`. Point existing checkouts at it:
   `git remote set-url origin https://github.com/CMLPlatform/r9lab.git`. GitHub redirects the old
   name for now.
@@ -42,6 +45,12 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - The public web app routes (products, a product, a profile, sign-in, sign-up) carry a
   `<meta name="description">`, taken from the product's description on a product page.
   ([#504](https://github.com/CMLPlatform/r9lab/issues/504))
+- Account erasures hold across a database restore. Each erasure is appended to a ledger in
+  `BACKUP_HOST_DIR/erasure-ledger`, outside Postgres, holding only the account id, the content
+  policy and the time. `just restore` brings the schema to the release's head and replays the
+  ledger before the API starts, so an account erased after the dump was taken is erased again.
+  An erasure whose ledger entry cannot be written fails instead of committing.
+  ([#523](https://github.com/CMLPlatform/r9lab/issues/523))
 - r9cam cameras can sign their device tokens with EdDSA (Ed25519) as well as ES256. Each camera
   may use only the algorithm of the key it paired with. The backend now uses r9cam-models
   0.7.0, which accepts Ed25519 public keys at pairing. ([#501](https://github.com/CMLPlatform/r9lab/issues/501))

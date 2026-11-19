@@ -138,6 +138,13 @@ Security-sensitive areas:
     authenticated with, or its owner fails the bar above. A re-check that errors or takes over 5 s
     keeps the socket once; two in a row close it with 1011, and the device authenticates again.
 - backups, secrets, logs, and telemetry
+  - Every account erasure is appended to a ledger file on the backup disk, outside Postgres
+    (`erasure_ledger_path`). A line holds the account's UUID, the content policy (`anonymize` or
+    `delete`) and the UTC time: no email address, name or other account field. The entry is
+    fsynced before the erasure commits, and a failed write fails the erasure, so no committed
+    erasure is missing from it. `just restore` replays the ledger through `erase_user` before the
+    API starts, so a restored dump cannot bring an erased account back. The file is mode 0600 and
+    owned by the app uid; only the API appends to it, and the migrator mounts it read-only.
 - release and security artifacts: the GHCR images the hosts pull, and the landing page and docs
   deploy, whose Cloudflare API token is a GitHub Environment secret holding only Workers
   Scripts: Edit. A token granted on all Workers is not scoped to one environment, so every

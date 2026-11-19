@@ -92,6 +92,15 @@ services:
     secrets: *api-runtime-secrets
     tmpfs:
       - /tmp:mode=1777
+    volumes:
+      # The erasure ledger sits on the backup disk, outside Postgres, so a database
+      # restore cannot roll it back; `just restore` replays it. No create_host_path: an
+      # unmounted disk must stop the API, not hand it an empty ledger.
+      - type: bind
+        source: ${BACKUP_HOST_DIR:-./backups}/erasure-ledger
+        target: /opt/r9lab/backend/data/erasure-ledger
+        bind:
+          create_host_path: false
     environment:
       !!merge <<: [*backend-public-origins, *backend-host-overrides]
       ENVIRONMENT: ${ENVIRONMENT:?ENVIRONMENT must be set}
@@ -229,6 +238,14 @@ services:
       ENVIRONMENT: ${ENVIRONMENT:?ENVIRONMENT must be set}
     tmpfs:
       - /tmp:mode=1777
+    volumes:
+      # Read by the erasure replay that `just restore` runs in this image.
+      - type: bind
+        source: ${BACKUP_HOST_DIR:-./backups}/erasure-ledger
+        target: /opt/r9lab/backend-migrations/data/erasure-ledger
+        read_only: true
+        bind:
+          create_host_path: false
 
   backup:
     # Encrypted logical PostgreSQL + user upload backups.

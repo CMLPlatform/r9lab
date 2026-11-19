@@ -26,6 +26,9 @@ playground.ipynb
 # User-uploaded data
 data/uploads/*
 
+# Account erasure ledger (written by local account deletions)
+data/erasure-ledger/
+
 # Cache files
 data/cache/*
 

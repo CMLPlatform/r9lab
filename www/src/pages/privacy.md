@@ -2,7 +2,7 @@
 layout: ../layouts/ContentLayout.astro
 title: Privacy policy
 description: Privacy information for R9lab accounts, contributions, and email preferences.
-meta: "Last updated: October 8, 2026"
+meta: "Last updated: November 19, 2026"
 intro: This policy explains what we collect, how we use it, and what choices you have.
 ---
 
@@ -54,7 +54,7 @@ External videos are the exception, which is why they never load on their own. Ch
 
 **Account holders:** You can view, update, and delete your account in the app. Deleting it erases your account details: your email address, username, sign-ins, and cameras. Your products, photos, and any text you wrote in product records stay public without your name. That includes the original file names of your photos. To have your uploads removed as well, email us.
 
-**Backups:** Deleting your account or your uploads removes them from the live platform straight away. Copies stay in our encrypted backups until those backups expire, which takes up to 13 months. Backups we take by hand before maintenance are kept until we delete them. We use backups only to restore the service.
+**Backups:** Deleting your account or your uploads removes them from the live platform straight away. Copies stay in our encrypted backups until those backups expire, which takes up to 13 months. Backups we take by hand before maintenance are kept until we delete them. We use backups only to restore the service. So that a restore cannot bring a deleted account back, we keep a list of the internal ids of deleted accounts, with no names or email addresses, and delete those accounts again after every restore.
 
 **Your rights:** You can ask for a copy of the personal data we hold about you, have it corrected, have it deleted, have our use of it restricted, object to our use of it, or receive it in a portable form. Where you gave consent (for optional update emails, for example), you can withdraw it at any time. Withdrawing does not affect what we did before you withdrew. One limit: a published dataset release cannot be recalled, so deletion removes your records from the platform but cannot retract a release that is already out.
 

@@ -268,6 +268,9 @@ class CoreSettings(RelabBaseSettings):
     image_storage_path: Path = uploads_path / "images"
     static_files_path: Path = BACKEND_DIR / "app" / "static"
     log_path: Path = BACKEND_DIR / "logs"
+    # Outside Postgres on purpose, so a database restore cannot roll it back; deploys bind
+    # it from the backup disk (compose.deploy.yaml).
+    erasure_ledger_path: Path = BACKEND_DIR / "data" / "erasure-ledger" / "erasures.jsonl"
 
     @property
     def debug(self) -> bool:

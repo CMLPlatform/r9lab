@@ -35,8 +35,14 @@ start without it (`create_host_path: false`), so Docker cannot create an empty d
 like a real mount. **The repository is never created automatically**, and backup runs never create
 one. Never run `backup-init` on a host that already has backups.
 
+The `erasure-ledger` directory beside it holds the account erasure ledger, which the API appends to
+on every account deletion. It lives outside Postgres so that `just restore` can erase those
+accounts again after loading an older dump. The API and the migrator refuse to start without it,
+for the same reason as the restic directory. Never delete or truncate it: an entry lost there is an
+erased account that a restore brings back.
+
 ```bash
-mkdir -p "${BACKUP_HOST_DIR:-./backups}/restic"
+mkdir -p "${BACKUP_HOST_DIR:-./backups}/restic" "${BACKUP_HOST_DIR:-./backups}/erasure-ledger"
 sudo chown -R 65532:65532 "${BACKUP_HOST_DIR:-./backups}"
 just backup-init prod     # creates the repository, marks the uploads volume
 just backup prod          # takes the first snapshot
@@ -528,7 +534,21 @@ For a real restore, pick the snapshot and restore it into the live database:
 
 ```bash
 just snapshots prod           # read-only; ids, dates, and dump sizes
-just restore prod YES <id>    # stops the api, restores, restarts it; a failed restore leaves it stopped
+just restore prod YES <id>    # stops the api, restores, replays erasures, restarts it; a failure leaves it stopped
+```
+
+Before the API starts again, the restore runs `scripts.maintenance.replay_erasures` in the migrator
+image. The migrator entrypoint first brings the schema to the release's head, then the replay reads
+the erasure ledger and erases again every account in it that the restored database still holds,
+through the same code path as a deletion in the API. Accounts already gone are skipped, so running
+it again is harmless. An unreadable ledger line or an account it cannot erase fails the restore and
+leaves the API stopped; the log names the line or the account id. To run it by hand:
+
+```bash
+just stack prod compose stop api
+just stack prod compose --profile migrations run --rm --no-deps -T migrator \
+    .venv/bin/python -m scripts.maintenance.replay_erasures
+just stack prod up YES
 ```
 
 These restore Postgres only. User uploads need a separate manual restore; see "Marker missing, and
