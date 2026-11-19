@@ -141,6 +141,18 @@ class TestAdminUsersActions:
             context=AuditContext(operation="erase_anonymize"),
         )
 
+    async def test_admin_cannot_delete_themselves(
+        self, api_client_superuser, db_session: AsyncSession, db_superuser: User
+    ) -> None:
+        """Self-deletion goes through DELETE /users/me, which asks for re-authentication."""
+        with patch(REVOKE) as revoke:
+            response = await api_client_superuser.delete(f"{ADMIN_USERS}/{db_superuser.id}")
+
+        assert response.status_code == 400
+        await db_session.refresh(db_superuser)
+        assert db_superuser.is_active is True
+        revoke.assert_not_awaited()
+
     async def test_superuser_updates_a_user_and_audits_the_actor(
         self, api_client_superuser, db_superuser: User, db_user: User
     ) -> None:
@@ -429,25 +441,32 @@ class TestAdminUserErasure:
         self, api_client_superuser, db_session: AsyncSession, db_superuser: User
     ) -> None:
         """The only remaining admin keeps both their account and their sessions."""
+        target = await UserFactory.create_async(
+            session=db_session, is_active=True, is_superuser=True, mfa_enabled=True, refresh_instance=True
+        )
+        # Stands in for a concurrent suspension of the acting admin by the target.
+        db_superuser.is_active = False
+        await db_session.commit()
+
         with patch("app.api.application.routers.account_erasure.revoke_user_refresh_tokens") as revoke:
-            response = await api_client_superuser.delete(f"{ADMIN_USERS}/{db_superuser.id}")
+            response = await api_client_superuser.delete(f"{ADMIN_USERS}/{target.id}")
 
         assert response.status_code == 409
-        assert await _row_exists(db_session, select(User.id).where(User.id == db_superuser.id))
+        assert await _row_exists(db_session, select(User.id).where(User.id == target.id))
         # A refused erasure must have no side effects: the admin is not logged out.
         revoke.assert_not_called()
 
     async def test_superuser_can_be_deleted_while_another_one_is_active(
-        self, api_client_superuser, db_session: AsyncSession, db_superuser: User
+        self, api_client_superuser, db_session: AsyncSession
     ) -> None:
-        """The guard blocks only the last admin, not admins in general."""
-        await UserFactory.create_async(session=db_session, is_active=True, is_superuser=True)
+        """The guard blocks only the last admin; the actor still counts as one."""
+        target = await UserFactory.create_async(session=db_session, is_active=True, is_superuser=True)
         await db_session.flush()
 
-        response = await api_client_superuser.delete(f"{ADMIN_USERS}/{db_superuser.id}")
+        response = await api_client_superuser.delete(f"{ADMIN_USERS}/{target.id}")
 
         assert response.status_code == 204
-        assert not await _row_exists(db_session, select(User.id).where(User.id == db_superuser.id))
+        assert not await _row_exists(db_session, select(User.id).where(User.id == target.id))
 
     async def test_anonymous_system_account_cannot_be_deleted(
         self, api_client_superuser, db_session: AsyncSession
