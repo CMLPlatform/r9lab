@@ -166,8 +166,9 @@ def stream_account_archive(archive: AccountArchive) -> Iterator[bytes]:
                 missing.append(upload.arcname)
                 continue
             try:
-                # from_file records the size, so entries over 4 GiB get ZIP64 headers.
-                info = zipfile.ZipInfo.from_file(upload.path, upload.arcname)
+                # from_file records the size, so entries over 4 GiB get ZIP64 headers. A file
+                # dated before 1980, which ZIP cannot store, gets 1980-01-01 rather than ValueError.
+                info = zipfile.ZipInfo.from_file(upload.path, upload.arcname, strict_timestamps=False)
                 source = upload.path.open("rb")
             except OSError:
                 missing.append(upload.arcname)

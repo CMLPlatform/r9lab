@@ -1,6 +1,9 @@
 """Unit tests for the account archive stream and route."""
 
+import io
 import logging
+import os
+import zipfile
 from pathlib import Path
 from typing import TYPE_CHECKING
 from unittest.mock import MagicMock
@@ -64,3 +67,15 @@ def test_a_read_error_mid_copy_is_logged_with_the_file_and_stops_the_stream(
         list(stream_account_archive(archive))
 
     assert "images/7/abc.gif" in caplog.text
+
+
+def test_a_file_dated_before_1980_is_archived(tmp_path: Path) -> None:
+    """ZIP cannot store a pre-1980 time; the entry gets 1980-01-01 instead of failing the download."""
+    photo = tmp_path / "old.jpg"
+    photo.write_bytes(b"old photo")
+    os.utime(photo, (0, 0))  # 1970-01-01
+    archive = AccountArchive(data_files={}, uploads=[ArchiveUpload(arcname="images/7/old.jpg", path=photo)])
+
+    with zipfile.ZipFile(io.BytesIO(b"".join(stream_account_archive(archive)))) as zf:
+        assert zf.read("images/7/old.jpg") == b"old photo"
+        assert zf.getinfo("images/7/old.jpg").date_time[0] == 1980
