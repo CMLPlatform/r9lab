@@ -46,7 +46,7 @@ Email [info@r9lab.io](mailto:info@r9lab.io), or open an issue on [GitHub](https:
 
 ## How we check
 
-Automated checks use axe, a testing tool, against the level A and AA rules for WCAG 2.0, 2.1 and 2.2. They run in Chromium and cover these screens. All three scans run on every pull request.
+Automated checks use axe, a testing tool, against the level A and AA rules for WCAG 2.0, 2.1 and 2.2. They run in Chromium and cover these screens. Each scan runs on every pull request that changes that part.
 
 - Website: the landing page in both themes, the privacy, terms and accessibility pages ([landing.spec.ts](https://github.com/CMLPlatform/r9lab/blob/main/www/e2e/landing.spec.ts), [accessibility.spec.ts](https://github.com/CMLPlatform/r9lab/blob/main/www/e2e/accessibility.spec.ts)).
 - Documentation site: every page, at desktop and phone width, plus the home page in the dark theme. The API reference viewer itself is left out because it is third-party ([accessibility.spec.ts](https://github.com/CMLPlatform/r9lab/blob/main/docs/e2e/accessibility.spec.ts)).

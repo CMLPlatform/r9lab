@@ -79,13 +79,18 @@ function routeOf(file: string): string {
   return route === '/404.html' ? '/no-such-page/' : route;
 }
 
+const PAGES = builtPages().map(routeOf);
+// An empty or half-built dist/ would otherwise generate no tests and pass.
+if (PAGES.length < 20)
+  throw new Error(`dist/ has only ${PAGES.length} pages; build the site first`);
+
 // Wide tables and code blocks only overflow, and so only fail the scrollable-region
 // rule, on a phone: scan at both widths.
 for (const width of [1280, 375]) {
   test.describe(`Accessibility, every page at ${width}px`, () => {
     test.use({ viewport: { width, height: 800 } });
 
-    for (const route of builtPages().map(routeOf)) {
+    for (const route of PAGES) {
       test(`${route} has no accessibility violations`, async ({ page }) => {
         await page.goto(route);
         const results = await analyzePage(page, { exclude: ['#api-reference'] });

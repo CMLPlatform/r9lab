@@ -9,7 +9,10 @@ describe('Layout', () => {
       slots: { default: '<p>body</p>' },
     });
     expect(html).toContain('<main id="main"');
-    expect(html.indexOf('href="#main"')).toBeGreaterThan(-1);
-    expect(html.indexOf('href="#main"')).toBeLessThan(html.indexOf('<header'));
+    const skip = html.indexOf('href="#main"');
+    const header = html.indexOf('<header');
+    expect(skip).toBeGreaterThan(-1);
+    expect(header).toBeGreaterThan(-1);
+    expect(skip).toBeLessThan(header);
   });
 });

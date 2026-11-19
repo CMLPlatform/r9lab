@@ -76,7 +76,12 @@ test('diagrams fit their frame and open full size in a new tab', async ({ page }
 // The accessibility statement lives on the main site; the directive asks for a
 // link on every page, so the footer override must carry it everywhere.
 test('every page links the accessibility statement from the footer', async ({ page }) => {
-  for (const path of ['/', '/user-guides/getting-started/', '/architecture/r9cam/']) {
+  for (const path of [
+    '/',
+    '/user-guides/getting-started/',
+    '/architecture/r9cam/',
+    '/api/public/',
+  ]) {
     await page.goto(path);
     await expect(
       page.getByRole('link', { name: 'Accessibility statement' }),
