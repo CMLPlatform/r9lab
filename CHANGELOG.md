@@ -73,9 +73,10 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   parts"). Links to the app open in the same tab; links to other sites still open a new one.
   The method section numbers only its steps, and a skip link leads to the main content.
 - Every docs page links the accessibility statement from its footer. Wide tables and code blocks
-  scroll from the keyboard. The docs call the camera plugin r9cam throughout, the home page is
-  titled "R9lab documentation" and has an Install card, the 404 page links back into the docs,
-  and the menu button on a phone is flat in light mode too.
+  scroll from the keyboard: the docs now render Markdown with `@astrojs/markdown-satteri`, and a
+  table plugin wraps each table in a scroll region. The docs call the camera plugin r9cam
+  throughout, the home page is titled "R9lab documentation" and has an Install card, the 404 page
+  links back into the docs, and the menu button on a phone is flat in light mode too.
   ([#506](https://github.com/CMLPlatform/r9lab/issues/506))
 - The docs accessibility scan covers every built page at desktop and phone width, and the
   accessibility statement says it runs on every pull request.
