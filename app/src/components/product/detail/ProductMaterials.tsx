@@ -97,8 +97,14 @@ export default function ProductMaterials({ product, editMode = false, canEdit = 
         ))}
       </LayoutAnimationConfig>
       {materials.length === 0 ? (
-        // Unset, like an empty spec row: a dash.
-        <AppText className="mb-2">—</AppText>
+        editMode ? (
+          <AppText className="mb-2 px-4 text-muted-foreground">No materials yet.</AppText>
+        ) : (
+          // Unset, like an empty spec row: a dash.
+          <AppText accessibilityLabel="None recorded" className="mb-2">
+            —
+          </AppText>
+        )
       ) : null}
       {materials.length > 0 ? (
         <AppText variant="caption" className="mb-2 px-4 text-muted-foreground">

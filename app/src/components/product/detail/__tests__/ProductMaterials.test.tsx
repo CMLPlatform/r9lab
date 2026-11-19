@@ -31,6 +31,7 @@ describe('ProductMaterials', () => {
     await render(<ProductMaterials product={withMaterials([])} />);
 
     expect(screen.getByRole('header', { name: 'Materials' })).toBeOnTheScreen();
+    expect(screen.getByLabelText('None recorded')).toBeOnTheScreen();
     expect(screen.getByText('—')).toBeOnTheScreen();
     expect(screen.queryByText('(0)')).toBeNull();
     expect(screen.queryByRole('button')).toBeNull();
@@ -41,6 +42,8 @@ describe('ProductMaterials', () => {
     await render(<ProductMaterials product={withMaterials([])} editMode />);
 
     expect(screen.getByText('Add material')).toBeOnTheScreen();
+    expect(screen.getByText('No materials yet.')).toBeOnTheScreen();
+    expect(screen.queryByText('—')).toBeNull();
   });
 
   // An unsaved draft has no id to record against.
