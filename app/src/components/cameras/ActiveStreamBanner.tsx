@@ -42,7 +42,7 @@ const SAVE_BAR_DOCK_ROUTE = /^\/(products|components)\/(?!new$)[^/]+$/;
 // Not exported (react-refresh/only-export-components); the test duplicates it.
 // Estimate of SaveBar's widest content, not a measured value.
 const SAVE_BAR_DOCK_RESERVE = 400;
-// Below md the SaveBar sits in flow above BottomNav; reserve the tallest
+// Below md the SaveBar floats above BottomNav like the FAB; reserve the tallest
 // two-row SaveBar. Absolute baseline from the tab scene's bottom, not additive.
 const FLOW_SAVE_BAR_CLEARANCE = 120;
 

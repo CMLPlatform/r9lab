@@ -1,7 +1,7 @@
 import type { ComponentProps, RefObject } from 'react';
 import { useContext } from 'react';
 import type { NativeScrollEvent, NativeSyntheticEvent, ScrollView } from 'react-native';
-import { View } from 'react-native';
+import { Platform, View } from 'react-native';
 import {
   KeyboardAwareScrollView,
   type KeyboardAwareScrollViewRef,
@@ -10,9 +10,11 @@ import { AppText } from '@/components/base/AppText';
 import { PageContainer } from '@/components/base/PageContainer';
 import { Section } from '@/components/base/Section';
 import { SectionNavContext } from '@/components/base/SectionNavContext';
+import { BOTTOM_NAV_CLEARANCE, useBottomNavVisible } from '@/components/base/useBottomNav';
 import { ExportMenu } from '@/components/product/ExportMenu';
 import ProductDelete from '@/components/product/ProductDelete';
 import ProductImageGallery from '@/components/product/ProductImageGallery';
+import { PRODUCTS_LIST_FAB_CLEARANCE } from '@/components/product/products-screen/shared';
 import { type MissingField, missingFields } from '@/features/products/missingFields';
 import { useAnchoredSectionNav } from '@/hooks/useAnchoredSectionNav';
 import type { Product } from '@/types/Product';
@@ -112,6 +114,12 @@ export function ProductPageContent({
     anchoredNav?.scrollTo(field.target);
   };
 
+  // The Edit FAB and the SaveBar float over the content: the last row scrolls above them.
+  const bottomNavVisible = useBottomNavVisible();
+  const fabClearance =
+    PRODUCTS_LIST_FAB_CLEARANCE +
+    (Platform.OS === 'web' && bottomNavVisible ? BOTTOM_NAV_CLEARANCE : 0);
+
   const sectionProps: SectionRenderProps = {
     product,
     editMode,
@@ -134,7 +142,7 @@ export function ProductPageContent({
       // KeyboardAwareScrollView forwards the real ScrollView instance; the two
       // ref shapes are runtime-compatible.
       ref={scrollRef as unknown as RefObject<KeyboardAwareScrollViewRef>}
-      contentContainerStyle={{ gap: 15, paddingBottom: 5 }}
+      contentContainerStyle={{ gap: 15, paddingBottom: fabClearance }}
       onScroll={onScroll}
       scrollEventThrottle={16}
       // The first tap on a button (Add material) must not only dismiss the keyboard.
