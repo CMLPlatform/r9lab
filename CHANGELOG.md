@@ -57,9 +57,7 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - The `r9lab-backup` image is built on Debian slim with only the PostgreSQL client, not the
   full `postgres:18` server image. It is about 71 MB to pull instead of 186 MB.
 - The landing page and docs Workers are named `r9lab-www-<env>` and `r9lab-docs-<env>`.
-- `just images-verify` checks images against `CMLPlatform/r9lab`. Only `sha-8697ebf`, published
-  between the deployment rename and the repository rename, still verifies against the old
-  repository name.
+- `just images-verify` checks images against `CMLPlatform/r9lab`.
 - `RELAB_ENVIRONMENT` is gone from `compose.deploy.yaml`; only `R9LAB_ENVIRONMENT` is set.
 - The dataset release build reads only `R9LAB_PSEUDONYM_SALT` (the `RELAB_PSEUDONYM_SALT`
   fallback is removed) and rejects salts shorter than 32 characters.

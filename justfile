@@ -666,11 +666,6 @@ images-verify env tag:
     . scripts/deploy_ops.sh
     require_image_tag "$tag"
     repo="${GITHUB_REPOSITORY:-CMLPlatform/r9lab}"
-    # Built under the r9lab image names but before the repository rename, so signed by
-    # CMLPlatform/relab. Only these exact tags trust the old name, which anyone could
-    # now re-create.
-    # TODO(drop-by 2027-01-13): remove once no host runs or can roll back to these tags.
-    case "$tag" in sha-8697ebf) [[ -n "${GITHUB_REPOSITORY:-}" ]] || repo=CMLPlatform/relab ;; esac
     registry="${IMAGE_REGISTRY:-ghcr.io/cmlplatform}"
     # Staging deliberately accepts a manual publish of any branch. A release publishes
     # from the event of its tag; a manual prod publish runs on main.
