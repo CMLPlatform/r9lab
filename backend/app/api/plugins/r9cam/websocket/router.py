@@ -269,8 +269,9 @@ async def _get_camera(camera_id: UUID4) -> Camera | None:
 async def _camera_still_authorised(session: _RelayWebSocketSession) -> bool:
     """Return whether the camera may still hold the socket with the credential it authenticated with.
 
-    The heartbeat runs this each tick, so revoking or rotating the credential, deleting the
-    camera, or deactivating its owner ends the tunnel within one heartbeat interval.
+    The heartbeat runs this each tick. It tolerates one failed re-check, so revoking or
+    rotating the credential, deleting the camera, or deactivating its owner ends the tunnel
+    within about two heartbeat intervals (~65 s with the re-check timeout).
     """
     camera = await _get_camera(session.camera_id)
     return (

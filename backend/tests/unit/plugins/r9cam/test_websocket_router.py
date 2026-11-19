@@ -105,6 +105,42 @@ async def test_connect_logs_unexpected_background_task_failure() -> None:
     assert str(camera_id) in logged_unexpected[0].args
 
 
+async def test_connect_keeps_the_credential_the_camera_authenticated_with() -> None:
+    """The session holds the camera's relay key, which each heartbeat re-check compares against.
+
+    Without it the first re-check sees a differing key and closes every tunnel with 1008.
+    """
+    websocket = MagicMock()
+    websocket.headers = {}
+    websocket.client = SimpleNamespace(host="203.0.113.10")
+    websocket.accept = AsyncMock()
+    manager = MagicMock()
+    manager.register = AsyncMock()
+    manager.unregister = MagicMock(return_value=False)
+    jwk = {"kty": "EC", "crv": "P-256", "x": "x-coordinate", "y": "y-coordinate"}
+    camera = SimpleNamespace(relay_key_id="cam-key-1", relay_public_key_jwk=jwk)
+    sessions: list[_RelayWebSocketSession] = []
+
+    async def _record_session(_websocket: object, session: _RelayWebSocketSession) -> None:
+        sessions.append(session)
+
+    async def _hang_forever(*_args: object, **_kwargs: object) -> None:
+        await asyncio.Event().wait()
+
+    with (
+        patch("app.api.plugins.r9cam.websocket.router._authenticate", new=AsyncMock(return_value=camera)),
+        patch("app.api.plugins.r9cam.websocket.router.get_connection_manager", return_value=manager),
+        patch("app.api.plugins.r9cam.websocket.router.require_connection_redis", return_value=AsyncMock()),
+        patch("app.api.plugins.r9cam.websocket.router._receive_loop", new=_record_session),
+        patch("app.api.plugins.r9cam.websocket.router.run_relay_listener", new=_hang_forever),
+        patch("app.api.plugins.r9cam.websocket.router._heartbeat_loop", new=_hang_forever),
+        patch("app.api.plugins.r9cam.websocket.router.mark_camera_offline", new=AsyncMock()),
+    ):
+        await camera_websocket_connect(websocket, uuid4())
+
+    assert [(s.relay_key_id, s.relay_public_key_jwk) for s in sessions] == [("cam-key-1", jwk)]
+
+
 async def test_session_text_frame_sanitizes_camera_id_in_log() -> None:
     """Invalid JSON logging should neutralize line breaks in camera IDs."""
     camera_id = uuid4()
