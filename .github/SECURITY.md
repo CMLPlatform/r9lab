@@ -153,6 +153,10 @@ Security-sensitive areas:
     admin section is hidden from other accounts, but that is presentation only.
   - Suspending an account (`PUT /v1/admin/users/{user_id}/active`) revokes its refresh sessions
     before the write, and refuses the acting admin's own account and the last active superuser.
+    The last-superuser guard locks every active superuser in id order, so two admins acting on
+    each other queue instead of deadlocking.
+  - The anonymous system account, which owns anonymized content, refuses every admin write
+    (`409`) and is left out of `GET /v1/admin/users` (`account_guards.py`).
   - No admin route sets `is_verified` or `is_superuser`: verification proves control of the
     mailbox, and OAuth sign-in links by email only to verified accounts.
 - RPi camera device APIs and WebSocket relay

@@ -14,11 +14,8 @@ from uuid import uuid4
 import pytest
 from sqlalchemy import Select, select
 
-from app.api.application.account_erasure import (
-    ANONYMOUS_USER_EMAIL,
-    LEGACY_ANONYMOUS_USER_EMAIL,
-    get_or_create_anonymous_user,
-)
+from app.api.application.account_erasure import get_or_create_anonymous_user
+from app.api.auth.account_guards import ANONYMOUS_USER_EMAIL, LEGACY_ANONYMOUS_USER_EMAIL
 from app.api.auth.dependencies import current_active_superuser_account
 from app.api.auth.models import OAuthAccount, User
 from app.api.common.audit import AuditAction, AuditContext
@@ -374,15 +371,59 @@ class TestAdminUserErasure:
 
         assert response.status_code == 422
 
-    async def test_anonymous_account_stays_listable(self, api_client_superuser, db_session: AsyncSession) -> None:
-        """The system account's address must survive UserRead's EmailStr validation."""
+    async def test_anonymous_account_is_not_listed(
+        self, api_client_superuser, db_session: AsyncSession, db_user: User
+    ) -> None:
+        """The system account is not an account to manage, so the list leaves it out."""
         await get_or_create_anonymous_user(db_session)
         await db_session.flush()
 
         response = await api_client_superuser.get(ADMIN_USERS)
 
         assert response.status_code == 200
-        assert ANONYMOUS_USER_EMAIL in [item["email"] for item in response.json()["items"]]
+        emails = [item["email"] for item in response.json()["items"]]
+        assert ANONYMOUS_USER_EMAIL not in emails
+        assert db_user.email in emails
+
+    async def test_anonymous_account_stays_readable(self, api_client_superuser, db_session: AsyncSession) -> None:
+        """Its address must survive UserRead's EmailStr validation on the detail route."""
+        anonymous = await get_or_create_anonymous_user(db_session)
+        await db_session.flush()
+
+        response = await api_client_superuser.get(f"{ADMIN_USERS}/{anonymous.id}")
+
+        assert response.status_code == 200
+        assert response.json()["email"] == ANONYMOUS_USER_EMAIL
+
+    # Reactivated and given a password, it would sign in as the owner of all anonymized content.
+    @pytest.mark.parametrize(
+        ("method", "path_suffix", "body"),
+        [
+            ("put", "/active", {"is_active": True}),
+            ("patch", "", {"password": "a-long-enough-password-1"}),
+            ("put", "/role", {"role": "lab"}),
+            ("post", "/mfa/reset", None),
+        ],
+    )
+    async def test_anonymous_account_refuses_admin_writes(
+        self,
+        api_client_superuser,
+        db_session: AsyncSession,
+        method: str,
+        path_suffix: str,
+        body: dict[str, object] | None,
+    ) -> None:
+        """Every admin write to the system account is a 409, and it stays inactive."""
+        anonymous = await get_or_create_anonymous_user(db_session)
+        await db_session.flush()
+
+        kwargs = {"json": body} if body is not None else {}
+        response = await getattr(api_client_superuser, method)(f"{ADMIN_USERS}/{anonymous.id}{path_suffix}", **kwargs)
+
+        assert response.status_code == 409, response.text
+        await db_session.refresh(anonymous)
+        assert anonymous.is_active is False
+        assert anonymous.role == "contributor"
 
     async def test_last_active_superuser_cannot_be_deleted(
         self, api_client_superuser, db_session: AsyncSession, db_superuser: User

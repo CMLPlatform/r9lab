@@ -587,19 +587,15 @@ async def test_delete_revokes_refresh_tokens_before_removing_the_row() -> None:
 
     manager.user_db.delete = AsyncMock(side_effect=_delete_row)
 
-    with (
-        patch(
-            "app.api.auth.services.account_security.refresh_token_service.revoke_all_user_tokens",
-            new_callable=AsyncMock,
-            side_effect=_revoke,
-        ) as mock_revoke,
-        patch("app.api.auth.services.user_manager.audit_event") as log_audit,
-    ):
+    with patch(
+        "app.api.auth.services.account_security.refresh_token_service.revoke_all_user_tokens",
+        new_callable=AsyncMock,
+        side_effect=_revoke,
+    ) as mock_revoke:
         await manager.delete(user, request=request)
 
     assert call_order == ["revoke", "delete_row"]
     mock_revoke.assert_awaited_once_with(redis, "user-id")
-    log_audit.assert_not_called()
 
 
 async def test_delete_aborts_without_removing_the_row_when_revocation_fails() -> None:

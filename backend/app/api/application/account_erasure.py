@@ -33,6 +33,7 @@ from pydantic import UUID4, AwareDatetime, BaseModel, ValidationError
 from sqlalchemy import delete, select, update
 from sqlalchemy.exc import IntegrityError
 
+from app.api.auth.account_guards import ANONYMOUS_USER_EMAIL, is_system_account, require_other_active_superuser
 from app.api.auth.models import OAuthAccount, User
 from app.api.auth.services.email_identity import canonicalize_email
 from app.api.auth.services.oauth.accounts import google_tokens_to_revoke, revoke_google_tokens
@@ -64,15 +65,6 @@ logger = logging.getLogger(__name__)
 
 type ErasureContent = Literal["anonymize", "delete"]
 ANONYMIZE: ErasureContent = "anonymize"
-
-# Owner of anonymized content, so products keep a NOT NULL owner_id. NOTE: `.internal`,
-# not `.invalid`: email-validator rejects `.invalid`, which would make `UserRead.email`
-# unserializable and break the admin user list.
-ANONYMOUS_USER_EMAIL = "anonymous@system.r9lab.internal"
-# The pre-rename address, which migration 0b5e7c3a9d21 rewrites. Still refused by the
-# erasure guard in case a rolled-back release recreated that row.
-# TODO(drop-by 2027-01-31): drop LEGACY_ANONYMOUS_USER_EMAIL
-LEGACY_ANONYMOUS_USER_EMAIL = "anonymous@system.relab.internal"
 
 
 async def get_or_create_anonymous_user(session: AsyncSession) -> User:
@@ -187,32 +179,15 @@ async def require_erasable_account(session: AsyncSession, user: User) -> User:
         ConflictError: when the target is the anonymous system account or the last
             active superuser.
     """
-    # The caller's instance may belong to the auth dependency's own session. Locked first,
-    # before any product row, in the owner-first order every product writer uses
-    # (lock_product_owner).
-    user = await require_locked_model(session, User, user.id)
-
-    if user.email_canonical in {
-        canonicalize_email(ANONYMOUS_USER_EMAIL),
-        canonicalize_email(LEGACY_ANONYMOUS_USER_EMAIL),
-    }:
+    if is_system_account(user):
         msg = "The anonymous system account cannot be deleted."
         raise ConflictError(msg)
-
-    if not (user.is_superuser and user.is_active):
-        return user
-
-    # Locked, so two concurrent deletions cannot each see the other as "remaining".
-    other_superuser = await session.execute(
-        select(User.id)
-        .where(User.is_superuser.is_(True), User.is_active.is_(True), User.id != user.id)
-        .with_for_update()
-        .limit(1)
-    )
-    if other_superuser.first() is None:
-        msg = "The last active superuser cannot be deleted."
-        raise ConflictError(msg)
-    return user
+    # Superusers first, in id order, so two admins erasing each other queue instead of
+    # deadlocking; then the target, before any product row, in the owner-first order every
+    # product writer uses (lock_product_owner). The caller's instance may belong to the
+    # auth dependency's own session, hence the reload.
+    await require_other_active_superuser(session, user, action="deleted")
+    return await require_locked_model(session, User, user.id)
 
 
 async def _delete_owned_products(

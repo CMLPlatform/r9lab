@@ -12,7 +12,7 @@ import pytest
 from fastapi import status
 from sqlalchemy import Select, select
 
-from app.api.application.account_erasure import ANONYMOUS_USER_EMAIL
+from app.api.auth.account_guards import ANONYMOUS_USER_EMAIL
 from app.api.auth.models import OAuthAccount, User
 from app.api.auth.services import mfa_service
 from app.api.auth.services.account_security import RECENT_SIGN_IN_WINDOW

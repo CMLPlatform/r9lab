@@ -1,12 +1,17 @@
 """Admin routes for managing users."""
 
-from typing import Annotated, cast
+from typing import Annotated, Any, cast
 
 from fastapi import Depends, HTTPException, Request, Security
 from fastapi_pagination import Page
 from fastapi_users.exceptions import InvalidPasswordException, UserAlreadyExists
 from sqlalchemy import select
 
+from app.api.auth.account_guards import (
+    SYSTEM_ACCOUNT_EMAILS_CANONICAL,
+    require_not_system_account,
+    require_other_active_superuser,
+)
 from app.api.auth.dependencies import (
     CurrentActiveSuperUserDep,
     UserByIDDep,
@@ -24,10 +29,23 @@ from app.api.common.audiences import AdminAPIRouter
 from app.api.common.audit import AuditAction, AuditContext, audit_event
 from app.api.common.crud.filtering import create_filter_dependency
 from app.api.common.crud.query import page_models
-from app.api.common.exceptions import BadRequestError, ConflictError
+from app.api.common.exceptions import BadRequestError
 from app.api.common.routers.dependencies import AsyncSessionDep
 
 router = AdminAPIRouter(prefix="/admin/users", tags=["admin"], dependencies=[Security(current_active_superuser)])
+
+SYSTEM_ACCOUNT_CONFLICT: dict[int | str, dict[str, Any]] = {
+    409: {"description": "The target is the anonymous system account."}
+}
+
+
+async def get_manageable_user(user: UserByIDDep) -> User:
+    """Load a user an admin may write to: any account but the anonymous system account."""
+    require_not_system_account(user)
+    return user
+
+
+ManageableUserDep = Annotated[User, Depends(get_manageable_user)]
 
 
 ## GET ##
@@ -48,10 +66,11 @@ async def get_users(
     user_filter: Annotated[UserFilter, Depends(create_filter_dependency(UserFilter))],
     session: AsyncSessionDep,
 ) -> Page[UserRead]:
-    """Get a list of all users with optional filtering."""
+    """Get a list of all users with optional filtering, without the anonymous system account."""
+    statement = select(User).where(User.email_canonical.not_in(SYSTEM_ACCOUNT_EMAILS_CANONICAL))
     return cast(
         "Page[UserRead]",
-        await page_models(session, User, filters=user_filter, read_schema=UserRead),
+        await page_models(session, User, filters=user_filter, statement=statement, read_schema=UserRead),
     )
 
 
@@ -70,10 +89,11 @@ async def get_user(user: UserByIDDep) -> User:
     "/{user_id}",  # user_id is bound by the get_user_or_404 dependency
     summary="Update a user by ID",
     response_model=UserRead,
+    responses=SYSTEM_ACCOUNT_CONFLICT,
 )
 async def update_user(
     user_update: UserUpdate,
-    user: UserByIDDep,
+    user: ManageableUserDep,
     user_manager: UserManagerDep,
     actor: CurrentActiveSuperUserDep,
     request: Request,
@@ -99,9 +119,10 @@ async def update_user(
     "/{user_id}/mfa/reset",  # user_id is bound by the get_user_or_404 dependency
     summary="Reset a user's two-step verification",
     status_code=204,
+    responses=SYSTEM_ACCOUNT_CONFLICT,
 )
 async def reset_user_mfa(
-    user: UserByIDDep,
+    user: ManageableUserDep,
     user_manager: UserManagerDep,
     actor: CurrentActiveSuperUserDep,
 ) -> None:
@@ -114,10 +135,11 @@ async def reset_user_mfa(
     "/{user_id}/role",  # user_id is bound by the get_user_or_404 dependency
     summary="Set a user's contributor tier",
     response_model=UserRead,
+    responses=SYSTEM_ACCOUNT_CONFLICT,
 )
 async def set_user_role(
     role_update: UserRoleUpdate,
-    user: UserByIDDep,
+    user: ManageableUserDep,
     user_manager: UserManagerDep,
     actor: CurrentActiveSuperUserDep,
 ) -> User:
@@ -152,12 +174,12 @@ async def set_user_role(
     response_model=UserRead,
     responses={
         400: {"description": "An administrator cannot suspend their own account."},
-        409: {"description": "The target is the last active superuser."},
+        409: {"description": "The target is the anonymous system account or the last active superuser."},
     },
 )
 async def set_user_active(
     active_update: UserActiveUpdate,
-    user: UserByIDDep,
+    user: ManageableUserDep,
     user_manager: UserManagerDep,
     actor: CurrentActiveSuperUserDep,
     request: Request,
@@ -172,17 +194,7 @@ async def set_user_active(
         if user.id == actor.id:
             msg = "You cannot suspend your own account."
             raise BadRequestError(msg)
-        if user.is_superuser and user.is_active:
-            # Locked, so two admins suspending each other at once cannot both see the other as "remaining".
-            other_superuser = await user_manager.user_db.session.execute(
-                select(User.id)
-                .where(User.is_superuser.is_(True), User.is_active.is_(True), User.id != user.id)
-                .with_for_update()
-                .limit(1)
-            )
-            if other_superuser.first() is None:
-                msg = "The last active superuser cannot be suspended."
-                raise ConflictError(msg)
+        await require_other_active_superuser(user_manager.user_db.session, user, action="suspended")
         # Before the write, so a Redis failure aborts rather than leaving a suspended user with live sessions.
         await revoke_user_refresh_tokens(user.id, request)
     updated = await user_manager.user_db.update(user, {"is_active": active_update.is_active})

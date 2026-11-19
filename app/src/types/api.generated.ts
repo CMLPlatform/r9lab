@@ -2239,7 +2239,7 @@ export interface paths {
     };
     /**
      * View all users
-     * @description Get a list of all users with optional filtering.
+     * @description Get a list of all users with optional filtering, without the anonymous system account.
      */
     get: operations['get_users_v1_admin_users_get'];
     put?: never;
@@ -11715,6 +11715,13 @@ export interface operations {
           'application/json': components['schemas']['UserRead'];
         };
       };
+      /** @description The target is the anonymous system account. */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
       /** @description Validation Error */
       422: {
         headers: {
@@ -11740,6 +11747,13 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description The target is the anonymous system account. */
+      409: {
         headers: {
           [name: string]: unknown;
         };
@@ -11780,6 +11794,13 @@ export interface operations {
         content: {
           'application/json': components['schemas']['UserRead'];
         };
+      };
+      /** @description The target is the anonymous system account. */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
       };
       /** @description Validation Error */
       422: {
@@ -11824,7 +11845,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description The target is the last active superuser. */
+      /** @description The target is the anonymous system account or the last active superuser. */
       409: {
         headers: {
           [name: string]: unknown;
