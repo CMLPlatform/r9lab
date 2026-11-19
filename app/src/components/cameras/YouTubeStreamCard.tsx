@@ -18,7 +18,6 @@ export function YouTubeStreamCard({ cameraId, isOnline }: YouTubeStreamCardProps
       elapsed={state.elapsed}
       streamStatus={state.streamStatus}
       isStopping={state.isStopping}
-      onWatch={actions.handleWatch}
       onStop={actions.handleStop}
     />
   );

@@ -12,6 +12,11 @@ type ProfileAccountSectionProps = {
   logoutTriggerRef?: RefObject<View | null>;
 };
 
+// The provider may return no email: omit the line rather than end on "Connected as ".
+function connectedAs(account?: OAuthAccount | null) {
+  return account?.account_email ? `Connected as ${account.account_email}` : undefined;
+}
+
 export function ProfileAccountSection({
   isVerified,
   onLogout,
@@ -19,21 +24,18 @@ export function ProfileAccountSection({
   onVerifyAccount,
   logoutTriggerRef,
 }: ProfileAccountSectionProps) {
-  const styles = createProfileSectionStyles(useAppTheme());
   return (
     <View className="mx-1">
       <ProfileAction
         title="Sign out"
         subtitle="Switch to another account"
         onPress={onLogout}
-        titleStyle={styles.danger}
         triggerRef={logoutTriggerRef}
       />
       <ProfileAction
         title="Sign out everywhere"
         subtitle="End all active sessions for this account"
         onPress={onRevokeAllSessions}
-        titleStyle={styles.danger}
       />
       {!isVerified ? (
         <ProfileAction
@@ -66,7 +68,6 @@ export function ProfileLinkedAccountsSection({
   onRequestUnlink,
   unlinkTriggerRef,
 }: ProfileLinkedAccountsSectionProps) {
-  const styles = createProfileSectionStyles(useAppTheme());
   const unlinkGoogleNodeRef = useRef<View>(null);
   const unlinkGithubNodeRef = useRef<View>(null);
   const unlinkGoogle = useCallback(() => {
@@ -84,9 +85,8 @@ export function ProfileLinkedAccountsSection({
       {isGoogleLinked ? (
         <ProfileAction
           title="Unlink Google"
-          subtitle={`Connected as ${googleAccount?.account_email ?? ''}`}
+          subtitle={connectedAs(googleAccount)}
           onPress={unlinkGoogle}
-          titleStyle={styles.danger}
           triggerRef={unlinkGoogleNodeRef}
         />
       ) : (
@@ -100,9 +100,8 @@ export function ProfileLinkedAccountsSection({
       {isGithubLinked ? (
         <ProfileAction
           title="Unlink GitHub"
-          subtitle={`Connected as ${githubAccount?.account_email ?? ''}`}
+          subtitle={connectedAs(githubAccount)}
           onPress={unlinkGithub}
-          titleStyle={styles.danger}
           triggerRef={unlinkGithubNodeRef}
         />
       ) : (
@@ -129,7 +128,7 @@ export function ProfileDangerZoneSection({
   return (
     <View className="mx-1 mb-10">
       <ProfileAction
-        title="Delete account?"
+        title="Delete account"
         onPress={onDeleteAccount}
         titleStyle={styles.danger}
         hideChevron

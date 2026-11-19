@@ -97,6 +97,13 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Cached public lists, such as product types and taxonomies, are stored per search, filter and
   page. A search or filter no longer gets the result of an earlier request with the same page
   size.
+- Web app accessibility: the category picker has one page heading instead of two; wrong-code,
+  reset and verify errors are announced by screen readers; inline links (camera guide, stream
+  URL) are real links that open with Enter and in a new tab; and the welcome and empty messages
+  read as one sentence.
+- The products list no longer says "No products yet" under a failed load. Only deleting the
+  account is red on the account screen, not signing out or unlinking a provider, and "Connected
+  as" no longer ends empty when a provider gave no email.
 - Registration and verification emails said the link expires in 1 hour. They now state the
   real lifetime, 1 day, and the reset email states its own.
 - Public profile statistics are counted from the owner's products and photos, so they stay

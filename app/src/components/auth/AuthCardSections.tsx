@@ -3,7 +3,9 @@ import { View, type ViewStyle } from 'react-native';
 import { AppButton } from '@/components/base/AppButton';
 import { AppText } from '@/components/base/AppText';
 import { Card } from '@/components/base/Card';
+import { IosAnnouncement } from '@/components/base/IosAnnouncement';
 import { heading } from '@/utils/a11y';
+import { cn } from '@/utils/cn';
 
 /** Single-Card auth screen scaffold (forgot-password, reset-password, mfa, verify). */
 export function AuthCard({
@@ -35,9 +37,24 @@ export function AuthCard({
 }
 
 /** The danger-colored inline error text repeated across the auth forms. */
-export function AuthFormError({ message }: { message?: string | null }) {
+export function AuthFormError({
+  message,
+  className,
+}: {
+  message?: string | null;
+  className?: string;
+}) {
   if (!message) return null;
-  return <AppText className="text-destructive">{message}</AppText>;
+  return (
+    <AppText
+      accessibilityRole="alert"
+      accessibilityLiveRegion="polite"
+      className={cn('text-destructive', className)}
+    >
+      <IosAnnouncement text={message} />
+      {message}
+    </AppText>
+  );
 }
 
 /** The centered "Back to login" ghost action row repeated across the auth forms. */

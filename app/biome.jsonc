@@ -45,6 +45,7 @@
               "AppText",
               "Chip",
               "DocsLink",
+              "ExternalTextLink",
               "FilterChip",
               "MutedText",
               "RNText",

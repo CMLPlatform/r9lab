@@ -156,6 +156,7 @@ export default function Products() {
               screen.complete
             }
             isAuthenticated={screen.isAuthenticated}
+            hasError={Boolean(list.error)}
             onScroll={list.onScroll}
             onRefresh={handleRetry}
             onFetchNextPage={list.fetchNextPage}

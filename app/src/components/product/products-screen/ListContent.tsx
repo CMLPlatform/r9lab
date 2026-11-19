@@ -45,6 +45,8 @@ type ProductsListContentProps = {
   /** A date, brand, type, components or completeness filter is narrowing the list. */
   isFiltered: boolean;
   isAuthenticated: boolean;
+  /** The fetch failed: the error banner speaks, so the empty copy would contradict it. */
+  hasError: boolean;
   onScroll: FlatListProps<Product>['onScroll'];
   onRefresh: () => Promise<unknown>;
   onFetchNextPage: () => void;
@@ -98,6 +100,7 @@ export function ProductsListContent({
   searchQuery,
   isFiltered,
   isAuthenticated,
+  hasError,
   onScroll,
   onRefresh,
   onFetchNextPage,
@@ -187,45 +190,42 @@ export function ProductsListContent({
         contentContainerStyle={{ paddingBottom: listBottomInset, flexGrow: 1 }}
         ListFooterComponent={listFooter}
         ListEmptyComponent={
-          <View className="flex-1 items-center justify-center p-5" testID="products-empty-state">
-            <StaticBackground scrim={theme.tokens.overlay.hero} />
-            {/* Decorative: expo-image drops an empty alt, so hide the subtree. */}
-            <View aria-hidden>
-              <Image
-                accessibilityIgnoresInvertColors
-                source={
-                  theme.dark
-                    ? require('@/assets/images/wordmark-dark.png')
-                    : require('@/assets/images/wordmark.png')
-                }
-                style={styles.emptyStateMark}
-                contentFit="contain"
-              />
-            </View>
-            {searchQuery && searchQuery.trim().length < MIN_SEARCH_LENGTH ? (
-              <AppText>Type at least {MIN_SEARCH_LENGTH} characters to search.</AppText>
-            ) : searchQuery ? (
-              <AppText>No products match your search.</AppText>
-            ) : isFiltered ? (
-              <AppText>No products match these filters.</AppText>
-            ) : !isAuthenticated ? (
-              <AppText>No products available yet. Sign in to add your own.</AppText>
-            ) : filterMode === 'mine' ? (
-              <View className="flex-row flex-wrap items-center justify-center">
-                <AppText style={styles.emptyStateText}>
-                  You haven&apos;t created any products yet. Tap the{' '}
+          hasError ? null : (
+            <View className="flex-1 items-center justify-center p-5" testID="products-empty-state">
+              <StaticBackground scrim={theme.tokens.overlay.hero} />
+              {/* Decorative: expo-image drops an empty alt, so hide the subtree. */}
+              <View aria-hidden>
+                <Image
+                  accessibilityIgnoresInvertColors
+                  source={
+                    theme.dark
+                      ? require('@/assets/images/wordmark-dark.png')
+                      : require('@/assets/images/wordmark.png')
+                  }
+                  style={styles.emptyStateMark}
+                  contentFit="contain"
+                />
+              </View>
+              {searchQuery && searchQuery.trim().length < MIN_SEARCH_LENGTH ? (
+                <AppText>Type at least {MIN_SEARCH_LENGTH} characters to search.</AppText>
+              ) : searchQuery ? (
+                <AppText>No products match your search.</AppText>
+              ) : isFiltered ? (
+                <AppText>No products match these filters.</AppText>
+              ) : !isAuthenticated ? (
+                <AppText>No products available yet. Sign in to add your own.</AppText>
+              ) : filterMode === 'mine' ? (
+                <AppText className="text-center" style={styles.emptyStateText}>
+                  You haven&apos;t created any products yet. Tap the <NewProductPill /> button to
+                  add your first one.
                 </AppText>
-                <NewProductPill />
-                <AppText style={styles.emptyStateText}> button to add your first one.</AppText>
-              </View>
-            ) : (
-              <View className="flex-row flex-wrap items-center justify-center">
-                <AppText style={styles.emptyStateText}>No products yet. Tap the </AppText>
-                <NewProductPill />
-                <AppText style={styles.emptyStateText}> button to add the first one.</AppText>
-              </View>
-            )}
-          </View>
+              ) : (
+                <AppText className="text-center" style={styles.emptyStateText}>
+                  No products yet. Tap the <NewProductPill /> button to add the first one.
+                </AppText>
+              )}
+            </View>
+          )
         }
       />
     </Animated.View>

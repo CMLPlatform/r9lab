@@ -91,8 +91,8 @@ export default function AddCameraScreen() {
             <ScreenTitle>Add camera</ScreenTitle>
           )}
           <View className="gap-3">
-            <AppText variant="label" className="text-muted-foreground mb-1">
-              PAIRING CODE
+            <AppText variant="eyebrow" className="mb-1">
+              Pairing code
             </AppText>
             <MutedText className="mb-2">
               Enter the 6-character code shown on your Raspberry Pi setup page, or read the boxed
@@ -120,7 +120,7 @@ export default function AddCameraScreen() {
               required
               maxLength={100}
               autoCapitalize="words"
-              placeholder="Camera name"
+              placeholder="e.g. Workbench camera"
               className="mb-1"
             />
 
@@ -131,7 +131,7 @@ export default function AddCameraScreen() {
               maxLength={500}
               multiline
               numberOfLines={2}
-              placeholder="Description (optional)"
+              placeholder="e.g. Mounted above the teardown bench"
               className="mb-1"
             />
 

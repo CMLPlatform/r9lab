@@ -1,6 +1,4 @@
-import { View } from 'react-native';
 import { AppText } from '@/components/base/AppText';
-import { Icon } from '@/components/base/Icon';
 import { useAppTheme } from '@/theme/appThemeContext';
 import { palette } from '@/theme/palette.generated';
 import { productsScreenStyles as styles } from './shared';
@@ -25,23 +23,15 @@ export function NewProductPill({ label = 'New product' }: NewProductPillProps) {
 
 export function ProfilePill() {
   const theme = useAppTheme();
-  // `primary` on the 12% tint measures 3.73:1 in dark at 14px bold (not WCAG
-  // large text, so 4.5:1 applies); `primaryStrong` passes.
-  const pillInk = palette[theme.scheme].primaryStrong;
-
+  // `primary` measures 3.73:1 in dark at 14px bold (not WCAG large text, so 4.5:1
+  // applies); `primaryStrong` passes. Plain text so the sentence stays one text node.
   return (
-    <View
-      className="flex-row items-center gap-1 self-center rounded-md px-2 py-0.5"
-      style={{ backgroundColor: theme.tokens.surface.accent }}
+    <AppText
+      testID="profile-pill-label"
+      className="font-bold"
+      style={[styles.inlineProfileText, { color: palette[theme.scheme].primaryStrong }]}
     >
-      <Icon name="circle-user-round" size={14} color={pillInk} />
-      <AppText
-        testID="profile-pill-label"
-        className="font-bold"
-        style={[styles.inlineProfileText, { color: pillInk }]}
-      >
-        account
-      </AppText>
-    </View>
+      account
+    </AppText>
   );
 }

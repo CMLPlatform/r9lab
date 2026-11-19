@@ -1,7 +1,6 @@
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { act, renderHook } from '@testing-library/react-native';
 import { useYouTubeStreamCard } from '@/features/cameras/youtube/useYouTubeStreamCard';
-import { openExternalUrl } from '@/services/externalLinks';
 
 const mockSetActiveStream = jest.fn();
 const mockAlert = jest.fn();
@@ -10,13 +9,6 @@ const mockMutate = jest.fn();
 const mockUseYouTubeIntegration = jest.fn();
 const mockUseStreamStatusQuery = jest.fn();
 const mockUseStopYouTubeStreamMutation = jest.fn();
-
-jest.mock('@/services/externalLinks', () => ({
-  __esModule: true,
-  openExternalUrl: require('@jest/globals').jest.fn(),
-}));
-
-const openExternalUrlMock = openExternalUrl as jest.MockedFunction<typeof openExternalUrl>;
 
 jest.mock('@/context/streamSession', () => ({
   useStreamSession: () => ({
@@ -47,7 +39,6 @@ jest.mock('@/features/cameras/r9cam/hooks', () => ({
 describe('useYouTubeStreamCard', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    openExternalUrlMock.mockResolvedValue(true);
     mockUseYouTubeIntegration.mockReturnValue({ enabled: true });
     mockUseStreamStatusQuery.mockReturnValue({
       data: {
@@ -85,31 +76,6 @@ describe('useYouTubeStreamCard', () => {
     await renderHook(() => useYouTubeStreamCard('cam-2', false));
 
     expect(mockUseStreamStatusQuery).toHaveBeenCalledWith('cam-2', { enabled: false });
-  });
-
-  it('opens the YouTube URL when watch is triggered and the stream has a URL', async () => {
-    const { result } = await renderHook(() => useYouTubeStreamCard('cam-1', true));
-
-    await act(() => {
-      result.current.actions.handleWatch();
-    });
-
-    expect(openExternalUrlMock).toHaveBeenCalledWith('https://youtube.test/watch?v=abc');
-  });
-
-  it('does nothing when watch is triggered without a stream URL', async () => {
-    mockUseStreamStatusQuery.mockReturnValue({
-      data: { started_at: '2026-04-15T10:00:00.000Z', url: '' },
-      isLoading: false,
-    });
-
-    const { result } = await renderHook(() => useYouTubeStreamCard('cam-1', true));
-
-    await act(() => {
-      result.current.actions.handleWatch();
-    });
-
-    expect(openExternalUrlMock).not.toHaveBeenCalled();
   });
 
   it('confirms stop and clears the active stream on successful stop', async () => {

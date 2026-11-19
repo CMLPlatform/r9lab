@@ -363,7 +363,7 @@ describe('ProfileTab', () => {
 
     it('explains that contributions stay, anonymized', async () => {
       const { findByLabelText, findByText } = await renderProfile();
-      await fireEvent.press(await findByLabelText('Delete account?'));
+      await fireEvent.press(await findByLabelText('Delete account'));
       expect(await findByText(CONTENT_STAYS_PATTERN)).toBeTruthy();
       expect(await findByText(REMOVE_UPLOADS_PATTERN)).toBeTruthy();
     });
@@ -371,7 +371,7 @@ describe('ProfileTab', () => {
     it('deletes with the current password, then leaves the screen like logout', async () => {
       withPasswordUser();
       const { findByLabelText, findAllByText } = await renderProfile();
-      await fireEvent.press(await findByLabelText('Delete account?'));
+      await fireEvent.press(await findByLabelText('Delete account'));
       await fireEvent.changeText(await findByLabelText('Current password'), 'my-password');
       await pressConfirm(findAllByText);
 
@@ -383,7 +383,7 @@ describe('ProfileTab', () => {
     it('does not call the server until a password is entered', async () => {
       withPasswordUser();
       const { findByLabelText, findAllByText } = await renderProfile();
-      await fireEvent.press(await findByLabelText('Delete account?'));
+      await fireEvent.press(await findByLabelText('Delete account'));
       await pressConfirm(findAllByText);
 
       expect(mockDeleteAccount).not.toHaveBeenCalled();
@@ -393,7 +393,7 @@ describe('ProfileTab', () => {
       withPasswordUser();
       mockDeleteAccount.mockRejectedValueOnce(new ApiError('Current password is invalid.', 403));
       const { findByLabelText, findAllByText, findByText } = await renderProfile();
-      await fireEvent.press(await findByLabelText('Delete account?'));
+      await fireEvent.press(await findByLabelText('Delete account'));
       await fireEvent.changeText(await findByLabelText('Current password'), 'wrong');
       await pressConfirm(findAllByText);
 
@@ -414,7 +414,7 @@ describe('ProfileTab', () => {
         new ApiError('Invalid MFA code', 403, 'MfaStepUpCodeInvalidError'),
       );
       const { findByLabelText, findAllByText, findByText, getByLabelText } = await renderProfile();
-      await fireEvent.press(await findByLabelText('Delete account?'));
+      await fireEvent.press(await findByLabelText('Delete account'));
       await fireEvent.changeText(await findByLabelText('Current password'), 'my-password');
       await fireEvent.changeText(await findByLabelText('Authentication code'), '000000');
       await pressConfirm(findAllByText);
@@ -434,7 +434,7 @@ describe('ProfileTab', () => {
         ),
       );
       const { findByLabelText, findAllByText, findByText } = await renderProfile();
-      await fireEvent.press(await findByLabelText('Delete account?'));
+      await fireEvent.press(await findByLabelText('Delete account'));
       await pressConfirm(findAllByText);
 
       expect(await findByText(SIGN_IN_AGAIN_PATTERN)).toBeTruthy();
@@ -458,7 +458,7 @@ describe('ProfileTab', () => {
           refetch: mockRefetch,
         });
         const { findByLabelText, findAllByText, queryByLabelText } = await renderProfile();
-        await fireEvent.press(await findByLabelText('Delete account?'));
+        await fireEvent.press(await findByLabelText('Delete account'));
         expect(queryByLabelText(hiddenField)).toBeNull();
         if (password) {
           await fireEvent.changeText(await findByLabelText('Current password'), password);
@@ -476,7 +476,7 @@ describe('ProfileTab', () => {
         refetch: mockRefetch,
       });
       const { findByLabelText, findAllByText } = await renderProfile();
-      await fireEvent.press(await findByLabelText('Delete account?'));
+      await fireEvent.press(await findByLabelText('Delete account'));
       await fireEvent.changeText(await findByLabelText('Current password'), 'my-password');
       // Password alone is not enough once MFA is on.
       await pressConfirm(findAllByText);

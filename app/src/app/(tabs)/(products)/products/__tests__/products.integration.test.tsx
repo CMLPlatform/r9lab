@@ -390,6 +390,12 @@ describe('Products screen', () => {
     expect(screen.getByText('Verify your email to start creating')).toBeOnTheScreen();
     expect(screen.getByText('Verify email to add product')).toBeOnTheScreen();
     expect(screen.getByTestId('profile-pill-label')).toBeOnTheScreen();
+    // One text node, so a screen reader reads it as a sentence.
+    expect(
+      screen.getByText(
+        'You can browse products and manage your account. Once your email is verified, you can use the New product button to create products.',
+      ),
+    ).toBeOnTheScreen();
     expect(screen.getByText('Got it')).toBeOnTheScreen();
     expect(screen.getByText('Verify email')).toBeOnTheScreen();
 
@@ -515,7 +521,11 @@ describe('Empty-state messages', () => {
     await renderProducts();
 
     await waitFor(() =>
-      expect(screen.getByText("You haven't created any products yet. Tap the")).toBeOnTheScreen(),
+      expect(
+        screen.getByText(
+          "You haven't created any products yet. Tap the New product button to add your first one.",
+        ),
+      ).toBeOnTheScreen(),
     );
     expect(screen.getAllByText('New product').length).toBeGreaterThan(0);
   });
@@ -524,7 +534,11 @@ describe('Empty-state messages', () => {
     mockUseAuth.mockReturnValue({ user: mockUser() });
     await renderProducts();
 
-    await waitFor(() => expect(screen.getByText('No products yet. Tap the')).toBeOnTheScreen());
+    await waitFor(() =>
+      expect(
+        screen.getByText('No products yet. Tap the New product button to add the first one.'),
+      ).toBeOnTheScreen(),
+    );
     expect(screen.getAllByText('New product').length).toBeGreaterThan(0);
   });
 });
