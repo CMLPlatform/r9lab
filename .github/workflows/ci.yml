@@ -315,6 +315,50 @@ jobs:
           read -ra recipe <<<"$RECIPE"
           just "${recipe[@]}"
 
+  api-diff:
+    name: API Breaking Changes
+    # The public schema is consumed by every installed app build and the device
+    # schema by cameras in the field, so a silent removal or tightened enum hurts.
+    # The `breaking-api` label marks an intended break.
+    needs: changes
+    if: >-
+      github.event_name == 'pull_request' && needs.changes.outputs.backend == 'true'
+      && !contains(github.event.pull_request.labels.*.name, 'breaking-api')
+    runs-on: ubuntu-26.04
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # The PR merge commit and its first parent (the base) are enough to diff.
+          fetch-depth: 2
+          persist-credentials: false
+
+      - name: Extract base schemas
+        run: |-
+          mkdir -p .api-base
+          for doc in public device; do
+            git show "HEAD^1:docs/public/api/schemas/openapi.$doc.json" >".api-base/openapi.$doc.json"
+          done
+
+      - name: Diff the public schema
+        uses: oasdiff/oasdiff-action/breaking@14ca7009a63c417dfe27b7c44359c4bcccaf8eee # v0.2.1
+        with:
+          base: .api-base/openapi.public.json
+          revision: docs/public/api/schemas/openapi.public.json
+          fail-on: ERR
+          review: "false"
+          github-token: ""
+
+      - name: Diff the device schema
+        uses: oasdiff/oasdiff-action/breaking@14ca7009a63c417dfe27b7c44359c4bcccaf8eee # v0.2.1
+        with:
+          base: .api-base/openapi.device.json
+          revision: docs/public/api/schemas/openapi.device.json
+          fail-on: ERR
+          review: "false"
+          github-token: ""
+
   secret-scan:
     name: Secret Scan
     runs-on: ubuntu-26.04
@@ -558,6 +602,7 @@ jobs:
       - changes
       - automation
       - backend
+      - api-diff
       - web
       - e2e-www
       - e2e-full-stack

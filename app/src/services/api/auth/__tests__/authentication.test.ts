@@ -27,15 +27,15 @@ describe('Authentication API Service', () => {
     });
   });
 
-  afterAll(() => {
-    consoleErrorSpy.mockRestore();
-  });
-
   beforeEach(async () => {
     setupFetchMock();
     jest.clearAllMocks();
     resetAuthRuntimeForTests();
     setWebSessionFlag(false);
+  });
+
+  afterAll(() => {
+    consoleErrorSpy.mockRestore();
   });
 
   // ─── getToken ───────────────────────────────────────────
