@@ -98,6 +98,10 @@ lines of a multi-line call, and their survivors belong in the baseline.
 `tests/integration/api/test_schemathesis.py` fuzzes every GET route in the public OpenAPI schema
 with Schemathesis, once as a guest and once logged in. It fails on a 500 or on a response body
 the schema does not describe. Each test is one pytest item. A failing route shows as a subtest
-with the request that broke it. The integration suite tries 5 examples per route. `just fuzz`
-tries 100 (`just fuzz 20` for fewer), and the Ops workflow runs it weekly. The OAuth callbacks are
-left out because they call the real provider. The TODO in the test file says why.
+with the request that broke it. `just fuzz` tries 100 examples per route (`just fuzz 5` for
+fewer) plus Schemathesis's coverage phase, which sends hundreds of boundary cases per route. CI
+runs `just fuzz 5` as its own job on every backend change, `test-ci` leaves the tests out (marker
+`fuzz`), and the Ops workflow runs the 100 weekly. A plain `just test` runs them without the
+coverage phase, in about 5 s each. The
+OAuth callbacks are fuzzed too: a fuzzed `state` never verifies, so they answer 400 before any
+request reaches the provider.

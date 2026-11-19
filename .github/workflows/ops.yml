@@ -109,7 +109,7 @@ jobs:
             repo/backend/reports/performance/*.md
           retention-days: 14
 
-  # The integration suite fuzzes with 5 examples per route; this pass tries 100.
+  # CI fuzzes with 5 examples per route; this pass tries 100.
   backend-fuzz:
     name: Backend API Fuzzing
     if: github.event.schedule == '0 5 * * 1' || inputs.operation == 'fuzz'

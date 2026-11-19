@@ -71,15 +71,15 @@ test-flows *args:
 test-integration *args:
     {{ pytest }} tests/integration -n auto --dist=loadgroup {{ args }}
 
-# Fuzz the public API's GET routes from its OpenAPI schema with more examples per route
-# than the integration suite's 5. The Ops workflow runs this weekly.
+# Fuzz the public API's GET routes from its OpenAPI schema, coverage phase included.
+# CI runs `just fuzz 5` on every backend change; the Ops workflow runs 100 weekly.
 fuzz examples="100" *args:
-    SCHEMATHESIS_MAX_EXAMPLES={{ examples }} {{ pytest }} tests/integration -n 2 -k schemathesis {{ args }}
+    SCHEMATHESIS_MAX_EXAMPLES={{ examples }} SCHEMATHESIS_COVERAGE=1 {{ pytest }} tests/integration -n 2 -m fuzz {{ args }}
 
 # Run the CI test suite
 test-ci:
     mkdir -p reports/coverage
-    {{ pytest }} tests/unit tests/integration -n auto --dist=loadgroup --durations=20 --junitxml=reports/junit.xml --cov --cov-report=xml --cov-report=term
+    {{ pytest }} tests/unit tests/integration -n auto --dist=loadgroup -m "not fuzz" --durations=20 --junitxml=reports/junit.xml --cov --cov-report=xml --cov-report=term
 
 # Run the CPU benchmarks once as plain tests. CodSpeed counts their instructions in CI;
 # `just bench --codspeed` times them locally instead.

@@ -2,7 +2,9 @@
 
 The only pass over the route handlers, which mutmut skips. Requests go through the
 in-process `api_client`, so they hit the test Postgres. `SCHEMATHESIS_MAX_EXAMPLES`
-sets the examples per operation: small here, larger in the weekly Ops run.
+sets the fuzzed examples per operation. `SCHEMATHESIS_COVERAGE=1` adds the coverage
+phase, which sends hundreds of boundary cases per operation whatever the example
+count; `just fuzz` turns it on, and a plain `just test` leaves it off to stay fast.
 """
 
 import os
@@ -14,6 +16,7 @@ from fastapi import FastAPI
 from httpx import AsyncClient  # noqa: TC002
 from hypothesis import HealthCheck, settings
 from schemathesis.checks import CheckFunction, not_a_server_error
+from schemathesis.config import SchemathesisConfig
 from schemathesis.generation.case import Case  # noqa: TC002
 from schemathesis.schemas import BaseSchema  # noqa: TC002
 from schemathesis.specs.openapi.checks import response_schema_conformance
@@ -25,10 +28,13 @@ from scripts.seed.factories.models import UserFactory
 from .auth.shared import TEST_PASSWORD, hash_test_password, login_bearer
 
 MAX_EXAMPLES = int(os.environ.get("SCHEMATHESIS_MAX_EXAMPLES", "5"))
+COVERAGE = os.environ.get("SCHEMATHESIS_COVERAGE") == "1"
+PHASES = ["examples", "fuzzing"] + (["coverage"] if COVERAGE else [])
 
 # Each test is one pytest item covering every GET operation, so the suite's 60s limit
-# is far too short; this one grows with the examples per operation.
-pytestmark = [pytest.mark.api, pytest.mark.timeout(60 * MAX_EXAMPLES)]
+# is far too short; this one grows with the examples per operation, and the coverage
+# phase alone took about 190s per test in CI.
+pytestmark = [pytest.mark.api, pytest.mark.fuzz, pytest.mark.timeout(60 * MAX_EXAMPLES + (900 if COVERAGE else 0))]
 
 CHECKS: list[CheckFunction] = [not_a_server_error, response_schema_conformance]
 FUZZ_SETTINGS = settings(
@@ -42,7 +48,9 @@ FUZZ_SETTINGS = settings(
 @pytest.fixture
 def public_schema(test_app: FastAPI) -> BaseSchema:
     """The public schema, as `/openapi.public.json` serves it."""
-    return schemathesis.openapi.from_dict(build_public_openapi(test_app))
+    config = SchemathesisConfig.discover()
+    config.projects.default.phases.update(phases=PHASES)
+    return schemathesis.openapi.from_dict(build_public_openapi(test_app), config=config)
 
 
 # The OAuth callbacks are fuzzed too: a fuzzed `state` never verifies, so they answer 400
