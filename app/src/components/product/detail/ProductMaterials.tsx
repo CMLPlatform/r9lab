@@ -4,6 +4,7 @@ import Animated, { LayoutAnimationConfig } from 'react-native-reanimated';
 import { AppButton } from '@/components/base/AppButton';
 import { AppText } from '@/components/base/AppText';
 import { Chip } from '@/components/base/Chip';
+import { useDialog } from '@/components/base/dialogContext';
 import { SingleSelectFilterModal } from '@/components/base/FilterSelectionModal';
 import { IconButton } from '@/components/base/IconButton';
 import { FADE_ENTER, FADE_EXIT, ROW_MOVE } from '@/components/base/motion';
@@ -11,6 +12,7 @@ import { Separator } from '@/components/base/ui/separator';
 import LocalizedFloatInput from '@/components/product/LocalizedFloatInput';
 import { bomWarnings, formatGrams, totalMaterialMassG } from '@/features/products/materialBalance';
 import { useProductMaterials } from '@/features/products/useProductMaterials';
+import type { MaterialOption } from '@/services/api/materials';
 import { useAppTheme } from '@/theme/appThemeContext';
 import type { ApiMaterialUnit } from '@/types/api';
 import type { Product, ProductMaterial } from '@/types/Product';
@@ -38,10 +40,25 @@ const QUANTITY_ERROR = 'Enter a quantity above 0.';
  */
 export default function ProductMaterials({ product, editMode = false, canEdit = true }: Props) {
   const editable = editMode && canEdit && typeof product.id === 'number';
+  const dialog = useDialog();
   const { materials, options, optionsLoading, add, update, remove } = useProductMaterials(
     product,
     editable,
   );
+
+  const confirmRemove = (material: ProductMaterial) =>
+    dialog.alert({
+      title: 'Remove material?',
+      message: `Remove ${material.name} from the bill of materials?`,
+      buttons: [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Remove',
+          style: 'destructive',
+          onPress: () => remove.mutate(material.materialID),
+        },
+      ],
+    });
 
   // Distinct from `[]`: the payload never carried a bill of materials, so
   // saying "none recorded" would be a claim we cannot make.
@@ -75,7 +92,7 @@ export default function ProductMaterials({ product, editMode = false, canEdit = 
             // biome-ignore lint/performance/noJsxPropsBind: handlers close over this row's state; short list.
             onUnit={(unit) => update.mutate({ materialID: material.materialID, unit })}
             // biome-ignore lint/performance/noJsxPropsBind: handlers close over this row's state; short list.
-            onRemove={() => remove.mutate(material.materialID)}
+            onRemove={() => confirmRemove(material)}
           />
         ))}
       </LayoutAnimationConfig>
@@ -98,7 +115,9 @@ export default function ProductMaterials({ product, editMode = false, canEdit = 
           loading={optionsLoading}
           adding={add.isPending}
           // biome-ignore lint/performance/noJsxPropsBind: handlers close over this row's state; short list.
-          onAdd={(materialID, quantity, unit) => add.mutate({ materialID, quantity, unit })}
+          onAdd={(materialID, quantity, unit, onSuccess) =>
+            add.mutate({ materialID, quantity, unit }, { onSuccess })
+          }
         />
       ) : null}
     </View>
@@ -135,7 +154,8 @@ function MaterialRow({
       <LocalizedFloatInput
         label={material.name}
         value={material.quantity}
-        unit={editable ? undefined : material.unit}
+        // In edit mode too: changing the unit keeps the number, so the unit must sit beside it.
+        unit={material.unit}
         editable={editable}
         // biome-ignore lint/performance/noJsxPropsBind: handlers close over this row's state; short list.
         onChange={changeQuantity}
@@ -196,10 +216,16 @@ function AddMaterial({
   onAdd,
 }: {
   taken: ProductMaterial[];
-  options: { id: number; name: string; description?: string }[];
+  options: MaterialOption[];
   loading: boolean;
   adding: boolean;
-  onAdd: (materialID: number, quantity: number, unit: ApiMaterialUnit) => void;
+  // `onSuccess` lets the form keep its input when the write fails.
+  onAdd: (
+    materialID: number,
+    quantity: number,
+    unit: ApiMaterialUnit,
+    onSuccess: () => void,
+  ) => void;
 }) {
   const [pickerOpen, setPickerOpen] = useState(false);
   const [search, setSearch] = useState('');
@@ -221,9 +247,23 @@ function AddMaterial({
     );
   }, [options, taken, search]);
 
-  const pick = (name: string) => {
-    const option = options.find((o) => o.name === name);
-    if (option) setPicked({ id: option.id, name: option.name });
+  // Names are not unique: the picker's values are ids, and a name shared with
+  // another material gets its source, description or id to tell them apart.
+  const labels = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const o of options) counts.set(o.name, (counts.get(o.name) ?? 0) + 1);
+    return Object.fromEntries(
+      options.map((o) => [
+        String(o.id),
+        (counts.get(o.name) ?? 0) > 1
+          ? `${o.name} (${o.source ?? o.description ?? `#${o.id}`})`
+          : o.name,
+      ]),
+    );
+  }, [options]);
+  const pick = (value: string) => {
+    const option = options.find((o) => String(o.id) === value);
+    if (option) setPicked({ id: option.id, name: labels[value] ?? option.name });
   };
   const reset = () => {
     setPicked(undefined);
@@ -236,8 +276,7 @@ function AddMaterial({
       setError(QUANTITY_ERROR);
       return;
     }
-    onAdd(picked.id, quantity, unit);
-    reset();
+    onAdd(picked.id, quantity, unit, reset);
   };
   const openPicker = () => {
     setSearch('');
@@ -281,7 +320,8 @@ function AddMaterial({
         // biome-ignore lint/performance/noJsxPropsBind: handlers close over this row's state; short list.
         onDismiss={closePicker}
         title="Add material"
-        items={available.map((o) => o.name)}
+        items={available.map((o) => String(o.id))}
+        labels={labels}
         isLoading={loading}
         value=""
         // biome-ignore lint/performance/noJsxPropsBind: handlers close over this row's state; short list.

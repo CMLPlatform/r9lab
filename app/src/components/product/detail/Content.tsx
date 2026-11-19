@@ -137,6 +137,8 @@ export function ProductPageContent({
       contentContainerStyle={{ gap: 15, paddingBottom: 5 }}
       onScroll={onScroll}
       scrollEventThrottle={16}
+      // The first tap on a button (Add material) must not only dismiss the keyboard.
+      keyboardShouldPersistTaps="handled"
     >
       <PageContainer onLayout={onPageContainerLayout}>
         {/* Full bleed on a phone (cancelling the base px-4 gutter); from md up the

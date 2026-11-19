@@ -1,5 +1,5 @@
 import { describe, expect, it } from '@jest/globals';
-import { fireEvent, screen, waitFor } from '@testing-library/react-native';
+import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { HttpResponse, http } from 'msw';
 import ProductMaterials from '@/components/product/detail/ProductMaterials';
 import { API_URL } from '@/config';
@@ -149,6 +149,9 @@ describe('ProductMaterials edit mode', () => {
     await renderEdit({ ...bill([aluminum]), id: 5, role: 'component' });
 
     await user.press(screen.getByRole('button', { name: 'Remove Aluminum' }));
+    // Nothing is sent until the dialog is confirmed.
+    expect(path).toBe('');
+    await user.press(await screen.findByText('Remove'));
 
     await waitFor(() => expect(path.endsWith('/components/5/materials/7')).toBe(true));
   });
@@ -178,7 +181,11 @@ describe('ProductMaterials edit mode', () => {
     await typeAndBlur(await screen.findByLabelText('Quantity'), '3');
     await user.press(screen.getByText('Add'));
 
-    expect(await screen.findByText('Materials with id 9 are already assigned')).toBeOnTheScreen();
+    expect(
+      await screen.findByText('This material is already in the bill of materials.'),
+    ).toBeOnTheScreen();
+    // The failed add keeps what was typed.
+    expect(screen.getByLabelText('Quantity').props.value).toBe('3');
   });
 
   it('offers no editing on a record the user cannot edit', async () => {
@@ -195,6 +202,51 @@ describe('ProductMaterials edit mode', () => {
     await renderEdit({ ...bill([]), id: 'new' as unknown as number });
 
     expect(screen.queryByText('Add material')).toBeNull();
+  });
+});
+
+describe('ProductMaterials picker and cache', () => {
+  const user = setupUser();
+
+  it('tells apart two materials with the same name and adds the one picked', async () => {
+    serveMaterials([
+      { id: 11, name: 'Steel', description: '', source: 'Handbook A' } as typeof copper,
+      { id: 12, name: 'Steel', description: '', source: 'Handbook B' } as typeof copper,
+    ]);
+    let path = '';
+    server.use(
+      http.post(`${API_URL}/products/:id/materials/:materialId`, ({ request }) => {
+        path = new URL(request.url).pathname;
+        return HttpResponse.json({}, { status: 201 });
+      }),
+    );
+    await renderEdit(bill([]));
+
+    await user.press(screen.getByText('Add material'));
+    expect(await screen.findByText('Steel (Handbook A)')).toBeOnTheScreen();
+    await user.press(screen.getByText('Steel (Handbook B)'));
+    await user.type(await screen.findByLabelText('Quantity'), '2');
+    fireEvent(screen.getByLabelText('Quantity'), 'blur');
+    await user.press(screen.getByText('Add'));
+
+    await waitFor(() => expect(path.endsWith('/products/1/materials/12')).toBe(true));
+  });
+
+  it('shows the product materials again once edit mode ends', async () => {
+    server.use(
+      http.get(`${API_URL}/:root/:id/materials`, () => HttpResponse.json([link(aluminum)])),
+    );
+    const { rerender } = await renderWithProviders(
+      <ProductMaterials product={bill([aluminum])} editMode />,
+      { withDialog: true },
+    );
+    await screen.findByText('Aluminum');
+
+    const newer = { ...aluminum, materialID: 8, name: 'Zinc' };
+    await act(async () => rerender(<ProductMaterials product={bill([newer])} />));
+
+    expect(await screen.findByText('Zinc')).toBeOnTheScreen();
+    expect(screen.queryByText('Aluminum')).toBeNull();
   });
 });
 

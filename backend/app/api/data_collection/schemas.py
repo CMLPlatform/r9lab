@@ -57,6 +57,8 @@ def validate_material_or_components(bill_of_materials: Collection, components: C
     require either. The app shows the same rule as a warning on the saved record.
     """
     if len(bill_of_materials) == 0 and len(components) == 0:
+        # TODO: raise error again once we implement Bill of materials UI
+        # that allows users to add materials at product creation instead of only components
         logger.warning("Validation warning: product must have at least one material or component.")
 
 

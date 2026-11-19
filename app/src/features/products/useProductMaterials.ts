@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { invalidateProductQuery } from '@/features/product-entity/queries';
 import { useAppFeedback } from '@/hooks/useAppFeedback';
+import { ApiError } from '@/services/api/errors';
 import {
   addProductMaterial,
   fetchAllMaterials,
@@ -45,7 +46,12 @@ export function useProductMaterials(product: Product, enabled: boolean) {
     if (productId !== undefined) invalidateProductQuery(queryClient, productId);
   };
   const onError = (title: string) => (error: Error) =>
-    feedback.error(getErrorMessage(error, 'Try again.'), title);
+    feedback.error(
+      error instanceof ApiError && error.status === 409
+        ? 'This material is already in the bill of materials.'
+        : getErrorMessage(error, 'Try again.'),
+      title,
+    );
 
   const add = useMutation({
     mutationFn: (v: { materialID: number; quantity: number; unit: ApiMaterialUnit }) =>
@@ -69,7 +75,8 @@ export function useProductMaterials(product: Product, enabled: boolean) {
   });
 
   return {
-    materials: listQuery.data ?? product.materials,
+    // Outside edit mode the list query is disabled and its cache may be older than the product.
+    materials: active ? (listQuery.data ?? product.materials) : product.materials,
     options: optionsQuery.data ?? [],
     optionsLoading: optionsQuery.isLoading,
     add,

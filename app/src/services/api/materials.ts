@@ -13,7 +13,7 @@ import { toProductMaterials } from './products';
  */
 
 /** A material the picker can offer. */
-export type MaterialOption = { id: number; name: string; description?: string };
+export type MaterialOption = { id: number; name: string; description?: string; source?: string };
 
 const PAGE_SIZE = 100; // the API's maximum
 
@@ -34,7 +34,7 @@ export async function fetchAllMaterials(): Promise<MaterialOption[]> {
     const response = await apiFetch(url, { method: 'GET' });
     if (!response.ok) await throwFromResponse(response, "Couldn't load the materials. Try again.");
     const data = (await response.json()) as {
-      items?: { id: number; name: string; description?: string | null }[];
+      items?: { id: number; name: string; description?: string | null; source?: string | null }[];
       pages?: number;
     };
     for (const item of data.items ?? []) {
@@ -42,6 +42,7 @@ export async function fetchAllMaterials(): Promise<MaterialOption[]> {
         id: item.id,
         name: item.name,
         ...(item.description ? { description: item.description } : {}),
+        ...(item.source ? { source: item.source } : {}),
       });
     }
     if (page >= (data.pages ?? 1)) break;
