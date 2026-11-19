@@ -176,7 +176,8 @@ files, components or materials. The history starts with the release that added i
 are not listed. Edits are kept for two years.
 
 The editor's name follows their profile settings. A correction by a moderator is shown as one,
-without the moderator's name.
+without the moderator's name. The values an edit left behind are visible only to the owner and the
+admins, through the API.
 
 ## Final check
 

@@ -11,11 +11,11 @@ from uuid import uuid4
 
 import pytest
 from sqlalchemy import delete, func, select, text
-from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.application.account_erasure import ANONYMOUS_USER_EMAIL, erase_user
 from app.api.auth.models import User
+from app.api.common.crud.exceptions import ModelNotFoundError
 from app.api.data_collection.crud.product_commands import delete_product, update_product
 from app.api.data_collection.exceptions import ProductVersionMismatchError
 from app.api.data_collection.models.product import Product, ProductRevision
@@ -142,8 +142,8 @@ async def test_owner_erasure_racing_their_update_does_not_deadlock(
     """The erasure holds the owner's row and then rewrites the product; the update waits behind both.
 
     Taking the product row before the owner's, as the revision's editor foreign key would,
-    deadlocks against the erasure. The edit then fails on that foreign key instead, since its
-    editor is gone, and the erasure completes.
+    deadlocks against the erasure. The edit then finds its editor gone and fails as not
+    found, and the erasure completes.
     """
     owner, product_id = committed_product
     async with AsyncSession(async_engine) as eraser, AsyncSession(async_engine) as editor:
@@ -157,8 +157,8 @@ async def test_owner_erasure_racing_their_update_does_not_deadlock(
             await asyncio.wait_for(erase_user(eraser, erased_owner, actor_id=uuid4()), STEP_TIMEOUT_S)
         (edit_result,) = await asyncio.wait_for(asyncio.gather(editing, return_exceptions=True), STEP_TIMEOUT_S)
 
-    assert isinstance(edit_result, IntegrityError), edit_result
-    assert "deadlock" not in str(edit_result)
+    # The edit's editor is gone: a 404 rather than a raw foreign-key error.
+    assert isinstance(edit_result, ModelNotFoundError), edit_result
     async with AsyncSession(async_engine) as session:
         anonymous_id = await session.scalar(select(User.id).where(User.email == ANONYMOUS_USER_EMAIL))
         assert await session.scalar(select(Product.owner_id).where(Product.id == product_id)) == anonymous_id

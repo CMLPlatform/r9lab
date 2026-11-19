@@ -111,6 +111,40 @@ async def test_history_of_a_missing_product_is_a_404(api_client_light: AsyncClie
     assert response.status_code == status.HTTP_404_NOT_FOUND
 
 
+async def test_snapshot_is_shown_to_the_owner_and_admins_only(
+    api_client_light: AsyncClient,
+    test_app: FastAPI,
+    db_session: AsyncSession,
+    db_superuser: User,
+    db_user: User,
+) -> None:
+    """Earlier text may be personal data: others see when and what changed, not the values."""
+    other = await UserFactory.create_async(session=db_session, is_active=True)
+    product = Product(owner_id=db_user.id, name="Snapshot kettle")
+    db_session.add(product)
+    await db_session.flush()
+    await update_product(
+        db_session,
+        product.id,
+        ProductUpdate(description="Bought from my neighbour"),
+        if_match_version=1,
+        user_id=db_user.id,
+    )
+    url = f"/v1/products/{product.id}/revisions"
+
+    anonymous = (await api_client_light.get(url)).json()["items"][0]
+    seen = {}
+    for name, viewer in {"other": other, "owner": db_user, "admin": db_superuser}.items():
+        with override_authenticated_user(test_app, viewer):
+            seen[name] = (await api_client_light.get(url)).json()["items"][0]
+
+    assert anonymous["snapshot"] is None
+    assert anonymous["changed_fields"] == ["description"]
+    assert seen["other"]["snapshot"] is None
+    assert seen["owner"]["snapshot"]["description"] == "Bought from my neighbour"
+    assert seen["admin"]["snapshot"]["description"] == "Bought from my neighbour"
+
+
 @pytest.fixture
 async def private_owner_product(db_session: AsyncSession) -> Product:
     """A product whose owner keeps a private profile, edited once by that owner."""

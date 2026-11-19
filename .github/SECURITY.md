@@ -120,9 +120,12 @@ Security-sensitive areas:
     they move to the system account; in delete mode the history goes with the products. Edits the
     account made to other people's products stay, with the editor cleared.
   - `GET /products/{id}/revisions` and `GET /components/{id}/revisions` are as public as the
-    product. An owner's edits follow the product's owner redaction; a moderator's edits are marked
-    as such and name the moderator to admins only.
-  - The migration's downgrade refuses while the table holds rows.
+    product, but return the `snapshot` only to the owner and to admins (`has_admin_access`);
+    everyone else gets `null`, with the time, the editor and the changed field names. An owner's
+    edits follow the product's owner redaction; a moderator's edits are marked as such and name
+    the moderator to admins only.
+  - The migration's downgrade refuses while the table holds rows, in SQL, so a script rendered
+    with `--sql` refuses too.
 - cookie-authenticated writes: an unsafe `/v1` request carrying the session cookies, and every
   session login, is refused with 403 when `Sec-Fetch-Site` is `cross-site` or the `Origin` is not
   in the CORS allow-list (`app/core/middleware/cross_site.py`). Requests without either header

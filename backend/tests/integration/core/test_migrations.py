@@ -12,7 +12,7 @@ from alembic import command
 from psycopg.errors import InsufficientPrivilege
 from sqlalchemy import inspect, text
 from sqlalchemy.dialects import postgresql
-from sqlalchemy.exc import ProgrammingError
+from sqlalchemy.exc import DBAPIError, ProgrammingError
 from sqlalchemy.schema import CreateIndex
 
 from app.api.common.models.base import Base
@@ -185,7 +185,7 @@ def test_downgrade_refuses_to_drop_recorded_edit_history(
         " SELECT id, 2, '[\"name\"]', '{}' FROM p"
     )
     try:
-        with pytest.raises(RuntimeError, match="edit history"):
+        with pytest.raises(DBAPIError, match="edit history"):
             command.downgrade(relab_alembic_config, "d8b3a6f0e1c5")
         assert migration_helper.table_exists("product_revision")
     finally:
@@ -194,6 +194,17 @@ def test_downgrade_refuses_to_drop_recorded_edit_history(
         command.upgrade(relab_alembic_config, "head")
 
     assert migration_helper.current_revision() == "d7fb0e59e51f"
+
+
+@pytest.mark.migration
+def test_offline_downgrade_sql_keeps_the_edit_history_guard(
+    relab_alembic_config: Config, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """A downgrade rendered as SQL cannot count rows up front, so the script carries the check."""
+    command.downgrade(relab_alembic_config, "d7fb0e59e51f:d8b3a6f0e1c5", sql=True)
+
+    script = capsys.readouterr().out
+    assert script.index("RAISE EXCEPTION") < script.index("DROP TABLE product_revision")
 
 
 def _index_is_valid(migration_helper: MigrationHelper, name: str) -> bool | None:

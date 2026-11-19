@@ -97,7 +97,7 @@ Taxonomies, categories and subcategories, materials, product types, and units. T
 - ownership is attached to the user level
 - materials, product types, and media can be linked without making every field mandatory
 - `completeness` (0 to 1) and `recommended_rank` are derived, and database triggers keep them current on every product and image write. `completeness` is the weighted share of the app's missing-data checklist a product has filled in, with a photo counting three times any other field. `recommended_rank` is the creation time in epoch seconds plus up to 30 days in proportion to completeness. It is a sort key only, so its value means nothing on its own
-- `product_revision` records the edit history. Each changing update of a product's own fields adds a row with the editor, the resulting `version`, the names of the changed fields and a JSON snapshot of the editable fields as the edit left them. Media, components and the bill of materials are not covered. Revisions are kept for two years, and the history starts with the release that added it: earlier edits are not recorded
+- `product_revision` records the edit history. Each changing update of a product's own fields adds a row with the editor, the resulting `version`, the names of the changed fields and a JSON snapshot of the editable fields as the edit left them. Media, components and the bill of materials are not covered. The API returns the snapshot only to the owner and admins. Revisions are kept for two years, and the history starts with the release that added it: earlier edits are not recorded
 
 <DataCollection />
 

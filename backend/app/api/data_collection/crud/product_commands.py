@@ -2,7 +2,11 @@
 
 from typing import TYPE_CHECKING, Any
 
+from sqlalchemy.exc import IntegrityError
+
+from app.api.auth.models import User
 from app.api.common.audit import AuditAction, audit_event
+from app.api.common.crud.exceptions import ModelNotFoundError
 from app.api.common.crud.persistence import commit_and_refresh
 from app.api.common.crud.query import require_locked_model, require_model, require_models
 from app.api.data_collection.crud.product_tree_queries import MAX_COMPONENT_DEPTH, component_depth
@@ -150,6 +154,10 @@ def apply_product_update(db_product: Product, product: ProductUpdate) -> None:
 REVISION_FIELDS = tuple(ProductUpdate.model_fields)
 
 
+# Postgres's default name for the constraint the migration creates.
+_EDITOR_FOREIGN_KEY = "product_revision_editor_id_fkey"
+
+
 def _editable_fields(db_product: Product) -> dict[str, Any]:
     return {field: getattr(db_product, field) for field in REVISION_FIELDS}
 
@@ -193,7 +201,15 @@ async def update_product(
         )
     )
 
-    res = await commit_and_refresh(db, db_product)
+    try:
+        res = await commit_and_refresh(db, db_product)
+    except IntegrityError as error:
+        # The editor's account was erased while this edit waited for its lock, so the
+        # revision's editor foreign key has nothing to point at.
+        if _EDITOR_FOREIGN_KEY not in str(error.orig):
+            raise
+        await db.rollback()
+        raise ModelNotFoundError(User, user_id) from error
     if user_id != db_product.owner_id:
         # A moderator's correction of someone else's product.
         audit_event(user_id, AuditAction.UPDATE, Product, product_id)

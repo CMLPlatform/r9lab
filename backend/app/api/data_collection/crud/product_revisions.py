@@ -39,6 +39,10 @@ def _editor_username(revision: ProductRevision, product: Product, viewer: User |
     return editor.username
 
 
+def _may_see_snapshot(product: Product, viewer: User | None) -> bool:
+    return viewer is not None and (viewer.id == product.owner_id or viewer.has_admin_access)
+
+
 def to_revision_read(revision: ProductRevision, product: Product, viewer: User | None) -> ProductRevisionRead:
     """Build the read model of one revision of ``product``, with viewer-aware attribution."""
     return ProductRevisionRead(
@@ -46,7 +50,7 @@ def to_revision_read(revision: ProductRevision, product: Product, viewer: User |
         version=revision.version,
         created_at=revision.created_at,
         changed_fields=revision.changed_fields,
-        snapshot=revision.snapshot,
+        snapshot=revision.snapshot if _may_see_snapshot(product, viewer) else None,
         # An erased editor's id is NULL; only a non-owner's edit survives that (see the model).
         by_moderator=revision.editor_id != product.owner_id,
         editor_username=_editor_username(revision, product, viewer),

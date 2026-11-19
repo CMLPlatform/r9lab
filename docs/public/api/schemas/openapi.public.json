@@ -5472,10 +5472,17 @@
             "type": "integer"
           },
           "snapshot": {
-            "additionalProperties": true,
-            "description": "The product's editable fields as this edit left them.",
-            "title": "Snapshot",
-            "type": "object"
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The product's editable fields as this edit left them. Only for the owner and admins: it can hold text the owner later removed.",
+            "title": "Snapshot"
           },
           "version": {
             "description": "The product's version after this edit.",
@@ -5489,7 +5496,6 @@
           "version",
           "created_at",
           "changed_fields",
-          "snapshot",
           "by_moderator"
         ],
         "title": "ProductRevisionRead",

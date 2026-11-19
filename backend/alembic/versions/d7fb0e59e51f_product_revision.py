@@ -23,6 +23,18 @@ branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 
 
+_REFUSE_WHILE_HISTORY_EXISTS = """
+DO $$
+BEGIN
+    IF EXISTS (SELECT 1 FROM product_revision) THEN
+        RAISE EXCEPTION 'product_revision holds edit history that this downgrade would delete. '
+            'Roll back the code only, or restore the pre-release backup.';
+    END IF;
+END
+$$
+"""
+
+
 def upgrade() -> None:
     """Create ``product_revision`` and its indexes."""
     op.create_table(
@@ -49,10 +61,6 @@ def upgrade() -> None:
 
 def downgrade() -> None:
     """Drop the table, refusing while it holds history: a rollback would destroy it."""
-    if op.get_bind().execute(sa.text("SELECT EXISTS (SELECT 1 FROM product_revision)")).scalar():
-        msg = (
-            "product_revision holds edit history that this downgrade would delete. "
-            "Roll back the code only, or restore the pre-release backup."
-        )
-        raise RuntimeError(msg)
+    # In SQL, not Python, so a script rendered with --sql carries the check too.
+    op.execute(_REFUSE_WHILE_HISTORY_EXISTS)
     op.drop_table("product_revision")

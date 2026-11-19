@@ -328,7 +328,13 @@ class ProductRevisionRead(BaseModel):
     version: PositiveInt = Field(description="The product's version after this edit.")
     created_at: datetime
     changed_fields: list[str] = Field(description="Names of the fields this edit changed.")
-    snapshot: dict[str, Any] = Field(description="The product's editable fields as this edit left them.")
+    snapshot: dict[str, Any] | None = Field(
+        default=None,
+        description=(
+            "The product's editable fields as this edit left them. Only for the owner and admins: it can "
+            "hold text the owner later removed."
+        ),
+    )
     by_moderator: bool = Field(description="Whether someone other than the owner made the edit.")
     editor_username: str | None = Field(
         default=None,

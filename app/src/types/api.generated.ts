@@ -5238,11 +5238,11 @@ export interface components {
       changed_fields: string[];
       /**
        * Snapshot
-       * @description The product's editable fields as this edit left them.
+       * @description The product's editable fields as this edit left them. Only for the owner and admins: it can hold text the owner later removed.
        */
-      snapshot: {
+      snapshot?: {
         [key: string]: unknown;
-      };
+      } | null;
       /**
        * By Moderator
        * @description Whether someone other than the owner made the edit.
