@@ -339,9 +339,34 @@ async def test_nested_admin_write_audits_the_child_it_changed(
         response = await api_client_superuser.delete(f"/v1/admin/materials/{db_material.id}/images/{image.id}")
 
     assert response.status_code == status.HTTP_204_NO_CONTENT
-    assert _audit_records(caplog) == [("delete", "materials", str(image.id), "delete_material_image")]
+    assert _audit_records(caplog) == [("delete", "images", str(image.id), "delete_material_image")]
     record = next(r for r in caplog.records if getattr(r, "audit", False))
     assert getattr(record, "path_params", None) == {"material_id": str(db_material.id), "image_id": str(image.id)}
+
+
+async def test_category_link_writes_audit_the_links_not_the_material(
+    api_client_superuser: AsyncClient,
+    db_session: AsyncSession,
+    db_material: Material,
+    db_category: Category,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """Linking and unlinking categories records the category links, with the material in the context."""
+    material_id, category_ids = db_material.id, [db_category.id]
+    path = f"/v1/admin/materials/{material_id}/categories"
+    with caplog.at_level(logging.INFO, logger="audit"):
+        link = await api_client_superuser.post(path, json=category_ids)
+        # The client shares this session; a real request would load the new link fresh.
+        db_session.expire(db_material)
+        unlink = await api_client_superuser.request("DELETE", path, json=category_ids)
+
+    assert [link.status_code, unlink.status_code] == [201, 204]
+    assert _audit_records(caplog) == [
+        ("create", "categories", None, "add_categories_to_material"),
+        ("delete", "categories", None, "remove_categories_from_material"),
+    ]
+    records = [r for r in caplog.records if getattr(r, "audit", False)]
+    assert [getattr(r, "path_params", None) for r in records] == [{"material_id": str(material_id)}] * 2
 
 
 async def test_refused_admin_write_is_not_audited(
