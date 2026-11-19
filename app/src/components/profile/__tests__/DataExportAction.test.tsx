@@ -72,12 +72,12 @@ describe('the download-your-data row', () => {
     expect(link.click).not.toHaveBeenCalled();
   });
 
-  it('on native, points to the web app and offers no button', async () => {
+  it('on native, points to r9lab.io in a browser and offers no button', async () => {
     mockPlatform('ios');
     await renderWithProviders(<DataExportAction />, { withDialog: true });
 
     expect(screen.getByText(TITLE)).toBeOnTheScreen();
-    expect(screen.getByText('Available in the web app')).toBeOnTheScreen();
+    expect(screen.getByText('Download it from r9lab.io in a browser')).toBeOnTheScreen();
     expect(screen.queryByRole('button')).toBeNull();
   });
 });

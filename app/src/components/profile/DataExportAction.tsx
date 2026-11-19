@@ -34,7 +34,7 @@ export function DataExportAction() {
       <View className="mx-1 min-h-11 px-4 py-2.5">
         <AppText className="font-semibold">{TITLE}</AppText>
         <AppText variant="caption" className="mt-px text-muted-foreground">
-          Available in the web app
+          Download it from r9lab.io in a browser
         </AppText>
       </View>
     );
