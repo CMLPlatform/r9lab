@@ -27,7 +27,24 @@ function SectionTitle({ title }: { title: string }) {
   );
 }
 
-function UserActions({ user, isSelf }: { user: AdminUser; isSelf: boolean }) {
+// The admin routes skip the password and code step-up of the self-service ones, so an
+// admin changes their own two-step verification or deletes their own account there.
+function OwnAccountNotice() {
+  const router = useRouter();
+  const goToAccount = useCallback(() => router.navigate('/account'), [router]);
+  return (
+    <>
+      <SectionTitle title="Your account" />
+      <ProfileAction
+        title="Open your account settings"
+        subtitle="Change your two-step verification or delete your account there"
+        onPress={goToAccount}
+      />
+    </>
+  );
+}
+
+function UserActions({ user }: { user: AdminUser }) {
   const styles = createProfileSectionStyles(useAppTheme());
   const actions = useAdminUserActions(user);
   const { nextRole } = actions;
@@ -50,7 +67,7 @@ function UserActions({ user, isSelf }: { user: AdminUser; isSelf: boolean }) {
           titleStyle={styles.danger}
         />
       ) : null}
-      {isSelf ? null : user.is_active === false ? (
+      {user.is_active === false ? (
         <ProfileAction
           title="Reactivate account"
           subtitle="Let them sign in again"
@@ -115,7 +132,7 @@ export function AdminUserDetail({ id }: { id: string }) {
           </AppText>
           <AdminUserBadges user={user} />
         </View>
-        <UserActions user={user} isSelf={me?.id === user.id} />
+        {me?.id === user.id ? <OwnAccountNotice /> : <UserActions user={user} />}
       </PageContainer>
     </ScrollView>
   );

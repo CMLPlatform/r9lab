@@ -35,6 +35,9 @@ Every change asks you to confirm first and is written to the audit log with your
 | Reactivate account          | Lets a suspended account sign in again.                                                                                                                              |
 | Delete account              | Erases the account and its personal data. Choose to keep its products (they move to an anonymous account) or delete them too, then type the email address to confirm. You cannot undo it. |
 
+Your own account shows none of these. Change your two-step verification or delete your account
+from **Account** instead, which asks for your password first.
+
 There is no button to mark an email address verified. Verification proves that the person controls
 the mailbox, and social sign-in links to an account by email only once it is verified. Ask the
 person to resend the verification email from their account screen instead.

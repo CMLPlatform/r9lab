@@ -26,6 +26,7 @@ const RESET_MFA = /^Reset two-step verification/;
 const SUSPEND = /^Suspend account/;
 const REACTIVATE = /^Reactivate account/;
 const DELETE_ACCOUNT = /^Delete account/;
+const OWN_SETTINGS = /^Open your account settings/;
 
 type Sent = { method: string; url: URL; body: unknown };
 
@@ -111,12 +112,18 @@ describe('Admin user detail screen', () => {
     expect(sent[0]).toMatchObject({ method: 'PUT', body: { is_active: true } });
   });
 
-  it('offers no suspension of the signed-in admin’s own account', async () => {
+  it('sends the signed-in admin to the self-service flows for their own account', async () => {
     await renderDetail(mockAdminUser({ id: ADMIN_ID, is_superuser: true, role: 'lab' }));
 
+    // The admin routes skip the password step-up the self-service routes ask for.
     expect(screen.queryByRole('button', { name: SUSPEND })).toBeNull();
+    expect(screen.queryByRole('button', { name: DELETE_ACCOUNT })).toBeNull();
+    expect(screen.queryByRole('button', { name: RESET_MFA })).toBeNull();
     // A superuser always holds the lab tier, so no role change is offered either.
     expect(screen.queryByRole('button', { name: MAKE_CONTRIBUTOR })).toBeNull();
+
+    await user.press(screen.getByRole('button', { name: OWN_SETTINGS }));
+    expect(navigate).toHaveBeenCalledWith('/account');
   });
 
   it('erases only after the email is typed, with the chosen content policy', async () => {
