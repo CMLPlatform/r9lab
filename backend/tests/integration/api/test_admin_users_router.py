@@ -18,6 +18,7 @@ from app.api.application.account_erasure import get_or_create_anonymous_user
 from app.api.auth.account_guards import ANONYMOUS_USER_EMAIL, LEGACY_ANONYMOUS_USER_EMAIL
 from app.api.auth.dependencies import current_active_superuser_account
 from app.api.auth.models import OAuthAccount, User
+from app.api.auth.roles import UserRole
 from app.api.auth.services.user_database import UserDatabaseAsync
 from app.api.common.audit import AuditAction, AuditContext
 from app.api.data_collection.models.product import Product
@@ -34,6 +35,14 @@ if TYPE_CHECKING:
 pytestmark = pytest.mark.api
 
 ADMIN_USERS = "/v1/admin/users"
+PUT_BODIES: dict[str, dict[str, object]] = {"/{uid}/active": {"is_active": False}, "/{uid}/role": {"role": "lab"}}
+
+
+def _write_body(method: str, path_suffix: str) -> dict[str, Any]:
+    """A valid body for each admin write, so the status comes from the route and not validation."""
+    if method == "put":
+        return {"json": PUT_BODIES[path_suffix]}
+    return {"json": {}} if method == "patch" else {}
 
 
 class TestAdminUsersAuthorization:
@@ -58,6 +67,7 @@ class TestAdminUsersAuthorization:
             ("delete", "/{uid}"),
             ("post", "/{uid}/mfa/reset"),
             ("put", "/{uid}/active"),
+            ("put", "/{uid}/role"),
         ],
     )
     async def test_regular_user_is_denied(
@@ -65,7 +75,7 @@ class TestAdminUsersAuthorization:
     ) -> None:
         """A non-superuser is denied every admin verb."""
         path = ADMIN_USERS + path_suffix.format(uid=db_superuser.id)
-        kwargs = {"json": {"is_active": False}} if method == "put" else {"json": {}} if method == "patch" else {}
+        kwargs = _write_body(method, path_suffix)
         response = await getattr(api_client_user, method)(path, **kwargs)
         assert response.status_code in (401, 403)
 
@@ -108,12 +118,13 @@ class TestAdminUsersNotFound:
             ("delete", "/{uid}"),
             ("post", "/{uid}/mfa/reset"),
             ("put", "/{uid}/active"),
+            ("put", "/{uid}/role"),
         ],
     )
     async def test_missing_user_returns_404(self, api_client_superuser, method: str, path_suffix: str) -> None:
         """Each admin verb maps a missing id to 404."""
         path = ADMIN_USERS + path_suffix.format(uid=uuid4())
-        kwargs = {"json": {"is_active": False}} if method == "put" else {"json": {}} if method == "patch" else {}
+        kwargs = _write_body(method, path_suffix)
         response = await getattr(api_client_superuser, method)(path, **kwargs)
         assert response.status_code == 404
 
@@ -207,6 +218,50 @@ class TestAdminUsersActions:
         assert response.status_code == 200
         assert response.json()["username"] == "renamed_by_admin"
         log_audit.assert_called_once_with(db_superuser.id, AuditAction.UPDATE, User, db_user.id)
+
+    @pytest.mark.parametrize(("start", "target"), [("contributor", "lab"), ("lab", "contributor")])
+    async def test_superuser_sets_a_role_and_audits_the_actor(
+        self,
+        api_client_superuser,
+        db_session: AsyncSession,
+        db_superuser: User,
+        db_user: User,
+        start: str,
+        target: str,
+    ) -> None:
+        """Promotion and demotion both land on the stored account and record the acting admin."""
+        db_user.role = UserRole(start)
+        await db_session.commit()
+
+        with patch(AUDIT) as log_audit:
+            response = await api_client_superuser.put(f"{ADMIN_USERS}/{db_user.id}/role", json={"role": target})
+
+        assert response.status_code == 200, response.text
+        assert response.json()["role"] == target
+        await db_session.refresh(db_user)
+        assert db_user.role == UserRole(target)
+        log_audit.assert_called_once_with(
+            db_superuser.id, AuditAction.UPDATE, User, db_user.id, context=AuditContext(operation=f"set_role_{target}")
+        )
+
+    async def test_role_route_refuses_to_take_another_superuser_off_lab(
+        self, api_client_superuser, db_session: AsyncSession
+    ) -> None:
+        """A superuser always holds the lab tier, so moving one below it is a 400 that changes nothing."""
+        other_admin = await UserFactory.create_async(
+            session=db_session, is_superuser=True, is_active=True, mfa_enabled=True, role=UserRole.LAB
+        )
+
+        with patch(AUDIT) as log_audit:
+            response = await api_client_superuser.put(
+                f"{ADMIN_USERS}/{other_admin.id}/role", json={"role": "contributor"}
+            )
+
+        assert response.status_code == 400, response.text
+        assert response.json()["detail"] == "Superusers always hold the lab tier."
+        await db_session.refresh(other_admin)
+        assert other_admin.role == UserRole.LAB
+        log_audit.assert_not_called()
 
     async def test_superuser_resets_user_mfa(
         self, api_client_superuser, db_session: AsyncSession, db_user: User
