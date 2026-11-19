@@ -90,8 +90,8 @@ navigator's `tabBar`. The products tab owns both the `/products` and `/component
 A cross-navigator `replace` resets every tab. A link that leaves one tab for another must use
 `navigate`, never `replace`.
 
-The root stack keeps only what sits outside the tabs: the entry redirect, `(auth)`,
-`category-selection` and `users/[username]`.
+The root stack keeps only what sits outside the tabs: the entry redirect, `(auth)` and
+`users/[username]`.
 
 Detail screens and the account screen are anchored-scroll documents. Each section registers itself
 with SectionNavContext. Chips (phone) or an outline (lg web) navigate between sections through

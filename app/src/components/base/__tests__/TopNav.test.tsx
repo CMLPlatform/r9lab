@@ -148,13 +148,6 @@ it.each([
   expect(screen.queryByText('Products')).toBeNull();
 });
 
-it('stays behind the category picker, which opens as a modal', async () => {
-  (useBreakpoint as jest.Mock).mockReturnValue({ isMd: true, isLg: true });
-  (usePathname as jest.Mock).mockReturnValue('/category-selection');
-  await render(<TopNav />);
-  expect(screen.getByText('Products')).toBeTruthy();
-});
-
 it('the shortcuts button opens the overlay', async () => {
   // Pressing "?" is the only other way in, which leaves the overlay, and the switch
   // inside it, unreachable for anyone who does not know the convention.

@@ -121,6 +121,9 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Changed
 
+- The product type is picked on the form itself: a search field suggests recent and common types,
+  and matches as you type. "Browse categories" opens the CPV tree in a dialog over the form. The
+  separate category selection page is gone.
 - The docs Operations section is grouped into "Run it" and "Reference". The deployment page is split
   into Deployment topology, Backups and recovery, Secrets and rotation, and Telemetry and
   monitoring; the upload limits are on a new Configure uploads page, and the security assurance case

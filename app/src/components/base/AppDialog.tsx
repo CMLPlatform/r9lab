@@ -20,6 +20,11 @@ type AppDialogProps = {
   dismissable?: boolean;
   /** The element that opened this dialog, so native screen readers can return focus to it on close. */
   triggerRef?: RefObject<View | null>;
+  /**
+   * 'large' holds a fixed 85% height up to 720 wide, for content that scrolls itself
+   * (a FlatList must not sit inside the default ScrollView).
+   */
+  size?: 'default' | 'large';
   children: ReactNode;
 };
 
@@ -41,8 +46,10 @@ export function AppDialog({
   accessibilityLabel,
   dismissable = true,
   triggerRef,
+  size = 'default',
   children,
 }: AppDialogProps) {
+  const large = size === 'large';
   const theme = useAppTheme();
   // A closing dialog stays mounted through its exit; a second Escape or backdrop
   // press in that window must not dismiss again.
@@ -85,23 +92,27 @@ export function AppDialog({
             tabIndex={-1}
             onPress={stopPropagation}
             className="w-full"
-            style={styles.dialogWrapper}
+            style={large ? styles.largeWrapper : styles.dialogWrapper}
           >
-            <KeyboardAvoidingView behavior="padding" style={styles.shrink}>
+            <KeyboardAvoidingView behavior="padding" style={large ? styles.fill : styles.shrink}>
               <Animated.View
-                style={styles.shrink}
+                style={large ? styles.fill : styles.shrink}
                 entering={FadeInUp.duration(200)
                   .easing(Easing.out(Easing.quad))
                   .reduceMotion(ReduceMotion.System)}
               >
                 <OverlaySurface
                   className="p-4"
-                  style={[theme.tokens.elevation.overlay, styles.shrink]}
+                  style={[theme.tokens.elevation.overlay, large ? styles.fill : styles.shrink]}
                   tone="surface"
                 >
-                  <ScrollView keyboardShouldPersistTaps="handled" bounces={false}>
-                    {children}
-                  </ScrollView>
+                  {large ? (
+                    children
+                  ) : (
+                    <ScrollView keyboardShouldPersistTaps="handled" bounces={false}>
+                      {children}
+                    </ScrollView>
+                  )}
                 </OverlaySurface>
               </Animated.View>
             </KeyboardAvoidingView>
@@ -119,6 +130,10 @@ const styles = StyleSheet.create({
   dialogWrapper: {
     maxWidth: 480,
     maxHeight: '85%',
+  },
+  largeWrapper: {
+    maxWidth: 720,
+    height: '85%',
   },
   shrink: {
     flexShrink: 1,

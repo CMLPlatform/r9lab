@@ -22,14 +22,13 @@ config:
 ---
 graph TD
     accTitle: R9lab app screen map
-    accDescr: The root stack holds the entry redirect, the auth group, the tab navigator, the category picker and public profiles. The tab navigator holds three tabs, each with its own stack: products (which owns both the products and components trees), cameras, and account.
+    accDescr: The root stack holds the entry redirect, the auth group, the tab navigator and public profiles. The tab navigator holds three tabs, each with its own stack: products (which owns both the products and components trees), cameras, and account.
 
     Root["Root stack"]
 
     Entry["/ entry redirect"]
     Auth["(auth) group"]
     Tabs["Tab navigator"]
-    Category["/category-selection"]
     Profile["/users/[username]"]
 
     Products["Products tab"]
@@ -39,7 +38,6 @@ graph TD
     Root --> Entry
     Root --> Auth
     Root --> Tabs
-    Root --> Category
     Root --> Profile
 
     Tabs --> Products
@@ -68,7 +66,6 @@ graph TD
 | `/account` | The signed-in account: profile, preferences, integrations, sign-out. |
 | `/admin/users` | User administration, in the account tab. Superusers with two-step verification only. |
 | `/admin/users/[id]` | One account: role, two-step reset, suspension, deletion. |
-| `/category-selection` | Category and product-type picker. Presents over whichever screen opened it. |
 | `/users/[username]` | Public contributor profile. |
 
 Three rules of that tree:
@@ -78,8 +75,8 @@ Three rules of that tree:
 - **The products tab owns both `/products` and `/components`.** A component is a product's
   child, so cards, breadcrumbs and post-create redirects hop between the two trees within one
   navigator.
-- **`/category-selection` and `/users/[username]` sit on the root stack, not in a tab.** More
-  than one tab reaches them, so they join no single tab's trail.
+- **`/users/[username]` sits on the root stack, not in a tab.** More than one tab reaches it,
+  so it joins no single tab's trail.
 
 The account screen links to `/admin/users` only for superusers. The admin screens show a
 "turn on two-step verification" state to a superuser without it, and refuse everyone else; the
@@ -153,8 +150,6 @@ graph LR
     accDescr: The new product route renders the capture screen, which takes photos, a name and a type. Saving posts the record immediately, then replaces the route with the detail screen in edit mode. Adding a component repeats the same path from the detail screen.
 
     New["/products/new"] --> Capture["Capture screen:<br/>photos, name, type"]
-    Capture --> Picker["/category-selection"]
-    Picker --> Capture
     Capture --> Save["POST the record"]
     Save --> Detail["/products/[id]<br/>edit mode"]
     Detail --> Component["components/new"]
@@ -175,8 +170,9 @@ at most 12 ancestors, so a deeper record shows a truncated trail.
 swaps the whole tab navigator out and resets every tab's trail. Within one tab's stack, `replace`
 is fine; the capture flow uses it.
 
-**The category picker returns; it does not redirect.** The capture screen and a detail screen's
-type field both push it and expect a selection back.
+**The type picker is not a route.** The capture screen and a detail screen's type field share
+`ProductTypeField`: a search field over every product type, and a dialog that browses the CPV
+tree. Both hand the pick back to the form through a callback, so nothing navigates.
 
 **Public profiles come back to `/products`.** A shared link can open `/users/[username]` with
 nothing to pop back to, so its header back button navigates to `/products`.

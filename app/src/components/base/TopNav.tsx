@@ -20,7 +20,6 @@ import { PRESS_TINT } from './pressFeedback';
 // Routes where TopNav hides: the chrome-free splash/auth routes (AppStack's
 // headerShown: false list), plus /mfa, which keeps its stack header. There the
 // links would also let a keyboard user tab away mid login-challenge.
-// /category-selection is a modal, so the page behind it keeps its TopNav.
 const NO_CHROME_PATHS = new Set<string>(['/', ...AUTH_HERO_PATHS]);
 
 function TopNavDestinationItem({

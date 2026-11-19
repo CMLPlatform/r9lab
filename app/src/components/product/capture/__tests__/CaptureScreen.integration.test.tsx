@@ -1,11 +1,13 @@
 import { describe, expect, it, jest } from '@jest/globals';
 import { onlineManager } from '@tanstack/react-query';
 import { act, fireEvent, screen, waitFor, within } from '@testing-library/react-native';
+import { HttpResponse, http } from 'msw';
 import type { ReactNode } from 'react';
 import { CaptureScreen } from '@/components/product/capture/CaptureScreen';
-import { takePendingTypeSelection } from '@/features/products/pendingTypeSelection';
+import { API_URL } from '@/config';
 import { PRODUCT_NAME_MAX_LENGTH } from '@/services/api/validation/productSchema';
 import { queryAllHostsByType, renderWithProviders } from '@/test-utils/index';
+import { server } from '@/test-utils/server';
 
 const NAME_PLACEHOLDER = /e\.g\. (Cordless drill|Battery pack)/i;
 const CHOOSE_INVITE_TEXT_PATTERN = /^Choose /;
@@ -39,9 +41,6 @@ jest.mock('expo-router', () => ({
     canGoBack: () => mockCanGoBack,
     goBack: mockGoBack,
   }),
-  // Never invokes its callback, matching the unit-lane default; the type-row
-  // round-trip isn't under test here.
-  useFocusEffect: jest.fn(),
   usePathname: () => '/products/new',
   Stack: { Screen: () => null },
 }));
@@ -60,7 +59,9 @@ jest.mock('@/context/auth', () => ({
   useAuth: () => mockUseAuth(),
 }));
 
+// Partial: the type row's search and shortcut queries stay real (MSW answers them).
 jest.mock('@/features/products/queries', () => ({
+  ...jest.requireActual<object>('@/features/products/queries'),
   QUEUED_OFFLINE_LABEL: 'Queued. Sends when online',
   useSaveProductMutation: () => ({
     mutateAsync: mockMutateAsync,
@@ -106,19 +107,12 @@ jest.mock('@/components/product/ProductImageGallery', () => {
   };
 });
 
-jest.mock('@/features/products/pendingTypeSelection', () => ({
-  takePendingTypeSelection: jest.fn(),
-  setPendingTypeSelection: jest.fn(),
-}));
-
-const mockedTakePending = jest.mocked(takePendingTypeSelection);
-
 // Renders and waits for the type row, so tests don't leave a pending act() warning.
 async function renderCapture(props: Parameters<typeof CaptureScreen>[0]) {
   const result = await renderWithProviders(<CaptureScreen {...props} />, { withDialog: true });
   // Role-agnostic: the invite's wording differs per role, and this only waits
   // for the row to render. The wording itself is pinned by its own tests.
-  await screen.findByText(CHOOSE_INVITE_TEXT_PATTERN);
+  await screen.findByLabelText(CHOOSE_INVITE_TEXT_PATTERN);
   return result;
 }
 
@@ -130,7 +124,6 @@ describe('CaptureScreen', () => {
     mockIsLg = false;
     mockAddListenerImpl = () => jest.fn();
     mockUseAuth.mockReturnValue({ user: { id: '1', username: 'owner' } });
-    mockedTakePending.mockReturnValue(null);
   });
 
   it('renders the capture layout for a new product with no physical-properties section', async () => {
@@ -376,16 +369,21 @@ describe('CaptureScreen', () => {
   it('shows an inviting empty state instead of the undefined category card when no type is picked', async () => {
     await renderCapture({ entityRole: 'product' });
 
-    expect(screen.getByText('Choose a product type')).toBeOnTheScreen();
+    expect(screen.getByLabelText('Choose a product type')).toBeOnTheScreen();
     expect(screen.queryByText('Category undefined')).toBeNull();
   });
 
-  it('navigates to category selection when the empty-state row is pressed', async () => {
+  it('opens the category browser from the type row', async () => {
+    server.use(
+      http.get(`${API_URL}/categories/tree`, () =>
+        HttpResponse.json({ items: [], page: 1, pages: 1, size: 100, total: 0 }),
+      ),
+    );
     await renderCapture({ entityRole: 'product' });
 
-    await fireEvent.press(screen.getByText('Choose a product type'));
+    await fireEvent.press(screen.getByText('Browse categories'));
 
-    expect(mockPush).toHaveBeenCalledWith('/category-selection');
+    expect(await screen.findByRole('button', { name: 'Close' })).toBeOnTheScreen();
   });
 
   it('confirms discard when leaving the screen with unsaved changes', async () => {
