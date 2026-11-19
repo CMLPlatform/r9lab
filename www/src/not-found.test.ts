@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 
 import { getPublicSiteConfig } from '@/config/public.ts';
 
-import NotFound from './404.astro';
+import NotFound from './pages/404.astro';
 
 describe('404 page', () => {
   it('opens every link into the app in the same tab', async () => {
