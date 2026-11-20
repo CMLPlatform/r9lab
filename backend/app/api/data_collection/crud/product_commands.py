@@ -120,6 +120,9 @@ async def create_component(
     parent_product: Product,
 ) -> Product:
     """Add a component to a product (denormalized owner_id inherited from the parent)."""
+    # Owner first, as every product writer does: the insert's foreign keys share-lock both
+    # the owner and the parent product, which an erasure of the owner locks in that order.
+    await lock_product_owner(db, product_id=parent_product.id)
     return await create_and_persist_product_tree(
         db,
         component,
@@ -173,10 +176,10 @@ async def update_product(
 
     A changing update records a ``ProductRevision`` in the same transaction.
     """
-    # Owner first, as every product writer does: the revision's editor foreign key locks
-    # the editor's user row, which for an owner's own edit is the owner's. Taken after the
-    # product row, that would deadlock against an erasure of that owner.
-    await lock_product_owner(db, product_id=product_id)
+    # Owner first, as every product writer does, with the editor in the erasure's order:
+    # the revision's editor foreign key locks the editor's user row, and taken after the
+    # product row that would deadlock against an erasure of the owner or the editor.
+    await lock_product_owner(db, product_id=product_id, editor_id=user_id)
     db_product = await require_locked_model(db, Product, product_id)
     await validate_product_type(db, product.product_type_id)
     before = _editable_fields(db_product)

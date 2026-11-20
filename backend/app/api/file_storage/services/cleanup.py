@@ -8,12 +8,21 @@ from anyio import Path as AnyIOPath
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.api.file_storage.exceptions import StorageBackendError
 from app.api.file_storage.models import File, Image
+from app.api.file_storage.models.storage_core import BaseStorage
+from app.api.file_storage.models.storage_resolver import _get_file_storage, _get_image_storage
 from app.api.file_storage.parents import registered_media_parents
 from app.core.config.core import settings
+from app.core.config.models import StorageBackend
 from app.core.images import THUMBNAIL_WIDTHS, thumbnail_path_for
 
 logger = logging.getLogger(__name__)
+
+# The S3 sweep stops when more than this share of the listed objects, and more than this
+# many, look unreferenced.
+SWEEP_BRAKE_FRACTION = 0.5
+SWEEP_BRAKE_MIN_COUNT = 10
 
 
 def _path_as_str(path: AnyIOPath) -> str:
@@ -159,3 +168,57 @@ async def cleanup_unreferenced_files(session: AsyncSession, *, dry_run: bool = T
                 logger.exception("  Failed to delete %s", path)
 
     return unreferenced
+
+
+async def cleanup_unreferenced_objects(session: AsyncSession, *, dry_run: bool = True) -> list[str]:
+    """Delete S3 objects under the upload prefixes that no database row references.
+
+    The S3 counterpart of ``cleanup_unreferenced_files``, with the same grace period for
+    an upload whose row has not committed yet. Returns the object names that were (or
+    would have been) deleted; nothing happens on the filesystem backend.
+    """
+    if settings.storage_backend != StorageBackend.S3:
+        return []
+
+    # Names are unique per upload, so one set serves both prefixes (they may be equal).
+    referenced: set[str] = set()
+    for media_model in (File, Image):
+        referenced.update(row.file.name for row in (await session.execute(select(media_model))).scalars() if row.file)
+
+    min_age_seconds = settings.file_cleanup_min_file_age_minutes * 60
+    unreferenced: list[tuple[BaseStorage, str]] = []
+    listed = 0
+    for storage in {id(s): s for s in (_get_file_storage(), _get_image_storage())}.values():
+        names = await storage.list_names(min_age_seconds=min_age_seconds)
+        listed += len(names)
+        unreferenced.extend((storage, name) for name in sorted(names) if name not in referenced)
+
+    if not unreferenced:
+        logger.info("No unreferenced S3 objects found.")
+        return []
+
+    # Bucket objects have no backup. Most of a bucket unreferenced points at the wrong or a
+    # restored database, not at orphans, so stop rather than delete it.
+    if len(unreferenced) > SWEEP_BRAKE_MIN_COUNT and len(unreferenced) > listed * SWEEP_BRAKE_FRACTION:
+        logger.error(
+            "Not sweeping S3: %d of %d listed objects are unreferenced. Check the database before deleting.",
+            len(unreferenced),
+            listed,
+        )
+        return []
+
+    if dry_run:
+        logger.info("Dry run: Found %d unreferenced S3 objects to delete:", len(unreferenced))
+    else:
+        logger.info("Cleaning up %d unreferenced S3 objects...", len(unreferenced))
+    for storage, name in unreferenced:
+        if dry_run:
+            logger.info("  [DRY RUN] Would delete: %s", storage.get_path(name))
+            continue
+        try:
+            await storage.delete(name)
+            logger.info("  Deleted: %s", storage.get_path(name))
+        except StorageBackendError:
+            logger.exception("  Failed to delete %s", storage.get_path(name))
+
+    return [name for _, name in unreferenced]

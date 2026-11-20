@@ -198,6 +198,8 @@ verify_postgres_restore() {
     RESTORE_CONTAINER="${4:-r9lab_restore_smoke_$(date +%s)_$$}"
     reap_stale_container "$RESTORE_CONTAINER"
 
+    # --exclude: the snapshot's ledger copy comes back 0700 and owned by the backup uid,
+    # and the host-side `find` for the dump below cannot read into it.
     docker run --rm \
         -v "$repo_dir:/restic:ro" \
         -v "$password_file:/run/secrets/restic_password:ro" \
@@ -205,7 +207,7 @@ verify_postgres_restore() {
         -e RESTIC_PASSWORD_FILE=/run/secrets/restic_password \
         --entrypoint restic \
         "$DEPLOY_BACKUP_IMAGE" \
-        restore --no-lock latest --repo /restic --tag postgres --target /restore
+        restore --no-lock latest --repo /restic --tag postgres --exclude /data/erasure-ledger --target /restore
 
     local dump_file
     dump_file="$(find "$work_dir/restore" -type f -name '*.dump' | sort | tail -n1)"
@@ -696,6 +698,8 @@ restore_postgres() {
     docker run --rm -v "$tmp_root/restore:/work" -v "$tmp_root/ledger:/ledger" --entrypoint chown "$ALPINE_IMAGE" \
         -R 65532:65532 /work /ledger
 
+    # --exclude: the snapshot's ledger copy comes back 0700 and owned by the backup uid,
+    # and the host-side `find` for the dump below cannot read into it.
     docker run --rm \
         -v "$DEPLOY_RESTIC_REPOSITORY:/restic:ro" \
         -v "$DEPLOY_RESTIC_PASSWORD_FILE:/run/secrets/restic_password:ro" \
@@ -703,7 +707,7 @@ restore_postgres() {
         -e RESTIC_PASSWORD_FILE=/run/secrets/restic_password \
         --entrypoint restic \
         "$DEPLOY_BACKUP_IMAGE" \
-        restore --no-lock "$snapshot" --repo /restic --tag postgres --target /restore
+        restore --no-lock "$snapshot" --repo /restic --tag postgres --exclude /data/erasure-ledger --target /restore
     # The newest snapshot's copy of the erasure ledger, which the replay unions with the
     # live file: after losing the backup disk, the offsite copy of it is all that is left.
     # A snapshot from before the ledger was archived restores nothing here.

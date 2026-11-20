@@ -54,6 +54,10 @@ class BaseStorage(ABC):
         """Delete a stored file, tolerating an object that is already missing."""
 
     @abstractmethod
+    async def list_names(self, *, min_age_seconds: float) -> list[str]:
+        """Return the names of stored files last modified at least ``min_age_seconds`` ago."""
+
+    @abstractmethod
     def size(self, name: str) -> int:
         """Return the stored object's size in bytes."""
 

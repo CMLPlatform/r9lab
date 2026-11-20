@@ -1413,6 +1413,12 @@ done
 out="$(TELEMETRY_EDGE_KEY='' bash scripts/smoke_redirects.sh cml-relab.org r9lab.io stagign 2>&1)"
 assert_eq "an unknown environment fails" "2|env must be prod or staging" "$?|$out"
 
+# Both dump restores leave out the snapshot's ledger copy: it comes back 0700 under the
+# backup uid, and the host-side find for the dump cannot read into it.
+restores="$(grep -c -- 'restore --no-lock .* --tag postgres --target /restore' scripts/backup_restic_ops.sh)"
+excluded="$(grep -c -- 'restore --no-lock .* --tag postgres --exclude /data/erasure-ledger --target /restore' scripts/backup_restic_ops.sh)"
+assert_eq "dump restores exclude the erasure ledger" "0 2" "$restores $excluded"
+
 # ---------------------------------------------------------------------------
 # restore_cleanup: the API comes back after a good restore or a failure before the
 # replay touched the database, and stays stopped after a failed replay.

@@ -3,16 +3,19 @@
 import os
 import time
 from pathlib import Path
+from types import SimpleNamespace
 from typing import TYPE_CHECKING
 from unittest.mock import AsyncMock, MagicMock, patch
 
 from app.api.file_storage.services.cleanup import (
     cleanup_unreferenced_files,
+    cleanup_unreferenced_objects,
     get_files_on_disk,
     get_referenced_files,
     get_unreferenced_files,
 )
 from app.core.config.core import settings
+from app.core.config.models import StorageBackend
 
 if TYPE_CHECKING:
     import pytest
@@ -224,3 +227,84 @@ async def test_cleanup_continues_after_delete_error(tmp_path: Path) -> None:
     assert missing in deleted
     assert good in deleted
     assert not good.exists(), "the successful deletion should still happen"
+
+
+# ---------------------------------------------------------------------------
+# the S3 sweep
+# ---------------------------------------------------------------------------
+
+
+class _FakeObjectStorage:
+    def __init__(self, names: list[str]) -> None:
+        self.names = names
+        self.deleted: list[str] = []
+
+    async def list_names(self, *, min_age_seconds: float) -> list[str]:
+        assert min_age_seconds == settings.file_cleanup_min_file_age_minutes * 60
+        return self.names
+
+    def get_path(self, name: str) -> str:
+        return f"s3://bucket/{name}"
+
+    async def delete(self, name: str) -> None:
+        self.deleted.append(name)
+
+
+def _session_referencing(file_names: list[str], image_names: list[str]) -> MagicMock:
+    def result(names: list[str]) -> MagicMock:
+        rows = [SimpleNamespace(file=SimpleNamespace(name=name)) for name in names]
+        return MagicMock(scalars=MagicMock(return_value=rows))
+
+    session = MagicMock()
+    session.execute = AsyncMock(side_effect=[result(file_names), result(image_names)])
+    return session
+
+
+async def _sweep(*, dry_run: bool, monkeypatch: pytest.MonkeyPatch) -> tuple[list[str], _FakeObjectStorage]:
+    storage = _FakeObjectStorage(["kept.pdf", "kept.jpg", "orphan.jpg"])
+    monkeypatch.setattr(settings, "storage_backend", StorageBackend.S3)
+    with (
+        patch("app.api.file_storage.services.cleanup._get_file_storage", return_value=storage),
+        patch("app.api.file_storage.services.cleanup._get_image_storage", return_value=storage),
+    ):
+        deleted = await cleanup_unreferenced_objects(_session_referencing(["kept.pdf"], ["kept.jpg"]), dry_run=dry_run)
+    return deleted, storage
+
+
+async def test_s3_cleanup_deletes_only_unreferenced_objects(monkeypatch: pytest.MonkeyPatch) -> None:
+    """An object no File or Image row names is deleted; referenced ones stay."""
+    deleted, storage = await _sweep(dry_run=False, monkeypatch=monkeypatch)
+
+    assert deleted == ["orphan.jpg"]
+    assert storage.deleted == ["orphan.jpg"]
+
+
+async def test_s3_cleanup_dry_run_does_not_delete(monkeypatch: pytest.MonkeyPatch) -> None:
+    """dry_run reports the orphan but leaves it in the bucket."""
+    deleted, storage = await _sweep(dry_run=True, monkeypatch=monkeypatch)
+
+    assert deleted == ["orphan.jpg"]
+    assert storage.deleted == []
+
+
+async def test_s3_cleanup_is_a_no_op_on_the_filesystem_backend(monkeypatch: pytest.MonkeyPatch) -> None:
+    """The local sweep covers the filesystem backend; no query or listing happens here."""
+    monkeypatch.setattr(settings, "storage_backend", StorageBackend.FILESYSTEM)
+    session = MagicMock()
+
+    assert await cleanup_unreferenced_objects(session, dry_run=False) == []
+    session.execute.assert_not_called()
+
+
+async def test_s3_cleanup_stops_when_most_of_the_bucket_looks_unreferenced(monkeypatch: pytest.MonkeyPatch) -> None:
+    """A database that names few of the bucket's objects is the wrong one; nothing is deleted."""
+    storage = _FakeObjectStorage([f"object-{i}.jpg" for i in range(20)])
+    monkeypatch.setattr(settings, "storage_backend", StorageBackend.S3)
+    with (
+        patch("app.api.file_storage.services.cleanup._get_file_storage", return_value=storage),
+        patch("app.api.file_storage.services.cleanup._get_image_storage", return_value=storage),
+    ):
+        deleted = await cleanup_unreferenced_objects(_session_referencing(["object-0.jpg"], []), dry_run=False)
+
+    assert deleted == []
+    assert storage.deleted == []

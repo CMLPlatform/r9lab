@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING
 
 from sqlalchemy import Case, and_, case, func, select, union_all, update
 
+from app.api.auth.account_guards import SYSTEM_ACCOUNT_EMAILS_CANONICAL
 from app.api.auth.models import User
 from app.api.auth.roles import UserRole, upload_quota_bytes_for_role, upload_quota_files_for_role
 from app.api.common.exceptions import PayloadTooLargeError
@@ -77,7 +78,9 @@ async def reserve_product_upload_quota(
     raise PayloadTooLargeError(UPLOAD_QUOTA_EXCEEDED_MESSAGE)
 
 
-async def lock_product_owner(session: AsyncSession, *, product_id: int | ScalarSelect[int]) -> None:
+async def lock_product_owner(
+    session: AsyncSession, *, product_id: int | ScalarSelect[int], editor_id: UUID | None = None
+) -> None:
     """Lock the user row that owns ``product_id`` before any product or media row.
 
     Every writer that locks both rows takes the owner's first: an upload reserves quota
@@ -85,9 +88,24 @@ async def lock_product_owner(session: AsyncSession, *, product_id: int | ScalarS
     ``image_touch_product`` trigger). A delete that locked the product or a media row
     first and the owner after would deadlock against that upload. ``product_id`` may be a
     subquery; when it finds no product, nothing is locked.
+
+    An edit also names its ``editor_id``: the revision's foreign key locks that row at
+    commit, so it is locked here with the owner, in the order an erasure takes them:
+    active superusers by id, then the anonymous account, then the rest. A moderator's
+    erasure holds the moderator's row and then wants the anonymous owner's.
     """
     owner_id = select(Product.owner_id).where(Product.id == product_id).scalar_subquery()
-    await session.execute(select(User.id).where(User.id == owner_id).with_for_update())
+    users = [owner_id] if editor_id is None else [owner_id, editor_id]
+    await session.execute(
+        select(User.id)
+        .where(User.id.in_(users))
+        .order_by(
+            and_(User.is_superuser, User.is_active).desc(),
+            User.email_canonical.in_(SYSTEM_ACCOUNT_EMAILS_CANONICAL).desc(),
+            User.id,
+        )
+        .with_for_update()
+    )
 
 
 async def release_product_upload_quota_for_media(session: AsyncSession, item: StorageModel) -> None:

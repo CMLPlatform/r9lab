@@ -118,6 +118,11 @@ def get_cpv_parent_id(row: dict[str, Any], available_codes: set[str] | None = No
     """Get parent code by recursively zeroing the rightmost non-zero digit until a valid parent is found."""
     code = str(row["external_id"])
 
+    # A division (first two digits, rest zero) is a top-level category. Zeroing its last digit
+    # would hang 31-38 under 30, because the sections are written as 30000000 and so on.
+    if set(code[2:]) <= {"0"}:
+        return None
+
     while True:
         # Zero the rightmost non-zero digit.
         parent_code = re.sub(r"([1-9])([^1-9]*)$", r"0\2", code)
