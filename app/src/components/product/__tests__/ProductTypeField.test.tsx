@@ -1,11 +1,12 @@
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { act, fireEvent, renderHook, screen, waitFor } from '@testing-library/react-native';
 import { delay, HttpResponse, http } from 'msw';
+import { AccessibilityInfo } from 'react-native';
 import { ProductTypeField } from '@/components/product/ProductTypeField';
 import { API_URL } from '@/config';
 import { usePickProductType } from '@/features/products/useCategorySelection';
 import { useRecentCategories } from '@/features/products/useRecentCategories';
-import { renderWithProviders } from '@/test-utils/index';
+import { mockPlatform, renderWithProviders, restorePlatform } from '@/test-utils/index';
 import { server } from '@/test-utils/server';
 
 const page = (items: unknown[]) => ({ items, page: 1, pages: 1, size: 50, total: items.length });
@@ -132,6 +133,24 @@ describe('ProductTypeField', () => {
     await waitFor(() => expect(onTypeChange).toHaveBeenCalledWith(77));
     expect(onTypeChange).toHaveBeenCalledTimes(1);
     await waitFor(() => expect(screen.queryByRole('button', { name: 'Close' })).toBeNull());
+  });
+
+  it('returns native screen-reader focus to the Browse button when the browser closes', async () => {
+    mockPlatform('ios');
+    const sendEvent = jest
+      .spyOn(AccessibilityInfo, 'sendAccessibilityEvent')
+      .mockImplementation(() => {});
+    try {
+      await renderField();
+
+      await fireEvent.press(screen.getByText('Browse categories'));
+      await fireEvent.press(await screen.findByRole('button', { name: 'Close' }));
+
+      await waitFor(() => expect(sendEvent).toHaveBeenCalledWith(expect.anything(), 'focus'));
+    } finally {
+      sendEvent.mockRestore();
+      restorePlatform();
+    }
   });
 
   it('takes one pick while the first lookup is still running', async () => {

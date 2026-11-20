@@ -35,3 +35,24 @@ it('scrollTo for an unregistered key is a no-op', async () => {
   await act(() => result.current.scrollTo('media'));
   expect(scrollToY).not.toHaveBeenCalled();
 });
+
+it('a jump asked for before the section laid out lands on every registration in the window', async () => {
+  const scrollToY = jest.fn();
+  const { result } = await renderHook(() => useSectionNav(scrollToY));
+  await act(() => result.current.scrollTo('security'));
+  expect(scrollToY).not.toHaveBeenCalled();
+  await act(() => result.current.registerSection('security', 100));
+  expect(scrollToY).toHaveBeenLastCalledWith(92);
+  // The anchored wrapper re-registers with the settled offset.
+  await act(() => result.current.registerSection('security', 340));
+  expect(scrollToY).toHaveBeenLastCalledWith(332);
+});
+
+it('a late layout after the window does not pull the page back', async () => {
+  const scrollToY = jest.fn();
+  const { result } = await renderHook(() => useSectionNav(scrollToY));
+  await act(() => result.current.scrollTo('security'));
+  await act(() => jest.advanceTimersByTime(2000));
+  await act(() => result.current.registerSection('security', 100));
+  expect(scrollToY).not.toHaveBeenCalled();
+});

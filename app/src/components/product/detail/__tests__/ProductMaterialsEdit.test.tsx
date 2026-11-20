@@ -1,9 +1,16 @@
-import { describe, expect, it } from '@jest/globals';
+import { afterEach, beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { HttpResponse, http } from 'msw';
 import ProductMaterials from '@/components/product/detail/ProductMaterials';
 import { API_URL } from '@/config';
-import { baseProduct, renderWithProviders, server, setupUser } from '@/test-utils/index';
+import {
+  baseProduct,
+  mockPlatform,
+  renderWithProviders,
+  restorePlatform,
+  server,
+  setupUser,
+} from '@/test-utils/index';
 import type { Product, ProductMaterial } from '@/types/Product';
 
 const MASS_GAP = /differ by more than 10%/;
@@ -140,6 +147,80 @@ describe('ProductMaterials edit mode', () => {
     await user.press(screen.getByRole('radio', { name: 'Unit: kg' }));
 
     await waitFor(() => expect(body).toEqual({ unit: 'kg' }));
+  });
+
+  describe('on web', () => {
+    beforeEach(() => mockPlatform('web'));
+    afterEach(restorePlatform);
+
+    it('makes the unit chips one Tab stop that arrow keys move and select', async () => {
+      let body: unknown;
+      server.use(
+        http.patch(`${API_URL}/products/:id/materials/:materialId`, async ({ request }) => {
+          body = await request.json();
+          return HttpResponse.json({});
+        }),
+      );
+      await renderEdit(bill([aluminum]));
+
+      const stops = screen.getAllByRole('radio').map((radio) => radio.props.tabIndex);
+      expect(stops).toEqual([0, -1, -1, -1]);
+
+      await fireEvent(screen.getByRole('radio', { name: 'Unit: g' }), 'keyDown', {
+        key: 'ArrowRight',
+        preventDefault: jest.fn(),
+      });
+
+      await waitFor(() => expect(body).toEqual({ unit: 'kg' }));
+    });
+
+    it('steps on from the unit last asked for while a save is in flight', async () => {
+      const bodies: unknown[] = [];
+      server.use(
+        http.patch(`${API_URL}/products/:id/materials/:materialId`, async ({ request }) => {
+          bodies.push(await request.json());
+          return HttpResponse.json({});
+        }),
+      );
+      await renderEdit(bill([aluminum]));
+
+      const pressRight = () =>
+        fireEvent(screen.getByRole('radio', { name: 'Unit: g' }), 'keyDown', {
+          key: 'ArrowRight',
+          preventDefault: jest.fn(),
+        });
+      await pressRight();
+      await pressRight();
+
+      await waitFor(() => expect(bodies).toEqual([{ unit: 'kg' }, { unit: 'm' }]));
+    });
+
+    it('leaves modified arrow keys to the browser', async () => {
+      let sent = false;
+      server.use(
+        http.patch(`${API_URL}/products/:id/materials/:materialId`, () => {
+          sent = true;
+          return HttpResponse.json({});
+        }),
+      );
+      await renderEdit(bill([aluminum]));
+      const preventDefault = jest.fn();
+
+      await fireEvent(screen.getByRole('radio', { name: 'Unit: g' }), 'keyDown', {
+        key: 'ArrowLeft',
+        altKey: true,
+        preventDefault,
+      });
+
+      expect(preventDefault).not.toHaveBeenCalled();
+      expect(sent).toBe(false);
+    });
+  });
+
+  it('leaves the unit chips as separate stops on native', async () => {
+    await renderEdit(bill([aluminum]));
+
+    for (const radio of screen.getAllByRole('radio')) expect(radio.props.tabIndex).toBeUndefined();
   });
 
   it('names each unit in context and marks the recorded one as checked', async () => {

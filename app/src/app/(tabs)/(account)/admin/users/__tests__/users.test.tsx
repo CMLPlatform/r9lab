@@ -59,7 +59,10 @@ describe('Admin users screen', () => {
 
     expect(screen.getByText('Turn on two-step verification first')).toBeOnTheScreen();
     await user.press(screen.getByRole('button', { name: 'Set up two-step verification' }));
-    expect(navigate).toHaveBeenCalledWith('/account');
+    expect(navigate).toHaveBeenCalledWith({
+      pathname: '/account',
+      params: { section: 'security' },
+    });
     expect(requests).toEqual([]);
   });
 

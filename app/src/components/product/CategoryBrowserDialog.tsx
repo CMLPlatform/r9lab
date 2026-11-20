@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { type RefObject, useCallback, useEffect, useRef, useState } from 'react';
 import { FlatList, Pressable, StyleSheet, View } from 'react-native';
 import { AppButton } from '@/components/base/AppButton';
 import { AppDialog } from '@/components/base/AppDialog';
@@ -23,10 +23,12 @@ type Props = {
   onDismiss: () => void;
   /** Gets the picked product type's id; the dialog closes itself after. */
   onSelect: (typeId: number) => void;
+  /** The control that opened the dialog, so native screen readers return focus to it on close. */
+  triggerRef?: RefObject<View | null>;
 };
 
 /** The whole CPV tree, level by level, with search: for when the form's type-ahead finds nothing. */
-export function CategoryBrowserDialog({ visible, onDismiss, onSelect }: Props) {
+export function CategoryBrowserDialog({ visible, onDismiss, onSelect, triggerRef }: Props) {
   // A fresh key per opening starts each one at the root with an empty search, while the
   // content stays mounted through the close fade.
   const [opening, setOpening] = useState(0);
@@ -50,7 +52,13 @@ export function CategoryBrowserDialog({ visible, onDismiss, onSelect }: Props) {
     [onSelect, onDismiss],
   );
   return (
-    <AppDialog visible={visible} onDismiss={onDismiss} accessibilityLabel={TITLE} size="large">
+    <AppDialog
+      visible={visible}
+      onDismiss={onDismiss}
+      accessibilityLabel={TITLE}
+      size="large"
+      triggerRef={triggerRef}
+    >
       <CategoryBrowser key={opening} onDismiss={onDismiss} onSelect={handleSelect} />
     </AppDialog>
   );

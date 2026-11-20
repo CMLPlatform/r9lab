@@ -24,7 +24,7 @@ photos, hangs below it.
 1. Choose **Create product**. To start another record straight away, choose
    **Create & add another**.
 
-![The new product form with an Add photos area, a Name field filled with "Cordless drill", the Product type row, and Create product buttons.](/images/guides/new-product-form.webp)
+![The new product form with an Add photos area, a Name field filled with "Cordless drill", and the Product type search field.](/images/guides/new-product-form.webp)
 
 After you create it, the record opens. Add the brand, model, measurements and notes there.
 

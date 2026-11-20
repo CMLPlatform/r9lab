@@ -46,7 +46,6 @@ export function ProductTypeField({ typeID, recorded, entityRole, onTypeChange }:
   const labels = typeRowLabels(entityRole);
   const cpvType = useCpvType(typeID, recorded);
   const [query, setQuery] = useState('');
-  const [browsing, setBrowsing] = useState(false);
   const { search, debouncedSearchQuery } = useProductTypeSearch(query.trim());
   const { commonTypes, recents } = useTypeShortcuts();
   const searchRef = useRef<TextInput>(null);
@@ -63,7 +62,6 @@ export function ProductTypeField({ typeID, recorded, entityRole, onTypeChange }:
     [onTypeChange],
   );
   const { pick, picking, pickFailed, clearPickError } = usePickProductType(handleInlineSelect);
-  // The dialog hands focus back to the Browse button itself.
   const handleBrowserSelect = useCallback(
     (id: number) => {
       clearPickError();
@@ -79,8 +77,6 @@ export function ProductTypeField({ typeID, recorded, entityRole, onTypeChange }:
     },
     [clearPickError],
   );
-  const openBrowser = useCallback(() => setBrowsing(true), []);
-  const closeBrowser = useCallback(() => setBrowsing(false), []);
 
   // Shortcuts only before a first pick: changing a set type starts from typing or browsing.
   const shortcuts =
@@ -156,16 +152,42 @@ export function ProductTypeField({ typeID, recorded, entityRole, onTypeChange }:
           Couldn't select that type. Try again.
         </AppText>
       ) : null}
-      {/* Not while an inline pick resolves: its late answer would override the browser's. */}
-      <AppButton variant="ghost" className="self-start" onPress={openBrowser} disabled={picking}>
+      <BrowseCategories disabled={picking} onSelect={handleBrowserSelect} />
+    </View>
+  );
+}
+
+/** Button and dialog for browsing the whole tree; the dialog returns focus to the button. */
+function BrowseCategories({
+  disabled,
+  onSelect,
+}: {
+  disabled: boolean;
+  onSelect: (typeID: number) => void;
+}) {
+  const [browsing, setBrowsing] = useState(false);
+  const buttonRef = useRef<View>(null);
+  const open = useCallback(() => setBrowsing(true), []);
+  const close = useCallback(() => setBrowsing(false), []);
+  return (
+    <>
+      {/* Disabled while an inline pick resolves: its late answer would override the browser's. */}
+      <AppButton
+        ref={buttonRef}
+        variant="ghost"
+        className="self-start"
+        onPress={open}
+        disabled={disabled}
+      >
         Browse categories
       </AppButton>
       <CategoryBrowserDialog
         visible={browsing}
-        onDismiss={closeBrowser}
-        onSelect={handleBrowserSelect}
+        onDismiss={close}
+        onSelect={onSelect}
+        triggerRef={buttonRef}
       />
-    </View>
+    </>
   );
 }
 
