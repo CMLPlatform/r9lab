@@ -482,11 +482,10 @@ env-inventory:
 deploy-secrets-check:
     @bash scripts/deploy_ops.sh deploy-secrets-check
 
-# TODO(drop-by 2027-01-31): drop the cml-relab.org default with the old-zone redirects
 # Check that every old-zone host redirects to the new zone (REDIRECT_PERMANENT=1 expects 301/308; TELEMETRY_EDGE_KEY enables the otel check)
 [group('deploy')]
-[doc('Smoke-check the old-zone redirects after a cutover step')]
-smoke-redirects old_zone='cml-relab.org' new_zone='r9lab.io' env='prod':
+[doc('Smoke-check the old-zone redirects after a cutover step; old_zone is the zone that redirects')]
+smoke-redirects old_zone new_zone='r9lab.io' env='prod':
     @bash scripts/smoke_redirects.sh {{ quote(old_zone) }} {{ quote(new_zone) }} {{ quote(env) }}
 
 # Create missing secret files for an environment (dev, prod, or staging)

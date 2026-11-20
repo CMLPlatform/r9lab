@@ -78,29 +78,6 @@ variable "redirect_to_zone_name" {
   }
 }
 
-# TODO(drop-by 2027-01-31): drop redirect_environments once both environments are cut over; the redirect
-# ruleset itself stays for at least a year after that.
-variable "redirect_environments" {
-  description = <<-EOT
-    Environments whose route-map hosts the redirect ruleset covers. Cutting over one
-    environment at a time keeps the other's hosts serving from this zone until its own
-    cutover: staging first with ["staging"], then prod with both. Required whenever
-    redirect_to_zone_name is set, so an apply can never redirect an environment by omission.
-  EOT
-  type        = set(string)
-  default     = []
-
-  validation {
-    condition     = var.redirect_to_zone_name == "" || length(var.redirect_environments) > 0
-    error_message = "redirect_environments must be set whenever redirect_to_zone_name is: [\"staging\"] for the staging cutover, then both."
-  }
-
-  validation {
-    condition     = alltrue([for env in var.redirect_environments : contains(["prod", "staging"], env)])
-    error_message = "redirect_environments may only list \"prod\" and \"staging\"."
-  }
-}
-
 variable "redirect_permanent" {
   description = "Redirect with 301/308 instead of 302/307. Keep false until the new zone is verified."
   type        = bool
