@@ -147,7 +147,7 @@ async def test_callback_redirect_places_mfa_handoff_not_token_in_url_fragment(re
     """OAuth MFA redirects should keep the MFA token out of URLs."""
     config, backend = make_auth_flow()
     csrf_token = generate_csrf_token()
-    frontend_redirect = "relab-app://login?redirectTo=%2Faccount"
+    frontend_redirect = "r9lab-app://login?redirectTo=%2Faccount"
     state = make_oauth_state(
         csrf_token,
         provider_name="github",
@@ -188,8 +188,7 @@ async def test_callback_redirect_places_mfa_handoff_not_token_in_url_fragment(re
     assert fragment["mfa_handoff"][0]
 
 
-# App builds from before the rename still send relab-app:// redirects.
-NATIVE_APP_SCHEMES = ["r9lab-app", "relab-app"]
+NATIVE_APP_SCHEME = "r9lab-app"
 
 
 def _frontend_redirect_request(frontend_redirect: str) -> tuple[MagicMock, tuple[Any, str]]:
@@ -206,12 +205,11 @@ def _frontend_redirect_request(frontend_redirect: str) -> tuple[MagicMock, tuple
     return request, (cast("Any", {"access_token": "provider-access-token"}), state)
 
 
-@pytest.mark.parametrize("app_scheme", NATIVE_APP_SCHEMES)
-async def test_callback_redirect_reports_missing_provider_email(app_scheme: str) -> None:
+async def test_callback_redirect_reports_missing_provider_email() -> None:
     """A provider that returns no email ends the flow with a typed error, before any account lookup."""
     config, backend = make_auth_flow()
     cast("MagicMock", config.oauth_client).get_id_email = AsyncMock(return_value=("provider-account-id", None))
-    request, access_token_state = _frontend_redirect_request(f"{app_scheme}://login")
+    request, access_token_state = _frontend_redirect_request(f"{NATIVE_APP_SCHEME}://login")
     user_manager = MagicMock()
     user_manager.oauth_callback = AsyncMock()
 
@@ -227,18 +225,17 @@ async def test_callback_redirect_reports_missing_provider_email(app_scheme: str)
     )
 
     location = urlparse(response.headers["location"])
-    assert (location.scheme, location.netloc) == (app_scheme, "login")
+    assert (location.scheme, location.netloc) == (NATIVE_APP_SCHEME, "login")
     fragment = parse_qs(location.fragment)
     assert fragment["status"] == ["error"]
     assert fragment["error"] == [ErrorCode.OAUTH_NOT_AVAILABLE_EMAIL.value]
     user_manager.oauth_callback.assert_not_awaited()
 
 
-@pytest.mark.parametrize("app_scheme", NATIVE_APP_SCHEMES)
-async def test_callback_redirect_reports_inactive_user_as_bad_credentials(app_scheme: str) -> None:
+async def test_callback_redirect_reports_inactive_user_as_bad_credentials() -> None:
     """An inactive account gets the bad-credentials error, not a session."""
     config, backend = make_auth_flow()
-    request, access_token_state = _frontend_redirect_request(f"{app_scheme}://login")
+    request, access_token_state = _frontend_redirect_request(f"{NATIVE_APP_SCHEME}://login")
     user = MagicMock()
     user.is_active = False
     user_manager = MagicMock()
@@ -257,18 +254,17 @@ async def test_callback_redirect_reports_inactive_user_as_bad_credentials(app_sc
     )
 
     location = urlparse(response.headers["location"])
-    assert (location.scheme, location.netloc) == (app_scheme, "login")
+    assert (location.scheme, location.netloc) == (NATIVE_APP_SCHEME, "login")
     fragment = parse_qs(location.fragment)
     assert fragment["status"] == ["error"]
     assert fragment["error"] == [ErrorCode.LOGIN_BAD_CREDENTIALS.value]
     user_manager.on_after_login.assert_not_awaited()
 
 
-@pytest.mark.parametrize("app_scheme", NATIVE_APP_SCHEMES)
-async def test_callback_redirect_carries_session_cookies_on_success(redis_client: Redis, app_scheme: str) -> None:
+async def test_callback_redirect_carries_session_cookies_on_success(redis_client: Redis) -> None:
     """A successful redirect login reports success and sets the same cookies as a direct one."""
     config, backend = make_auth_flow()
-    request, access_token_state = _frontend_redirect_request(f"{app_scheme}://login")
+    request, access_token_state = _frontend_redirect_request(f"{NATIVE_APP_SCHEME}://login")
     request.app.state.services = AppServices(redis=redis_client)
     user = MagicMock()
     user.id = uuid4()
@@ -292,7 +288,7 @@ async def test_callback_redirect_carries_session_cookies_on_success(redis_client
     )
 
     location = urlparse(response.headers["location"])
-    assert (location.scheme, location.netloc) == (app_scheme, "login")
+    assert (location.scheme, location.netloc) == (NATIVE_APP_SCHEME, "login")
     assert parse_qs(location.fragment)["status"] == ["success"]
     set_cookie_headers = response.headers.getlist("set-cookie")
     assert any(header.startswith("__Host-r9lab-auth=") for header in set_cookie_headers)
@@ -342,7 +338,7 @@ async def test_callback_redirect_returns_typed_existing_user_error() -> None:
     """Maps duplicate-user errors to a typed fragment redirect when a frontend redirect exists."""
     config, backend = make_auth_flow()
     csrf_token = generate_csrf_token()
-    frontend_redirect = "relab-app://login"
+    frontend_redirect = "r9lab-app://login"
     state = make_oauth_state(
         csrf_token,
         provider_name="github",
@@ -597,7 +593,7 @@ async def test_associate_callback_redirects_errors_to_the_frontend(failure: str,
     config, user_schema = make_associate_flow()
     current_user = MagicMock()
     current_user.id = USER1_EMAIL
-    frontend_redirect = "relab-app://account"
+    frontend_redirect = "r9lab-app://account"
     csrf_token = generate_csrf_token()
     state = make_oauth_state(
         csrf_token,

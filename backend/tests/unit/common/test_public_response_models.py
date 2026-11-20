@@ -38,13 +38,6 @@ PRIVATE_MODEL_ROUTES = {
     ("GET", "/v1/plugins/r9cam/cameras/{camera_id}/local-access"),
     ("POST", "/v1/plugins/r9cam/pairing/claim"),
 }
-# The camera routes are also served under their pre-rename path.
-# TODO(drop-by 2027-01-31): drop the /v1/plugins/rpi-cam/ prefix
-PRIVATE_MODEL_ROUTES |= {
-    (method, path.replace("/plugins/r9cam/", "/plugins/rpi-cam/"))
-    for method, path in PRIVATE_MODEL_ROUTES
-    if "/plugins/r9cam/" in path
-}
 
 
 def _reachable_models(annotation: Any, seen: set[type[BaseModel]]) -> set[type[BaseModel]]:

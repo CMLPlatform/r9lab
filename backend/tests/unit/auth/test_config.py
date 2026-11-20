@@ -24,8 +24,6 @@ def test_oauth_redirect_allowlist_defaults_from_app_public_url() -> None:
         "https://app.example.com/account",
         "r9lab-app://login",
         "r9lab-app://account",
-        "relab-app://login",
-        "relab-app://account",
     ]
 
 
@@ -160,7 +158,7 @@ def test_oauth_state_secret_rejects_short_values_in_production_like_environments
 
 def test_oauth_redirect_uris_can_be_set() -> None:
     """OAuth allowed redirect URIs can be configured via constructor."""
-    redirect_uris = ["https://app.example.com/login", "relab-app://account"]
+    redirect_uris = ["https://app.example.com/login", "r9lab-app://account"]
     settings = AuthSettings(oauth_allowed_redirect_uris=redirect_uris)
     assert settings.oauth_allowed_redirect_uris == redirect_uris
 

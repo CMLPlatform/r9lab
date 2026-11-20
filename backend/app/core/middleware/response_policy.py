@@ -26,10 +26,6 @@ SENSITIVE_PATH_PREFIXES = (
     "/v1/plugins/r9cam/pairing",
     "/v1/plugins/r9cam/cameras",
     "/v1/plugins/r9cam/device",
-    # TODO(drop-by 2027-01-31): drop the /v1/plugins/rpi-cam/ prefix
-    "/v1/plugins/rpi-cam/pairing",
-    "/v1/plugins/rpi-cam/cameras",
-    "/v1/plugins/rpi-cam/device",
 )
 
 HSTS_HEADER_VALUE = "max-age=63072000; includeSubDomains"

@@ -80,17 +80,17 @@ describe('local connection storage security', () => {
     expect(global.fetch).not.toHaveBeenCalled();
   });
 
-  it.each(['r9cam', 'relab-rpi-cam'])(
-    'accepts a camera that reports the %s service',
-    async (service) => {
-      global.fetch = jest.fn(async () => ({
-        ok: true,
-        json: async () => ({ status: 'ok', service }),
-      })) as unknown as typeof fetch;
+  it.each([
+    ['r9cam', true],
+    ['relab-rpi-cam', false],
+  ])('treats a camera reporting the %s service as reachable: %s', async (service, expected) => {
+    global.fetch = jest.fn(async () => ({
+      ok: true,
+      json: async () => ({ status: 'ok', service }),
+    })) as unknown as typeof fetch;
 
-      await expect(probeLocalUrl('http://192.168.7.1:8018')).resolves.toBe(true);
-    },
-  );
+    await expect(probeLocalUrl('http://192.168.7.1:8018')).resolves.toBe(expected);
+  });
 
   it('probes the unauthenticated liveness endpoint and sends no credential', async () => {
     const fetchMock = jest.fn(async () => ({
