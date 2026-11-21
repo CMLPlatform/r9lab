@@ -6,10 +6,6 @@ PLUGIN_STREAM_ENDPOINT = "/streams/youtube"
 
 # Every plugin route lives under this path, relative to the API version prefix.
 PLUGIN_PATH = "/plugins/r9cam"
-# Cameras paired before the rename persist URLs under the old path, so the routes are also
-# served there, outside the OpenAPI schema.
-# TODO(drop-by 2027-01-31): drop the /v1/plugins/rpi-cam/ prefix
-LEGACY_PLUGIN_PATH = "/plugins/rpi-cam"
 
 # The relay endpoint, relative to PLUGIN_PATH. Paired cameras persist the absolute URL
 # handed to them at pairing, so changing this strands every camera in the field until it

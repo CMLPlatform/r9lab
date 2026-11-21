@@ -15,7 +15,7 @@ import pytest
 from sqlalchemy import Select, select
 
 from app.api.application.account_erasure import get_or_create_anonymous_user
-from app.api.auth.account_guards import ANONYMOUS_USER_EMAIL, LEGACY_ANONYMOUS_USER_EMAIL
+from app.api.auth.account_guards import ANONYMOUS_USER_EMAIL
 from app.api.auth.dependencies import current_active_superuser_account
 from app.api.auth.models import OAuthAccount, User
 from app.api.auth.roles import UserRole
@@ -598,19 +598,3 @@ class TestAdminUserErasure:
 
         assert response.status_code == 409
         assert await _row_exists(db_session, select(User.id).where(User.id == anonymous.id))
-
-    async def test_legacy_anonymous_system_account_cannot_be_deleted(
-        self, api_client_superuser, db_session: AsyncSession
-    ) -> None:
-        """The pre-rename system address stays protected while a rollback could still recreate it."""
-        legacy = await UserFactory.create_async(
-            session=db_session,
-            email=LEGACY_ANONYMOUS_USER_EMAIL,
-            is_active=False,
-        )
-        await db_session.flush()
-
-        response = await api_client_superuser.delete(f"{ADMIN_USERS}/{legacy.id}")
-
-        assert response.status_code == 409
-        assert await _row_exists(db_session, select(User.id).where(User.id == legacy.id))

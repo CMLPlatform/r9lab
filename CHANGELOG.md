@@ -154,9 +154,9 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   fallback is removed) and rejects salts shorter than 32 characters.
 - A restore that fails while replacing the database leaves the API stopped and prints the
   command to start it again. A failure before the database is touched restarts the API.
-- Camera tokens use the audience `r9cam-relay`. The backend still accepts the old
-  `relab-rpi-cam-relay` until 2027-01-31, so the backend and the Pis can be upgraded in either
-  order and paired cameras keep working.
+- **Breaking:** camera tokens use the audience `r9cam-relay`; the old `relab-rpi-cam-relay` is
+  refused. Update every Pi to an r9cam release that signs with `r9cam-relay` and moves a saved
+  pre-rename relay URL to `/v1/plugins/r9cam/` before deploying, or pair those cameras again.
 
 ### Removed
 
@@ -165,8 +165,12 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - The app no longer ships the CPV category list (2 MB, about 200 KB gzipped). The category picker
   browses the CPV categories from the API and searches product types on the server, so the app
   and the API cannot drift apart.
-- The legacy admin path `/v1/admin/plugins/rpi-cam` is no longer served. The device and
-  user-facing legacy camera paths stay until 2027-01-31.
+- The legacy camera paths under `/v1/plugins/rpi-cam` and `/v1/admin/plugins/rpi-cam` are no
+  longer served.
+- Sign-in no longer redirects to `relab-app://`; the app uses `r9lab-app://`.
+- The app only finds cameras that announce the `r9cam` service, not `relab-rpi-cam`.
+- The old-zone redirects no longer take a per-environment switch (`redirect_environments`), and
+  `just smoke-redirects` takes the old zone as an argument.
 - The docs site's Prerequisites and Deploy pages. Their URLs redirect to
   [Install](https://docs.r9lab.io/operations/install/) and
   [Deployment topology](https://docs.r9lab.io/operations/deployment/). The Upgrade and backup page

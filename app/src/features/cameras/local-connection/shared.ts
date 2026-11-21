@@ -25,9 +25,7 @@ export const apiKeySecureKey = (cameraId: string) => `localConnection_${cameraId
 
 // The Pi's unauthenticated liveness endpoint. Probing must never carry a credential.
 const LIVENESS_PATH = '/healthz';
-// Plugin releases before the r9cam rename report the old service name.
-// TODO(drop-by 2027-01-31): drop the 'relab-rpi-cam' service name
-const R9CAM_SERVICES: ReadonlySet<unknown> = new Set(['r9cam', 'relab-rpi-cam']);
+const R9CAM_SERVICE = 'r9cam';
 
 export function buildLocalProbeCandidates(candidateUrls: string[]): string[] {
   const localUrls = [...candidateUrls, USB_GADGET_DEFAULT].filter((url) => {
@@ -67,7 +65,7 @@ export async function probeLocalUrl(baseUrl: string): Promise<boolean> {
       });
       if (!response.ok) return false;
       const body = (await response.json().catch(() => null)) as { service?: unknown } | null;
-      return R9CAM_SERVICES.has(body?.service);
+      return body?.service === R9CAM_SERVICE;
     } catch {
       return false;
     } finally {

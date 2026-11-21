@@ -115,24 +115,3 @@ async def test_non_owner_cannot_access_camera(
     assert preview_response.status_code == status.HTTP_404_NOT_FOUND
     assert patch_response.status_code == status.HTTP_404_NOT_FOUND
     assert delete_response.status_code == status.HTTP_404_NOT_FOUND
-
-
-@pytest.mark.parametrize("plugin_path", ["/plugins/r9cam", "/plugins/rpi-cam"])
-async def test_camera_routes_answer_on_current_and_legacy_path(
-    api_client_superuser: AsyncClient, db_superuser: User, plugin_path: str
-) -> None:
-    """Cameras and clients from before the rename still call the old path until it is dropped."""
-    response = await api_client_superuser.post(f"/v1{plugin_path}/cameras", json=build_camera_payload())
-    assert response.status_code == status.HTTP_201_CREATED
-    camera_id = response.json()["id"]
-    assert response.json()["owner_id"] == str(db_superuser.id)
-
-    response = await api_client_superuser.get(f"/v1{plugin_path}/cameras/{camera_id}")
-    assert response.status_code == status.HTTP_200_OK
-
-    response = await api_client_superuser.get(f"/v1/admin/plugins/r9cam/cameras/{camera_id}")
-    assert response.status_code == status.HTTP_200_OK
-
-    # The admin routes were never called on the old path, so they are not served there.
-    response = await api_client_superuser.get(f"/v1/admin/plugins/rpi-cam/cameras/{camera_id}")
-    assert response.status_code == status.HTTP_404_NOT_FOUND

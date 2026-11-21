@@ -31,8 +31,7 @@ plan. An optional `infra/cloudflare-zone/<zone>.tfvars` is loaded when present.
 ## Redirecting the old zone
 
 The old zone's workspace sets `redirect_to_zone_name` to send every route-map hostname to the same
-name on the new zone. `redirect_environments` limits the rules to the environments being cut over,
-so each environment keeps serving from the old zone until its own window.
+name on the new zone, for both environments.
 
 **Before the first window**, check that the old zone has no redirect ruleset made in the
 dashboard. This call must print `404`:
@@ -46,11 +45,8 @@ If it exists (`200`), delete it in the dashboard or import it as `cloudflare_rul
 with the id `zones/<old zone id>/<ruleset id>`, with `TF_VAR_redirect_to_zone_name` set.
 Otherwise the redirect apply fails with "already exists" inside the cutover window.
 
-`redirect_environments` defaults to `[]`, and a validation requires a non-empty set whenever
-`redirect_to_zone_name` is set: a plan that turns redirects on without naming the environments
-fails rather than redirecting prod by omission. The recipes pass `cml-relab.org.tfvars` as
-`-var-file`, which overrides `TF_VAR_*`, so a later old-zone apply run without those variables
-cannot drop the redirects.
+The recipes pass `cml-relab.org.tfvars` as `-var-file`, which overrides `TF_VAR_*`, so a later
+old-zone apply run without those variables cannot drop the redirects.
 
 ## Mail
 

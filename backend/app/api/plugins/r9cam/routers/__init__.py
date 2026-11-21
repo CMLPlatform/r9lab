@@ -2,7 +2,7 @@
 
 from fastapi import APIRouter
 
-from app.api.plugins.r9cam.constants import LEGACY_PLUGIN_PATH, PLUGIN_PATH
+from app.api.plugins.r9cam.constants import PLUGIN_PATH
 from app.api.plugins.r9cam.routers.admin import router as admin_router
 from app.api.plugins.r9cam.routers.camera_crud import device_router as device_crud_router
 from app.api.plugins.r9cam.routers.camera_crud import router as public_crud_router
@@ -25,5 +25,3 @@ plugin_router.include_router(ws_router)
 router = APIRouter()
 router.include_router(plugin_router, prefix=PLUGIN_PATH)
 router.include_router(admin_router, prefix=f"/admin{PLUGIN_PATH}")
-# Only cameras and old app builds call the legacy path; the admin UI never did.
-router.include_router(plugin_router, prefix=LEGACY_PLUGIN_PATH, include_in_schema=False)

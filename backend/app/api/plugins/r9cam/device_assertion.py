@@ -30,10 +30,6 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 ASSERTION_AUDIENCE = "r9cam-relay"
-# Pis on an r9cam release older than the rename still sign with this audience, so the
-# backend and the Pis can be upgraded in either order.
-# TODO(drop-by 2027-01-31): drop together with the /v1/plugins/rpi-cam/ prefix
-LEGACY_ASSERTION_AUDIENCE = "relab-rpi-cam-relay"
 ASSERTION_ALGORITHMS = ("ES256", "EdDSA")
 # The key type registered at pairing fixes the one algorithm a camera may sign with, so a
 # token cannot pick a different algorithm than its key was made for.
@@ -76,7 +72,7 @@ async def verify_device_assertion(assertion: str, camera: Camera, redis: Redis) 
         assertion,
         key=public_key,
         algorithms=[algorithm],
-        audience=[ASSERTION_AUDIENCE, LEGACY_ASSERTION_AUDIENCE],
+        audience=ASSERTION_AUDIENCE,
         options={"require": ["exp", "iat", "iss", "nbf", "jti", "sub"]},
     )
     expected_camera_claim = f"camera:{camera.id}"

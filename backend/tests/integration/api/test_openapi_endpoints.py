@@ -113,9 +113,7 @@ async def test_canonical_openapi_json_can_be_generated(openapi_client: AsyncClie
     assert "x-tagGroups" in payload
     assert payload["info"]["version"] == "1.0.0"
     assert payload["info"]["x-api-major"] == "v1"
-    # The pre-rename camera path is served but undocumented until it is dropped.
     assert any(path.startswith("/v1/plugins/r9cam/") for path in payload["paths"])
-    assert not any("/plugins/rpi-cam/" in path for path in payload["paths"])
     # The service version is not disclosed on unauthenticated routes; only the API contract version is.
     assert "x-service-version" not in payload["info"]
     paths = payload["paths"]

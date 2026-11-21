@@ -19,14 +19,7 @@ if TYPE_CHECKING:
 # not `.invalid`: email-validator rejects `.invalid`, which would make `UserRead.email`
 # unserializable and break the admin user list.
 ANONYMOUS_USER_EMAIL = "anonymous@system.r9lab.internal"
-# The pre-rename address, which migration 0b5e7c3a9d21 rewrites. Still refused by the
-# guards in case a rolled-back release recreated that row.
-# TODO(drop-by 2027-01-31): drop LEGACY_ANONYMOUS_USER_EMAIL
-LEGACY_ANONYMOUS_USER_EMAIL = "anonymous@system.relab.internal"
-
-SYSTEM_ACCOUNT_EMAILS_CANONICAL = frozenset(
-    canonicalize_email(email) for email in (ANONYMOUS_USER_EMAIL, LEGACY_ANONYMOUS_USER_EMAIL)
-)
+SYSTEM_ACCOUNT_EMAILS_CANONICAL = frozenset({canonicalize_email(ANONYMOUS_USER_EMAIL)})
 
 
 def is_system_account(user: User) -> bool:

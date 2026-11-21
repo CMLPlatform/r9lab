@@ -179,13 +179,6 @@ RATE_LIMIT_EXEMPT_ROUTES = {
     ("POST", "/v1/oauth/google-youtube/associate/authorize"),
     ("DELETE", "/v1/oauth/{provider}/associate"),
 }
-# The non-admin camera routes are also served under their pre-rename path.
-# TODO(drop-by 2027-01-31): drop the /v1/plugins/rpi-cam/ prefix
-RATE_LIMIT_EXEMPT_ROUTES |= {
-    (method, path.replace("/plugins/r9cam/", "/plugins/rpi-cam/"))
-    for method, path in RATE_LIMIT_EXEMPT_ROUTES
-    if path.startswith("/v1/plugins/r9cam/")
-}
 
 
 def _all_dependency_names(dependant: Dependant) -> set[str]:

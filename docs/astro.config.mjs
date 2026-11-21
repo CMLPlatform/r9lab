@@ -136,8 +136,8 @@ const site = process.env.PUBLIC_DOCS_URL?.trim() || MODE_SITES[buildMode] || MOD
 
 export default defineConfig({
   site,
-  // TODO(drop-by 2027-01-31): drop these redirects once the old rpi-cam links have stopped
-  // arriving (the same date the backend drops its legacy camera paths).
+  // TODO(drop-by 2027-01-31): drop these redirects once the r9cam repo's README and INSTALL
+  // link the r9cam pages and the old rpi-cam links have stopped arriving.
   redirects: {
     '/user-guides/rpi-cam': '/user-guides/r9cam/',
     '/architecture/rpi-cam': '/architecture/r9cam/',
